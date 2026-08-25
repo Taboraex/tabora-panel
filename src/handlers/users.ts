@@ -23,19 +23,31 @@ interface UserPayload {
     maxConfigs?: number;
 }
 
+/** Longest name we will store. Long enough for any label, short enough to render. */
+const MAX_NAME_LENGTH = 64;
+const MAX_NOTES_LENGTH = 500;
+
+/** Clamp a byte/count value to a sane non-negative number. */
+const nonNegative = (value: unknown): number => {
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+};
+
 function toPatch(payload: UserPayload): Partial<User> {
     const patch: Partial<User> = {};
 
-    if (payload.name !== undefined) patch.name = payload.name.trim();
+    if (payload.name !== undefined) patch.name = payload.name.trim().slice(0, MAX_NAME_LENGTH);
     if (payload.uuid !== undefined && payload.uuid) patch.uuid = payload.uuid.trim().toLowerCase();
-    if (payload.notes !== undefined) patch.notes = payload.notes;
-    if (payload.limitGb !== undefined) patch.limitBytes = gbToBytes(Number(payload.limitGb) || 0);
+    if (payload.notes !== undefined) patch.notes = String(payload.notes).slice(0, MAX_NOTES_LENGTH);
+    // Negative limits used to pass straight through, creating a user that was
+    // already over quota the moment it existed.
+    if (payload.limitGb !== undefined) patch.limitBytes = gbToBytes(nonNegative(payload.limitGb));
     if (payload.dailyLimitGb !== undefined) {
-        patch.dailyLimitBytes = gbToBytes(Number(payload.dailyLimitGb) || 0);
+        patch.dailyLimitBytes = gbToBytes(nonNegative(payload.dailyLimitGb));
     }
-    if (payload.expiryMs !== undefined) patch.expiryMs = Number(payload.expiryMs) || 0;
+    if (payload.expiryMs !== undefined) patch.expiryMs = nonNegative(payload.expiryMs);
     else if (payload.expiryDays !== undefined) {
-        const days = Number(payload.expiryDays) || 0;
+        const days = nonNegative(payload.expiryDays);
         patch.expiryMs = days > 0 ? daysFromNow(days) : 0;
     }
     if (payload.isPaused !== undefined) patch.isPaused = Boolean(payload.isPaused);
@@ -43,7 +55,7 @@ function toPatch(payload: UserPayload): Partial<User> {
     if (payload.ports !== undefined) patch.ports = parsePorts(payload.ports);
     if (payload.cleanIPs !== undefined) patch.cleanIPs = parseList(payload.cleanIPs);
     if (payload.panelUrl !== undefined) patch.panelUrl = payload.panelUrl.trim();
-    if (payload.maxConfigs !== undefined) patch.maxConfigs = Number(payload.maxConfigs) || 0;
+    if (payload.maxConfigs !== undefined) patch.maxConfigs = nonNegative(payload.maxConfigs);
 
     return patch;
 }

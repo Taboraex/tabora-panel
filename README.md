@@ -115,6 +115,20 @@ All variables are optional except `ADMIN_PASSWORD`.
 | `FALLBACK` | Wikipedia | Site mirrored for unauthorised requests. |
 | `PROXY_IP` | built-in defaults | Comma-separated relay hosts, e.g. `1.2.3.4:443`. Seeds the relay list on a fresh deploy; once you save relays in the panel (or apply a scan), those win. |
 
+### Traffic accounting
+
+Every byte relayed back to a client is attributed to the user whose credential
+opened the connection. Counters are buffered per connection and flushed via
+`ctx.waitUntil`, which matters more than it sounds: a WebSocket handler returns
+its 101 response immediately, so a write started afterwards is discarded unless
+it is registered with the runtime. Without that registration the writes were
+issued and dropped, quotas never moved, and every usage figure read zero.
+
+The **Overview** tab charts the last 7 or 30 days as an inline SVG. There is no
+charting library: the panel ships as a single self-contained file, and a CDN
+dependency would be both a size cost and an availability risk on the networks
+this tool is used on.
+
 ### Security
 
 The panel is a single-credential admin surface reachable from anywhere, so the

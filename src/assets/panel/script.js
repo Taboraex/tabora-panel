@@ -33,7 +33,24 @@ const I18N = {
         'sub.hint': 'Panel-wide links. For per-user links, open a user in the Users tab.',
         'sub.qr': 'QR code',
         'usr.title': 'Users', 'usr.add': '+ Add user', 'usr.all': 'All',
+        'set.uuid': 'UUID (VLESS)', 'set.trojanPass': 'Trojan password',
+        'set.vless': 'VLESS', 'set.trojan': 'Trojan', 'set.echName': 'ECH server name',
+        'set.tfo': 'TCP Fast Open', 'set.remoteDns': 'Remote DNS (DoH)',
+        'set.localDns': 'Local DNS', 'set.ipv6': 'Enable IPv6', 'set.proxyIps': 'Proxy IPs',
+        'set.nat64': 'NAT64 prefixes', 'set.blockQuic': 'Block QUIC (UDP 443)',
+        'set.logLevel': 'Log level',
+        'um.name': 'Name *', 'um.uuid': 'UUID', 'um.limit': 'Traffic limit (GB)',
+        'um.daily': 'Daily limit (GB)', 'um.expiry': 'Expires in (days)', 'um.notes': 'Notes',
         'usr.active': 'Active', 'usr.paused': 'Paused', 'usr.expired': 'Expired',
+        'usr.quotaExceeded': 'Quota used', 'usr.dailyLimit': 'Daily limit',
+        'usr.link': 'Link', 'usr.qr': 'QR', 'usr.edit': 'Edit',
+        'usr.pause': 'Pause', 'usr.resume': 'Resume', 'usr.reset': 'Reset',
+        'usr.delete': 'Delete', 'usr.copy': 'Copy',
+        'usr.none': 'No users found.',
+        'usr.search': 'Search by name, UUID or note…',
+        'usr.unlimited': 'Unlimited', 'qr.title': 'Scan to import',
+        'chart.title': 'Traffic', 'chart.7d': '7 days', 'chart.30d': '30 days',
+        'chart.empty': 'No traffic recorded yet.', 'chart.peak': 'Peak',
         'usr.loading': 'Loading…',
         'set.identity': 'Identity & access', 'set.path': 'Secret path',
         'set.fallback': 'Decoy site', 'set.changePass': 'Change panel password',
@@ -77,7 +94,24 @@ const I18N = {
         'sub.hint': 'لینک‌های عمومی پنل. برای لینک اختصاصی هر کاربر، به تب کاربران بروید.',
         'sub.qr': 'کد QR',
         'usr.title': 'کاربران', 'usr.add': '+ کاربر جدید', 'usr.all': 'همه',
+        'set.uuid': 'شناسه UUID (VLESS)', 'set.trojanPass': 'رمز Trojan',
+        'set.vless': 'VLESS', 'set.trojan': 'Trojan', 'set.echName': 'نام سرور ECH',
+        'set.tfo': 'TCP Fast Open', 'set.remoteDns': 'DNS راه دور (DoH)',
+        'set.localDns': 'DNS محلی', 'set.ipv6': 'فعال‌سازی IPv6', 'set.proxyIps': 'آی‌پی‌های واسط',
+        'set.nat64': 'پیشوندهای NAT64', 'set.blockQuic': 'مسدودسازی QUIC (UDP 443)',
+        'set.logLevel': 'سطح گزارش',
+        'um.name': 'نام *', 'um.uuid': 'شناسه UUID', 'um.limit': 'محدودیت ترافیک (گیگابایت)',
+        'um.daily': 'محدودیت روزانه (گیگابایت)', 'um.expiry': 'انقضا (روز)', 'um.notes': 'یادداشت',
         'usr.active': 'فعال', 'usr.paused': 'متوقف', 'usr.expired': 'منقضی',
+        'usr.quotaExceeded': 'اتمام حجم', 'usr.dailyLimit': 'سقف روزانه',
+        'usr.link': 'لینک', 'usr.qr': 'کد QR', 'usr.edit': 'ویرایش',
+        'usr.pause': 'توقف', 'usr.resume': 'ادامه', 'usr.reset': 'صفر کردن',
+        'usr.delete': 'حذف', 'usr.copy': 'کپی',
+        'usr.none': 'کاربری یافت نشد.',
+        'usr.search': 'جستجو بر اساس نام، شناسه یا یادداشت…',
+        'usr.unlimited': 'نامحدود', 'qr.title': 'برای افزودن اسکن کنید',
+        'chart.title': 'مصرف ترافیک', 'chart.7d': '۷ روز', 'chart.30d': '۳۰ روز',
+        'chart.empty': 'هنوز مصرفی ثبت نشده است.', 'chart.peak': 'بیشترین',
         'usr.loading': 'در حال بارگذاری…',
         'set.identity': 'هویت و دسترسی', 'set.path': 'مسیر مخفی',
         'set.fallback': 'سایت استتار', 'set.changePass': 'تغییر رمز پنل',
@@ -99,6 +133,17 @@ const I18N = {
 
 let lang = localStorage.getItem('tabora.lang') || 'en';
 
+/** Map a backend status string onto its localised label. */
+const STATUS_KEYS = {
+    active: 'usr.active',
+    paused: 'usr.paused',
+    expired: 'usr.expired',
+    'quota-exceeded': 'usr.quotaExceeded',
+    'daily-limit': 'usr.dailyLimit',
+    'auto-disabled': 'usr.paused',
+};
+const statusLabel = (status) => t(STATUS_KEYS[status] ?? 'usr.active');
+
 /** Translate a key for use in dynamically generated markup. */
 const t = (key) => (I18N[lang] || I18N.en)[key] ?? I18N.en[key] ?? key;
 
@@ -108,10 +153,31 @@ function applyLang() {
         const value = dict[el.dataset.i18n];
         if (value) el.textContent = value;
     });
+    // Placeholders are attributes, so they need their own pass.
+    document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
+        const value = dict[el.dataset.i18nPh];
+        if (value) el.setAttribute('placeholder', value);
+    });
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
     $('#langLabel').textContent = lang.toUpperCase();
     localStorage.setItem('tabora.lang', lang);
+}
+
+/**
+ * Re-render everything that JavaScript generated.
+ *
+ * applyLang can only translate markup that exists in the document with a
+ * data-i18n attribute. Rows built from templates carry no such markers, so
+ * without this a language switch leaves buttons and badges in the old
+ * language until the next reload.
+ */
+function redrawDynamic() {
+    if (usersCache.length) renderUsers();
+    if (meta.subscriptionBase) renderSubscriptions();
+    // Logs are fetched and rendered together, so refetch only if that tab is
+    // the one on screen.
+    if (document.querySelector('.panel.active')?.dataset.panel === 'logs') loadLogs();
 }
 
 /* ══════════════════════════════════ helpers ═════════════════════════════ */
@@ -404,8 +470,8 @@ function renderSubscriptions() {
         <div class="sub-item">
           <span class="sub-name">${name}</span>
           <span class="sub-url" title="${escapeHtml(url)}">${escapeHtml(url)}</span>
-          <button class="btn tiny" data-copy="${escapeHtml(url)}">Copy</button>
-          <button class="btn tiny" data-qr="${escapeHtml(url)}">QR</button>
+          <button class="btn tiny" data-copy="${escapeHtml(url)}">${t('usr.copy')}</button>
+          <button class="btn tiny" data-qr="${escapeHtml(url)}">${t('usr.qr')}</button>
         </div>`).join('');
 
     drawQR($('#qrCanvas'), base);
@@ -427,7 +493,7 @@ function renderUsers() {
     });
 
     if (!rows.length) {
-        $('#userList').innerHTML = '<p class="empty">No users found.</p>';
+        $('#userList').innerHTML = `<p class="empty">${t('usr.none')}</p>`;
         return;
     }
 
@@ -443,7 +509,7 @@ function renderUsers() {
           <div class="user-main">
             <div class="user-name">
               ${escapeHtml(u.name)}
-              <span class="pill ${u.status}">${u.status}</span>
+              <span class="pill ${u.status}">${statusLabel(u.status)}</span>
             </div>
             <div class="user-meta">
               <span>${formatBytes(used)}${limit ? ` / ${formatBytes(limit)}` : ' / ∞'}</span>
@@ -453,12 +519,12 @@ function renderUsers() {
             ${limit ? `<div class="bar ${over ? 'over' : ''}"><i style="width:${pct}%"></i></div>` : ''}
           </div>
           <div class="user-actions">
-            <button class="btn tiny" data-copy="${escapeHtml(subUrl)}">Link</button>
-            <button class="btn tiny" data-qr="${escapeHtml(subUrl)}">QR</button>
-            <button class="btn tiny" data-edit="${u.id}">Edit</button>
-            <button class="btn tiny" data-toggle="${u.id}">${u.isPaused ? 'Resume' : 'Pause'}</button>
-            <button class="btn tiny" data-reset="${u.id}">Reset</button>
-            <button class="btn tiny danger" data-del="${u.id}">Delete</button>
+            <button class="btn tiny" data-copy="${escapeHtml(subUrl)}">${t('usr.link')}</button>
+            <button class="btn tiny" data-qr="${escapeHtml(subUrl)}">${t('usr.qr')}</button>
+            <button class="btn tiny" data-edit="${u.id}">${t('usr.edit')}</button>
+            <button class="btn tiny" data-toggle="${u.id}">${u.isPaused ? t('usr.resume') : t('usr.pause')}</button>
+            <button class="btn tiny" data-reset="${u.id}">${t('usr.reset')}</button>
+            <button class="btn tiny danger" data-del="${u.id}">${t('usr.delete')}</button>
           </div>
         </div>`;
     }).join('');
@@ -620,11 +686,106 @@ async function loadAll() {
         console.error('Could not render subscription links:', err);
     }
 
+    // Decorative and independently guarded, like the block above.
+    loadChart().catch((err) => console.error('Could not render chart:', err));
+
     if (!meta.persistent) {
         notify('No D1 or KV binding found — settings will not persist.', 'warn', 9000);
     }
 }
 
+
+/* ════════════════════════════════ chart ═════════════════════════════════ */
+
+let chartDays = 30;
+
+/**
+ * Draw the traffic history as an inline SVG area chart.
+ *
+ * Hand-rolled rather than pulled from a charting library: the panel ships as
+ * one self-contained file, and a CDN dependency would be both a size cost and
+ * a availability risk in exactly the networks this tool is used on.
+ */
+function renderChart(history) {
+    const box = $('#chartBox');
+
+    if (!history.length || history.every((d) => d.bytes === 0)) {
+        box.innerHTML = `<p class="empty">${t('chart.empty')}</p>`;
+        return;
+    }
+
+    const W = 720, H = 180, PAD = 4;
+    const peak = Math.max(...history.map((d) => d.bytes));
+    const step = history.length > 1 ? W / (history.length - 1) : W;
+
+    // Map a value to a y coordinate, leaving headroom above the peak.
+    const y = (bytes) => H - PAD - (bytes / (peak * 1.15)) * (H - PAD * 2);
+
+    const points = history.map((d, i) => [i * step, y(d.bytes)]);
+    const line = points.map(([px, py], i) => `${i ? 'L' : 'M'}${px.toFixed(1)},${py.toFixed(1)}`).join('');
+    const area = `${line}L${W},${H}L0,${H}Z`;
+
+    const bars = history.map((d, i) => {
+        const px = i * step;
+        return `<rect class="chart-hit" x="${(px - step / 2).toFixed(1)}" y="0"
+                 width="${step.toFixed(1)}" height="${H}"
+                 data-day="${d.day}" data-bytes="${d.bytes}"></rect>`;
+    }).join('');
+
+    box.innerHTML = `
+      <svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
+           aria-label="${t('chart.title')}">
+        <defs>
+          <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity=".35"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${area}" fill="url(#chartFill)"/>
+        <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"
+              vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+        ${bars}
+      </svg>
+      <div class="chart-axis">
+        <span>${history[0].day}</span>
+        <span class="chart-peak">${t('chart.peak')}: ${formatBytes(peak)}</span>
+        <span>${history[history.length - 1].day}</span>
+      </div>
+      <div class="chart-tip" id="chartTip" hidden></div>`;
+
+    // Hover readout. Pointer events on wide invisible bars are far more
+    // forgiving than trying to hit a 2px line.
+    const tip = $('#chartTip');
+    box.querySelectorAll('.chart-hit').forEach((hit) => {
+        hit.addEventListener('mouseenter', () => {
+            tip.hidden = false;
+            tip.textContent = `${hit.dataset.day} · ${formatBytes(Number(hit.dataset.bytes))}`;
+        });
+    });
+    box.addEventListener('mouseleave', () => { tip.hidden = true; });
+}
+
+async function loadChart() {
+    try {
+        const data = await request(`/usage-history?days=${chartDays}`);
+        renderChart(data.history ?? []);
+    } catch {
+        $('#chartBox').innerHTML = `<p class="empty">${t('chart.empty')}</p>`;
+    }
+}
+
+/* ═══════════════════════════════════ QR ═════════════════════════════════ */
+
+let qrModalUrl = '';
+
+function openQrModal(url) {
+    qrModalUrl = url;
+    drawQR($('#qrModalCanvas'), url);
+    $('#qrModalCaption').textContent = url;
+    $('#qrModal').hidden = false;
+}
+
+const closeQrModal = () => { $('#qrModal').hidden = true; };
 
 /* ═════════════════════════════════ scanner ══════════════════════════════ */
 
@@ -772,6 +933,22 @@ async function applyCleanIPs() {
 }
 
 function bindEvents() {
+    $$('[data-range]').forEach((btn) => btn.addEventListener('click', () => {
+        chartDays = Number(btn.dataset.range);
+        $$('[data-range]').forEach((b) => b.classList.toggle('active', b === btn));
+        loadChart();
+    }));
+
+    $('#closeQrModal')?.addEventListener('click', closeQrModal);
+    $('#qrModalCopy')?.addEventListener('click', () => copy(qrModalUrl));
+    $('#qrModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'qrModal') closeQrModal();
+    });
+    // Escape should dismiss whichever modal is open.
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeQrModal();
+    });
+
     $('#scanRelays')?.addEventListener('click', scanRelays);
     $('#applyRelays')?.addEventListener('click', () => applyRelays().catch((e) => notify(e.message, 'error')));
     $('#scanClean')?.addEventListener('click', scanCleanIPs);
@@ -795,6 +972,9 @@ function bindEvents() {
     $('#langBtn').addEventListener('click', () => {
         lang = lang === 'en' ? 'fa' : 'en';
         applyLang();
+        // Lists are built in JS, so a language switch has to rebuild them —
+        // applyLang only touches elements that carry a data-i18n attribute.
+        redrawDynamic();
     });
 
     $('#logoutBtn').addEventListener('click', async () => {
@@ -810,10 +990,9 @@ function bindEvents() {
         if (el.dataset.copy) return copy(el.dataset.copy);
 
         if (el.dataset.qr) {
-            drawQR($('#qrCanvas'), el.dataset.qr);
-            $('#qrCaption').textContent = el.dataset.qr;
-            $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === 'subscriptions'));
-            $$('.panel').forEach((p) => p.classList.toggle('active', p.dataset.panel === 'subscriptions'));
+            // Show the code where the user already is. Jumping them to another
+            // tab lost their place and made it look like the click misfired.
+            openQrModal(el.dataset.qr);
             return;
         }
 

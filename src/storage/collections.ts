@@ -165,6 +165,32 @@ export class Collections {
         return { bytes: row?.bytes ?? 0, reqs: row?.reqs ?? 0 };
     }
 
+    /**
+     * Total traffic per day across all users, oldest first.
+     *
+     * Aggregated in the store rather than the handler so the SQL path can do
+     * the grouping itself instead of shipping every row to the worker.
+     */
+    async usageByDay(days: string[]): Promise<Map<string, number>> {
+        const out = new Map<string, number>(days.map((d) => [d, 0]));
+
+        if (this.useSql) {
+            const placeholders = days.map(() => '?').join(',');
+            const rows = await this.store.all<{ day: string; bytes: number }>(
+                `SELECT day, COALESCE(SUM(bytes), 0) AS bytes FROM usage
+                 WHERE day IN (${placeholders}) GROUP BY day`,
+                ...days,
+            );
+            for (const row of rows) out.set(row.day, row.bytes);
+            return out;
+        }
+
+        for (const row of await this.allUsage()) {
+            if (out.has(row.day)) out.set(row.day, (out.get(row.day) ?? 0) + row.bytes);
+        }
+        return out;
+    }
+
     async addUsage(userId: string, day: string, bytes: number, reqs: number): Promise<void> {
         if (this.useSql) {
             await this.store.run(

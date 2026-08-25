@@ -187,6 +187,23 @@ export class UserService {
         await this.db.addUsage(userId, todayKey(), bytes, reqs);
     }
 
+    /**
+     * Daily totals for the last `days` days, oldest first.
+     *
+     * Days with no traffic are returned as zero rather than omitted, so the
+     * chart keeps an even time axis instead of compressing quiet periods.
+     */
+    async usageHistory(days = 30): Promise<Array<{ day: string; bytes: number }>> {
+        const keys: string[] = [];
+        const now = Date.now();
+        for (let i = days - 1; i >= 0; i--) {
+            keys.push(new Date(now - i * 86_400_000).toISOString().slice(0, 10));
+        }
+
+        const totals = await this.db.usageByDay(keys);
+        return keys.map((day) => ({ day, bytes: totals.get(day) ?? 0 }));
+    }
+
     async resetUsage(userId: string): Promise<void> {
         await this.db.clearUsage(userId);
         await this.update(userId, { isPaused: false, disabledReason: '' });

@@ -20,6 +20,7 @@ import {
     handleImport,
     handleMyIp,
     handleStats,
+    handleUsageHistory,
 } from '@handlers/panel';
 import {
     corsPreflight, unauthorized, notFound, serverError, safeError, HttpStatus,
@@ -35,7 +36,7 @@ export default {
 
             // 1. WebSocket upgrades are proxy traffic — handle before routing.
             if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
-                return handleWebSocket(request, settings, users);
+                return handleWebSocket(request, settings, users, ctx);
             }
 
             if (request.method === 'OPTIONS') return corsPreflight();
@@ -83,6 +84,9 @@ export default {
 
                 case 'api/users':
                     return handleUsers(request, store, users);
+
+                case 'api/usage-history':
+                    return handleUsageHistory(request, users);
 
                 case 'api/stats':
                     return handleStats(users);

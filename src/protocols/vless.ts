@@ -119,6 +119,8 @@ export async function handleVless(
     request: Request,
     settings: Settings,
     uuids: Set<string>,
+    onUsage?: (uuid: string, bytes: number) => void,
+    onClose?: () => void,
 ): Promise<Response> {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
@@ -154,6 +156,7 @@ export async function handleVless(
 
                     const parsed = parseHeader(chunk, uuids);
                     if (parsed.hasError) throw new Error(parsed.message);
+                    const credential = bytesToUUID(chunk, 1);
 
                     address = parsed.addressRemote!;
                     port = parsed.portRemote!;
@@ -173,16 +176,20 @@ export async function handleVless(
 
                     await handleTCPOutbound(
                         remote, address, port, payload, server, responseHeader, settings, log,
+                        onUsage ? (bytes) => onUsage(credential, bytes) : undefined,
                     );
                 },
 
                 close() {
                     closeSocket(remote.value);
+                    // Settle any traffic buffered for this connection.
+                    onClose?.();
                 },
 
                 abort(reason) {
                     log('inbound stream aborted', reason);
                     closeSocket(remote.value);
+                    onClose?.();
                 },
             }),
         )
@@ -190,6 +197,7 @@ export async function handleVless(
             log('pipe failed', safeError(error));
             closeSocket(remote.value);
             closeWebSocket(server);
+            onClose?.();
         });
 
     return new Response(null, { status: 101, webSocket: client });

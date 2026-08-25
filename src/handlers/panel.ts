@@ -200,6 +200,15 @@ export async function handleMyIp(): Promise<Response> {
     }
 }
 
+/** GET api/usage-history — daily totals for the traffic chart. */
+export async function handleUsageHistory(
+    request: Request,
+    users: UserService,
+): Promise<Response> {
+    const days = Math.min(90, Math.max(7, Number(new URL(request.url).searchParams.get('days')) || 30));
+    return ok({ history: await users.usageHistory(days) });
+}
+
 export async function handleStats(users: UserService): Promise<Response> {
     const stats = await users.stats();
     return ok({

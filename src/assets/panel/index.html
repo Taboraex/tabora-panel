@@ -63,6 +63,18 @@
       <div class="stat"><span class="stat-label" data-i18n="stat.expired">Expired</span><span class="stat-value" id="stExpired">—</span></div>
     </div>
 
+    
+    <div class="card">
+      <div class="card-head">
+        <h2 data-i18n="chart.title">Traffic</h2>
+        <div class="btn-row">
+          <button class="btn tiny" data-range="7" data-i18n="chart.7d">7 days</button>
+          <button class="btn tiny active" data-range="30" data-i18n="chart.30d">30 days</button>
+        </div>
+      </div>
+      <div id="chartBox" class="chart-box"><p class="empty">—</p></div>
+    </div>
+
     <div class="card">
       <h2 data-i18n="ov.system">System</h2>
       <dl class="kv">
@@ -107,7 +119,7 @@
         <button class="btn primary" id="addUserBtn" data-i18n="usr.add">+ Add user</button>
       </div>
       <div class="filter-row">
-        <input type="search" id="userSearch" placeholder="Search by name, UUID or note…">
+        <input type="search" id="userSearch" data-i18n-ph="usr.search" placeholder="Search by name, UUID or note…">
         <select id="userFilter">
           <option value="all" data-i18n="usr.all">All</option>
           <option value="active" data-i18n="usr.active">Active</option>
@@ -126,13 +138,13 @@
       <details class="card" open>
         <summary><h2 data-i18n="set.identity">Identity &amp; access</h2></summary>
         <div class="grid">
-          <label class="field"><span>UUID (VLESS)</span>
+          <label class="field"><span data-i18n="set.uuid">UUID (VLESS)</span>
             <div class="with-btn">
               <input name="uuid" id="fUuid" spellcheck="false">
               <button type="button" class="mini" data-gen="uuid">↻</button>
             </div>
           </label>
-          <label class="field"><span>Trojan password</span>
+          <label class="field"><span data-i18n="set.trojanPass">Trojan password</span>
             <div class="with-btn">
               <input name="trojanPassword" id="fTrojan" spellcheck="false">
               <button type="button" class="mini" data-gen="pass">↻</button>
@@ -152,8 +164,8 @@
         <div class="grid">
           <div class="field"><span data-i18n="set.protocols">Protocols</span>
             <div class="chips" id="protocolChips">
-              <label class="chip"><input type="checkbox" value="vless" checked><span>VLESS</span></label>
-              <label class="chip"><input type="checkbox" value="trojan" checked><span>Trojan</span></label>
+              <label class="chip"><input type="checkbox" value="vless" checked><span data-i18n="set.vless">VLESS</span></label>
+              <label class="chip"><input type="checkbox" value="trojan" checked><span data-i18n="set.trojan">Trojan</span></label>
             </div>
           </div>
           <div class="field"><span data-i18n="set.ports">Ports</span>
@@ -168,16 +180,16 @@
             </select>
           </label>
           <label class="field toggle"><input type="checkbox" name="enableECH" id="fEch"><span data-i18n="set.ech">Enable ECH</span></label>
-          <label class="field"><span>ECH server name</span><input name="echServerName" id="fEchName"></label>
-          <label class="field toggle"><input type="checkbox" name="enableTFO" id="fTfo"><span>TCP Fast Open</span></label>
+          <label class="field"><span data-i18n="set.echName">ECH server name</span><input name="echServerName" id="fEchName"></label>
+          <label class="field toggle"><input type="checkbox" name="enableTFO" id="fTfo"><span data-i18n="set.tfo">TCP Fast Open</span></label>
         </div>
       </details>
 
       <details class="card">
         <summary><h2 data-i18n="set.network">Network &amp; DNS</h2></summary>
         <div class="grid">
-          <label class="field"><span>Remote DNS (DoH)</span><input name="remoteDNS" id="fRemoteDns"></label>
-          <label class="field"><span>Local DNS</span><input name="localDNS" id="fLocalDns"></label>
+          <label class="field"><span data-i18n="set.remoteDns">Remote DNS (DoH)</span><input name="remoteDNS" id="fRemoteDns"></label>
+          <label class="field"><span data-i18n="set.localDns">Local DNS</span><input name="localDNS" id="fLocalDns"></label>
           <label class="field"><span data-i18n="set.proxyMode">Proxy IP mode</span>
             <select name="proxyIpMode" id="fProxyMode">
               <option value="proxyip">ProxyIP</option>
@@ -185,11 +197,11 @@
               <option value="off">Off</option>
             </select>
           </label>
-          <label class="field toggle"><input type="checkbox" name="enableIPv6" id="fIpv6"><span>Enable IPv6</span></label>
-          <label class="field wide"><span>Proxy IPs</span>
+          <label class="field toggle"><input type="checkbox" name="enableIPv6" id="fIpv6"><span data-i18n="set.ipv6">Enable IPv6</span></label>
+          <label class="field wide"><span data-i18n="set.proxyIps">Proxy IPs</span>
             <textarea name="proxyIPs" id="fProxyIps" rows="3" placeholder="one per line, host or host:port"></textarea>
           </label>
-          <label class="field wide"><span>NAT64 prefixes</span>
+          <label class="field wide"><span data-i18n="set.nat64">NAT64 prefixes</span>
             <textarea name="nat64Prefixes" id="fNat64" rows="2"></textarea>
           </label>
           <label class="field wide"><span data-i18n="set.cleanIps">Clean IPs / domains</span>
@@ -220,7 +232,7 @@
           <label class="field toggle"><input type="checkbox" name="bypassLAN" id="fBypassLan"><span data-i18n="set.bypassLan">Bypass LAN / private</span></label>
           <label class="field toggle"><input type="checkbox" name="blockAds" id="fBlockAds"><span data-i18n="set.blockAds">Block ads</span></label>
           <label class="field toggle"><input type="checkbox" name="blockPorn" id="fBlockPorn"><span data-i18n="set.blockPorn">Block adult content</span></label>
-          <label class="field toggle"><input type="checkbox" name="blockUDP443" id="fBlockQuic"><span>Block QUIC (UDP 443)</span></label>
+          <label class="field toggle"><input type="checkbox" name="blockUDP443" id="fBlockQuic"><span data-i18n="set.blockQuic">Block QUIC (UDP 443)</span></label>
           <label class="field wide"><span data-i18n="set.bypassRules">Custom direct rules</span>
             <textarea name="customBypassRules" id="fBypassRules" rows="3" placeholder="one domain per line"></textarea>
           </label>
@@ -234,7 +246,7 @@
         <summary><h2 data-i18n="set.ops">Operations</h2></summary>
         <div class="grid">
           <label class="field toggle"><input type="checkbox" name="isPaused" id="fPaused"><span data-i18n="set.kill">Kill switch (pause all proxy traffic)</span></label>
-          <label class="field"><span>Log level</span>
+          <label class="field"><span data-i18n="set.logLevel">Log level</span>
             <select name="logLevel" id="fLogLevel">
               <option value="none">none</option><option value="error">error</option>
               <option value="warning">warning</option><option value="info">info</option>
@@ -301,6 +313,23 @@
 
 </main>
 
+<!-- ──────────────────────────────── QR modal ──────────────────────────────── -->
+<div class="modal-backdrop" id="qrModal" hidden>
+  <div class="modal qr-modal">
+    <div class="modal-head">
+      <h3 data-i18n="qr.title">Scan to import</h3>
+      <button class="icon-btn" id="closeQrModal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-holder"><canvas id="qrModalCanvas"></canvas></div>
+      <p class="qr-link" id="qrModalCaption"></p>
+      <div class="modal-actions">
+        <button class="btn" id="qrModalCopy" data-i18n="usr.copy">Copy</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ─────────────────────────────── User modal ─────────────────────────────── -->
 <div class="modal-backdrop" id="userModal" hidden>
   <div class="modal">
@@ -310,19 +339,19 @@
     </div>
     <form id="userForm" class="modal-body">
       <input type="hidden" id="uId">
-      <label class="field"><span>Name *</span><input id="uName" required></label>
-      <label class="field"><span>UUID</span>
+      <label class="field"><span data-i18n="um.name">Name *</span><input id="uName" required></label>
+      <label class="field"><span data-i18n="um.uuid">UUID</span>
         <div class="with-btn">
           <input id="uUuid" spellcheck="false" placeholder="auto-generated">
           <button type="button" class="mini" data-gen="uuser">↻</button>
         </div>
       </label>
       <div class="grid two">
-        <label class="field"><span>Traffic limit (GB)</span><input type="number" id="uLimit" min="0" step="0.1" placeholder="0 = unlimited"></label>
-        <label class="field"><span>Daily limit (GB)</span><input type="number" id="uDaily" min="0" step="0.1" placeholder="0 = unlimited"></label>
+        <label class="field"><span data-i18n="um.limit">Traffic limit (GB)</span><input type="number" id="uLimit" min="0" step="0.1" placeholder="0 = unlimited"></label>
+        <label class="field"><span data-i18n="um.daily">Daily limit (GB)</span><input type="number" id="uDaily" min="0" step="0.1" placeholder="0 = unlimited"></label>
       </div>
-      <label class="field"><span>Expires in (days)</span><input type="number" id="uDays" min="0" placeholder="0 = never"></label>
-      <label class="field"><span>Notes</span><textarea id="uNotes" rows="2"></textarea></label>
+      <label class="field"><span data-i18n="um.expiry">Expires in (days)</span><input type="number" id="uDays" min="0" placeholder="0 = never"></label>
+      <label class="field"><span data-i18n="um.notes">Notes</span><textarea id="uNotes" rows="2"></textarea></label>
       <div class="modal-actions">
         <button type="button" class="btn ghost" id="cancelUser">Cancel</button>
         <button type="submit" class="btn primary" id="saveUser">Save</button>

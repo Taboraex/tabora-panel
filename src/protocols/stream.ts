@@ -65,6 +65,7 @@ export async function handleTCPOutbound(
     responseHeader: Uint8Array | null,
     settings: Settings,
     log: Logger,
+    onBytes?: (bytes: number) => void,
 ): Promise<void> {
     async function connectAndWrite(host: string, targetPort: number): Promise<Socket> {
         const socket = connect({ hostname: host, port: targetPort });
@@ -112,7 +113,7 @@ export async function handleTCPOutbound(
                           }
                       };
 
-                void pipeRemoteToWebSocket(socket, webSocket, responseHeader, advance, log)
+                void pipeRemoteToWebSocket(socket, webSocket, responseHeader, advance, log, onBytes)
                     .catch((error) => {
                         log('relay pipe failed', safeError(error));
                         closeWebSocket(webSocket);
@@ -153,7 +154,7 @@ export async function handleTCPOutbound(
             const socket = await connectAndWrite(host, targetPort);
             socket.closed.catch(() => {}).finally(() => closeWebSocket(webSocket));
             // Background pump, for the same reason as the direct path below.
-            void pipeRemoteToWebSocket(socket, webSocket, responseHeader, null, log)
+            void pipeRemoteToWebSocket(socket, webSocket, responseHeader, null, log, onBytes)
                 .catch((error) => {
                     log('relay pipe failed', safeError(error));
                     closeWebSocket(webSocket);
@@ -167,7 +168,7 @@ export async function handleTCPOutbound(
     try {
         const socket = await connectAndWrite(address, port);
         // Deliberately not awaited — see the note above.
-        void pipeRemoteToWebSocket(socket, webSocket, responseHeader, retry, log)
+        void pipeRemoteToWebSocket(socket, webSocket, responseHeader, retry, log, onBytes)
             .catch((error) => {
                 log('relay pipe failed', safeError(error));
                 closeWebSocket(webSocket);
@@ -185,6 +186,7 @@ async function pipeRemoteToWebSocket(
     responseHeader: Uint8Array | null,
     retry: (() => Promise<void>) | null,
     log: Logger,
+    onBytes?: (bytes: number) => void,
 ): Promise<void> {
     let header = responseHeader;
     let sawData = false;
@@ -194,6 +196,7 @@ async function pipeRemoteToWebSocket(
             new WritableStream({
                 async write(chunk: Uint8Array, controller) {
                     sawData = true;
+                    onBytes?.(chunk.byteLength);
                     if (webSocket.readyState !== WS_READY_STATE_OPEN) {
                         controller.error('client socket closed');
                         return;

@@ -22,6 +22,7 @@
       "@cores/*": ["src/cores/*"],
       "@handlers/*": ["src/handlers/*"],
       "@scanner/*": ["src/scanner/*"],
+      "@gaming/*": ["src/gaming/*"],
       "@users/*": ["src/users/*"],
       "@i18n/*": ["src/i18n/*"],
       "#types/*": ["src/types/*"]

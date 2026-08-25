@@ -43,6 +43,10 @@ with no server to maintain.
   light themes, and a responsive layout that works on phones.
 - **Decoy page** — any request outside the secret path mirrors a real website,
   so casual probes never see that a panel exists.
+- **Gaming profiles** — pin one fixed IP, port and protocol so the route never
+  changes between sessions. Candidate edges are measured repeatedly from your
+  own browser and ranked on *stability*, not raw speed. See
+  [Gaming profiles](#gaming-profiles).
 - **ProxyIP and NAT64** — automatic retry through a relay when Cloudflare's
   egress is blocked by the destination.
 - **Private DoH** — UDP DNS is tunnelled to a DoH resolver of your choice.
@@ -188,6 +192,7 @@ edited in the dashboard and stored in D1.
 | `/{path}/login` | Sign-in page |
 | `/{path}/sub` | Subscription endpoint |
 | `/{path}/sub?u=NAME` | Per-user subscription |
+| `/{path}/sub?gaming=1` | Pinned gaming profiles only |
 | `/{path}/api/*` | JSON API (requires session) |
 | `/vl`, `/tr` | WebSocket proxy endpoints |
 | anything else | Decoy page |
@@ -206,6 +211,60 @@ Append `?format=` to force an output, or let Tabora sniff the User-Agent:
 Opening a subscription URL in a browser shows a status page with the user's
 quota, expiry and QR code instead of raw config.
 
+
+---
+
+## Gaming profiles
+
+A normal subscription lists every address x port combination and wraps them in
+a `url-test` group, so the client picks whichever edge is fastest and re-checks
+on a timer. That is the right behaviour for browsing and the wrong behaviour
+for games:
+
+- the client **re-probes every few minutes and can switch mid-match**;
+- the default clean-IP entries are *domains*, so DNS re-resolves on every
+  reconnect and can land on a different edge — the ping moves between sessions;
+- multiplexing adds head-of-line blocking, which shows up as a spike.
+
+A gaming profile pins **one IPv4 literal, one port, one protocol** and emits no
+selector group at all. Every session takes the identical route.
+
+### How ranking works
+
+Candidates are measured **from your browser**, five times each. A worker cannot
+usefully measure this: it sits in a datacentre, so its latency describes
+Cloudflare's network rather than yours, and it is not permitted to open sockets
+into Cloudflare's own address space at all.
+
+Results are scored on stability rather than speed:
+
+```
+score = median + 2 x jitter + 500 x lossRate     (lower is better)
+```
+
+Jitter is the **median of successive differences** (RFC 3550 style). Standard
+deviation would let one outlier condemn a good edge; median absolute deviation
+would ignore up to half the samples and rate an alternating 40/200 ms route as
+"stable" — which is exactly the pattern that rubber-bands a match. Grades run
+S/A/B/C/D off the composite score, so a steady 90 ms outranks a jumpy 45 ms.
+
+### Options
+
+| Option | Effect |
+| --- | --- |
+| Lock to profile | Emits no `url-test`/`urltest` group, so the client cannot drift. On by default. |
+| Skip relay hop | Game servers are not behind Cloudflare, so the relay detour is unnecessary latency. |
+| Split tunnel | Routes only game traffic through the tunnel; everything else goes direct. |
+
+### Honest limits
+
+Cloudflare Workers carry **TCP, not UDP**. Most competitive shooters send
+gameplay over UDP and will not pass through any Workers-based tunnel — no panel
+can change that. What a pinned profile does deliver: a route that never
+changes, no DNS lookup at connect time, no mid-match switching, and no extra
+relay hop. That is a real, measurable win for TCP games, launchers, matchmaking
+and downloads.
+
 ---
 
 ## Project layout
@@ -218,6 +277,8 @@ src/
 ├── auth/                  JWT sessions and password hashing
 ├── protocols/             VLESS, Trojan, WebSocket ↔ TCP relay
 ├── cores/                 URI, Clash and Sing-box config builders
+├── gaming/                endpoint scoring and pinned-profile builders
+├── scanner/               clean-IP and relay probing
 ├── users/                 subscriber model, quotas, usage accounting
 ├── handlers/              one module per route
 └── assets/                panel, login and subscription pages
@@ -240,7 +301,9 @@ Cloudflare Workers impose a few constraints that no panel can work around:
 
 - **100,000 requests/day** on the free plan — comfortable for a handful of users.
 - **No real UDP.** Only DNS (port 53) is supported, tunnelled over DoH. Telegram
-  and WhatsApp voice/video calls will not work.
+  and WhatsApp voice/video calls will not work, and UDP-based game traffic
+  (most competitive shooters) will not tunnel — see
+  [Gaming profiles](#gaming-profiles).
 - **CPU time limits** per request.
 - Cloudflare may disable Workers that match well-known proxy fingerprints.
   Tabora avoids literal protocol strings in the bundle, but no obfuscation is

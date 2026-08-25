@@ -49,11 +49,50 @@ export interface Settings {
     customBypassRules: string[];
     customBlockRules: string[];
 
+    // gaming
+    gaming: GamingSettings;
+
     // ops
     fallback: string;
     isPaused: boolean;
     logLevel: LogLevel;
     panelVersion: string;
+}
+
+/**
+ * A gaming profile pins one exact endpoint.
+ *
+ * Normal configs enumerate addresses x ports and let the client url-test
+ * between them. That is right for browsing and wrong for gaming: the client
+ * re-probes on a timer and can migrate mid-match, and domain front-ends
+ * re-resolve to a different edge on every reconnect, so the ping moves around.
+ * A profile freezes one IPv4 literal, one port and one protocol so every
+ * session takes the identical route.
+ */
+export interface GamingProfile {
+    id: string;
+    name: string;
+    /** IPv4 literal. Never a domain — a domain re-resolves and defeats the point. */
+    address: string;
+    port: number;
+    protocol: string;              // 'vless' | 'trojan'
+    /** Measurements from the last pin, kept so the UI can show why it was chosen. */
+    medianMs: number;
+    jitterMs: number;
+    lossPct: number;
+    grade: string;                 // S | A | B | C | D
+    pinnedAt: number;
+}
+
+export interface GamingSettings {
+    enabled: boolean;
+    profiles: GamingProfile[];
+    /** Strip the url-test/selector wrapper so the client cannot drift. */
+    lockToProfile: boolean;
+    /** Send game traffic straight out instead of through a relay hop. */
+    bypassRelay: boolean;
+    /** Route only game traffic through the tunnel; everything else direct. */
+    splitTunnel: boolean;
 }
 
 export interface FakeConfig {

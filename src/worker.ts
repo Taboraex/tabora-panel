@@ -12,6 +12,13 @@ import { handleUsers } from '@handlers/users';
 import { handleLogs } from '@handlers/logs';
 import { handleScan, handleScanCandidates, handleScanApply } from '@handlers/scan';
 import {
+    handleGamingCandidates,
+    handleGamingRank,
+    handleGamingPin,
+    handleGamingUnpin,
+    handleGamingConfig,
+} from '@handlers/gaming';
+import {
     renderPanel,
     handleGetSettings,
     handleUpdateSettings,
@@ -108,6 +115,21 @@ export default {
 
                 case 'api/scan/apply':
                     return handleScanApply(request, settings, store);
+
+                case 'api/gaming/candidates':
+                    return handleGamingCandidates();
+
+                case 'api/gaming/rank':
+                    return handleGamingRank(request);
+
+                case 'api/gaming/pin':
+                    return handleGamingPin(request, settings, store);
+
+                case 'api/gaming/unpin':
+                    return handleGamingUnpin(request, settings, store);
+
+                case 'api/gaming/config':
+                    return handleGamingConfig(settings);
 
                 case 'api/my-ip':
                     return handleMyIp();

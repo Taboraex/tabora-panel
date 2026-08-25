@@ -55,7 +55,7 @@ export async function handleGetSettings(
 }
 
 /** Normalise textarea/CSV inputs coming from the panel form. */
-function normalisePayload(raw: Record<string, unknown>): Partial<Settings> {
+function normalisePayload(raw: Record<string, unknown>, current: Settings): Partial<Settings> {
     const out: Record<string, unknown> = { ...raw };
 
     const listFields = [
@@ -73,6 +73,30 @@ function normalisePayload(raw: Record<string, unknown>): Partial<Settings> {
     if (raw.maxConfigs !== undefined) out.maxConfigs = Number(raw.maxConfigs) || 30;
 
     if (Array.isArray(raw.protocols)) out.protocols = (raw.protocols as string[]).join(',');
+
+    // Gaming is a nested object; accept only known keys and coerce their
+    // types, so a malformed PUT cannot corrupt the pinned profiles.
+    if (raw.gaming !== undefined && raw.gaming !== null && typeof raw.gaming === 'object') {
+        const g = raw.gaming as Record<string, unknown>;
+        const profiles = Array.isArray(g.profiles) ? g.profiles : undefined;
+        // saveSettings merges shallowly, so a PUT carrying only the toggles
+        // would otherwise replace the whole gaming object and drop every
+        // pinned profile. Rebuild it from the stored copy.
+        out.gaming = {
+            ...current.gaming,
+            enabled: !!g.enabled,
+            lockToProfile: g.lockToProfile !== false,
+            bypassRelay: g.bypassRelay !== false,
+            splitTunnel: !!g.splitTunnel,
+            // Profiles are owned by the pin/unpin endpoints, which validate the
+            // address. Only accept a list here if one was explicitly sent.
+            profiles: profiles
+                ? (profiles as Settings['gaming']['profiles'])
+                : current.gaming.profiles,
+        };
+    } else {
+        delete out.gaming;
+    }
 
     // Never let the client rewrite derived/managed fields.
     delete out.panelVersion;
@@ -94,7 +118,7 @@ export async function handleUpdateSettings(
         return badRequest('Invalid request body.');
     }
 
-    const patch = normalisePayload(raw);
+    const patch = normalisePayload(raw, settings);
     const errors = validateSettings(patch);
     if (errors) return respond(false, HttpStatus.BAD_REQUEST, 'Validation failed.', errors);
 
@@ -158,7 +182,7 @@ export async function handleImport(
     let restoredUsers = 0;
 
     if (payload.settings) {
-        const patch = normalisePayload(payload.settings as Record<string, unknown>);
+        const patch = normalisePayload(payload.settings as Record<string, unknown>, settings);
         const errors = validateSettings(patch);
         if (errors) return respond(false, HttpStatus.BAD_REQUEST, 'Backup failed validation.', errors);
         await saveSettings(store, settings, patch);

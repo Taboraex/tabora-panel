@@ -50,6 +50,15 @@ export const DEFAULT_SETTINGS: Settings = {
     customBypassRules: [],
     customBlockRules: [],
 
+    // gaming — off until the operator pins a profile
+    gaming: {
+        enabled: false,
+        profiles: [],
+        lockToProfile: true,
+        bypassRelay: true,
+        splitTunnel: false,
+    },
+
     // ops
     fallback: 'https://www.wikipedia.org',
     isPaused: false,

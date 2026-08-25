@@ -10,6 +10,32 @@ const I18N = {
     en: {
         'tab.overview': 'Overview', 'tab.subs': 'Links', 'tab.users': 'Users',
         'tab.settings': 'Settings', 'tab.logs': 'Logs', 'tab.scanner': 'Scanner',
+        'tab.gaming': 'Gaming',
+        'game.find.title': 'Find a low-ping route',
+        'game.find.run': 'Measure edges',
+        'game.find.stop': 'Stop',
+        'game.find.hint': 'Each address is measured several times from your own connection. Ranking favours steady ping over fast ping — a stable 90 ms plays better than a 40\u2013200 ms swing.',
+        'game.port': 'Port', 'game.proto': 'Protocol',
+        'game.measuring': 'Measuring {done} of {total}\u2026',
+        'game.found': 'Best route: {ms} ms, jitter {jit} ms (grade {grade})',
+        'game.nores': 'No edge responded. Your network may be blocking direct IPs \u2014 try another port.',
+        'game.pin': 'Pin',
+        'game.pinned.title': 'Pinned profiles',
+        'game.pinned.hint': 'A pinned profile locks one IP, one port and one protocol. No auto-select group is emitted, so your client cannot switch route in the middle of a match.',
+        'game.none': 'Nothing pinned yet.',
+        'game.pinned.ok': 'Pinned \u2014 your gaming links now use this route',
+        'game.unpin': 'Remove',
+        'game.opts.title': 'Behaviour',
+        'game.opts.lock': 'Lock to profile (no auto-switching)',
+        'game.opts.bypass': 'Skip relay hop for game traffic',
+        'game.opts.split': 'Split tunnel \u2014 route only games',
+        'game.opts.save': 'Save',
+        'game.opts.saved': 'Gaming settings saved',
+        'game.links.title': 'Gaming subscription',
+        'game.links.hint': 'These links contain only your pinned profiles.',
+        'game.honest.title': 'What this can and cannot do',
+        'game.honest.body': 'Cloudflare Workers carry TCP, not UDP. Most competitive shooters send gameplay over UDP and will not pass through any Workers-based tunnel \u2014 no panel can change that. What a pinned profile does give you: a route that never changes, no DNS lookup at connect time, no mid-match switching, and no extra relay hop. That is a real and measurable win for TCP games, launchers, and matchmaking.',
+        'game.jitter': 'jitter', 'game.loss': 'loss',
         'scan.relay.title': 'Relay health',
         'scan.relay.run': 'Test relays',
         'scan.relay.apply': 'Use fastest',
@@ -71,6 +97,32 @@ const I18N = {
     fa: {
         'tab.overview': 'نمای کلی', 'tab.subs': 'لینک‌ها', 'tab.users': 'کاربران',
         'tab.settings': 'تنظیمات', 'tab.logs': 'گزارش‌ها', 'tab.scanner': 'اسکنر',
+        'tab.gaming': 'گیمینگ',
+        'game.find.title': 'پیدا کردن مسیر با پینگ پایین',
+        'game.find.run': 'اندازه‌گیری لبه‌ها',
+        'game.find.stop': 'توقف',
+        'game.find.hint': 'هر آی‌پی چند بار از روی اینترنت خودتان تست می‌شود. رتبه‌بندی به جای سرعت، ثبات را در اولویت می‌گذارد \u2014 پینگ ثابت ۹۰ از پینگ نوسانی ۴۰ تا ۲۰۰ بهتر بازی می‌دهد.',
+        'game.port': 'پورت', 'game.proto': 'پروتکل',
+        'game.measuring': 'اندازه‌گیری {done} از {total}\u2026',
+        'game.found': 'بهترین مسیر: {ms} میلی‌ثانیه، نوسان {jit} (درجه {grade})',
+        'game.nores': 'هیچ لبه‌ای جواب نداد. ممکن است شبکه شما آی‌پی مستقیم را ببندد \u2014 پورت دیگری را امتحان کنید.',
+        'game.pin': 'ثابت کن',
+        'game.pinned.title': 'پروفایل‌های ثابت',
+        'game.pinned.hint': 'پروفایل ثابت یک آی‌پی، یک پورت و یک پروتکل را قفل می‌کند. هیچ گروه انتخاب خودکاری ساخته نمی‌شود، پس کلاینت شما وسط بازی مسیر را عوض نمی‌کند.',
+        'game.none': 'هنوز چیزی ثابت نشده.',
+        'game.pinned.ok': 'ثابت شد \u2014 لینک‌های گیمینگ حالا از این مسیر استفاده می‌کنند',
+        'game.unpin': 'حذف',
+        'game.opts.title': 'رفتار',
+        'game.opts.lock': 'قفل روی پروفایل (بدون جابه‌جایی خودکار)',
+        'game.opts.bypass': 'رد کردن رله برای ترافیک بازی',
+        'game.opts.split': 'تونل جدا \u2014 فقط بازی‌ها از تونل رد شوند',
+        'game.opts.save': 'ذخیره',
+        'game.opts.saved': 'تنظیمات گیمینگ ذخیره شد',
+        'game.links.title': 'اشتراک گیمینگ',
+        'game.links.hint': 'این لینک‌ها فقط شامل پروفایل‌های ثابت شما هستند.',
+        'game.honest.title': 'این بخش چه می‌تواند و چه نمی‌تواند',
+        'game.honest.body': 'ورکرهای کلادفلر فقط TCP را عبور می‌دهند، نه UDP. بیشتر شوترهای رقابتی داده بازی را روی UDP می‌فرستند و از هیچ تونل مبتنی بر ورکر رد نمی‌شوند \u2014 هیچ پنلی نمی‌تواند این را تغییر دهد. کاری که پروفایل ثابت واقعاً می‌کند: مسیری که هرگز عوض نمی‌شود، بدون جست‌وجوی DNS هنگام اتصال، بدون تعویض وسط بازی و بدون پرش اضافه از رله. این برای بازی‌های TCP، لانچرها و مچ‌میکینگ یک برد واقعی و قابل اندازه‌گیری است.',
+        'game.jitter': 'نوسان', 'game.loss': 'اتلاف',
         'scan.relay.title': 'سلامت رله‌ها',
         'scan.relay.run': 'تست رله‌ها',
         'scan.relay.apply': 'استفاده از سریع‌ترین',
@@ -173,6 +225,7 @@ function applyLang() {
  * language until the next reload.
  */
 function redrawDynamic() {
+    try { renderGamingProfiles(); } catch { /* not loaded yet */ }
     if (usersCache.length) renderUsers();
     if (meta.subscriptionBase) renderSubscriptions();
     // Logs are fetched and rendered together, so refetch only if that tab is
@@ -686,6 +739,12 @@ async function loadAll() {
         console.error('Could not render subscription links:', err);
     }
 
+    try {
+        renderGamingProfiles();
+    } catch (err) {
+        console.error('Could not render gaming profiles:', err);
+    }
+
     // Decorative and independently guarded, like the block above.
     loadChart().catch((err) => console.error('Could not render chart:', err));
 
@@ -786,6 +845,246 @@ function openQrModal(url) {
 }
 
 const closeQrModal = () => { $('#qrModal').hidden = true; };
+
+
+/* ═════════════════════════════════ gaming ═══════════════════════════════ */
+
+let gameRanked = [];
+let gameAbort = false;
+
+const GRADE_CLASS = { S: 'grade-s', A: 'grade-a', B: 'grade-b', C: 'grade-c', D: 'grade-d' };
+
+/**
+ * Time one TLS handshake against a bare Cloudflare IP.
+ *
+ * The certificate is issued for the worker's domain, so requesting an IP
+ * literal always fails validation — but the failure only happens *after* TCP
+ * and TLS have completed, so the elapsed time is a genuine round-trip
+ * measurement. That means a rejected promise is a success for our purposes;
+ * only an abort (timeout) means the edge is actually unreachable.
+ */
+function probeEndpoint(ip, port, timeoutMs = 3000) {
+    return new Promise((resolve) => {
+        const started = performance.now();
+        const controller = new AbortController();
+        let settled = false;
+
+        const timer = setTimeout(() => { controller.abort(); }, timeoutMs);
+        const finish = (ms) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve(ms);
+        };
+
+        fetch(`https://${ip}:${port}/cdn-cgi/trace`, {
+            mode: 'no-cors',
+            cache: 'no-store',
+            signal: controller.signal,
+            redirect: 'manual',
+        })
+            .then(() => finish(Math.round(performance.now() - started)))
+            .catch(() => {
+                // Aborted = never answered. Anything else = the stack replied.
+                finish(controller.signal.aborted ? -1 : Math.round(performance.now() - started));
+            });
+    });
+}
+
+/** Measure every candidate several times, then have the worker rank them. */
+async function runGamingScan() {
+    const btn = $('#gameScan');
+    const stopBtn = $('#gameStop');
+    const box = $('#gameResults');
+    const prog = $('#gameProgress');
+
+    gameAbort = false;
+    btn.disabled = true;
+    stopBtn.hidden = false;
+    box.innerHTML = '';
+    gameRanked = [];
+
+    try {
+        const { addresses = [], probesPerIp = 5 } = await request('/gaming/candidates');
+        const port = Number($('#gamePort').value) || 443;
+        const total = addresses.length;
+        const measurements = [];
+        let done = 0;
+
+        // Two at a time: more parallelism makes the samples contend for
+        // bandwidth and inflates the very numbers we are trying to measure.
+        const queue = [...addresses];
+        const workers = Array.from({ length: 2 }, async () => {
+            for (;;) {
+                if (gameAbort) return;
+                const ip = queue.shift();
+                if (!ip) return;
+
+                const samples = [];
+                for (let i = 0; i < probesPerIp; i++) {
+                    if (gameAbort) break;
+                    samples.push(await probeEndpoint(ip, port));
+                }
+
+                measurements.push({ address: ip, port, samples });
+                done++;
+                prog.textContent = t('game.measuring')
+                    .replace('{done}', String(done))
+                    .replace('{total}', String(total));
+            }
+        });
+        await Promise.all(workers);
+
+        if (!measurements.length) { prog.textContent = ''; return; }
+
+        const { ranked = [], best = null } = await request('/gaming/rank', {
+            method: 'POST',
+            body: JSON.stringify({ measurements }),
+        });
+
+        gameRanked = ranked;
+        renderGameResults(ranked);
+        prog.textContent = '';
+
+        if (best) {
+            notify(t('game.found')
+                .replace('{ms}', String(best.medianMs))
+                .replace('{jit}', String(best.jitterMs))
+                .replace('{grade}', best.grade));
+        } else {
+            notify(t('game.nores'), 'warn', 6000);
+        }
+    } catch (err) {
+        box.innerHTML = `<p class="empty">${escapeHtml(err.message)}</p>`;
+        prog.textContent = '';
+    } finally {
+        btn.disabled = false;
+        stopBtn.hidden = true;
+    }
+}
+
+function renderGameResults(rows) {
+    const box = $('#gameResults');
+    const usable = rows.filter((r) => r.ok);
+
+    if (!usable.length) {
+        box.innerHTML = `<p class="empty">${escapeHtml(t('game.nores'))}</p>`;
+        return;
+    }
+
+    box.innerHTML = usable.map((r) => `
+        <div class="game-row">
+          <span class="game-grade ${GRADE_CLASS[r.grade] ?? ''}">${escapeHtml(r.grade)}</span>
+          <span class="game-addr">${escapeHtml(r.address)}<small>:${r.port}</small></span>
+          <span class="game-metrics">
+            <b><bdi>${r.medianMs} ms</bdi></b>
+            <small>${escapeHtml(t('game.jitter'))} <bdi>${r.jitterMs} ms</bdi></small>
+            <small>${escapeHtml(t('game.loss'))} <bdi>${Math.round(r.lossRate * 100)}%</bdi></small>
+          </span>
+          <button class="btn tiny primary" data-pin="${escapeHtml(r.address)}" data-port="${r.port}"
+                  data-grade="${escapeHtml(r.grade)}" data-median="${r.medianMs}"
+                  data-jitter="${r.jitterMs}" data-loss="${Math.round(r.lossRate * 100)}">
+            ${escapeHtml(t('game.pin'))}
+          </button>
+        </div>`).join('');
+}
+
+async function pinProfile(dataset) {
+    await request('/gaming/pin', {
+        method: 'POST',
+        body: JSON.stringify({
+            name: `${dataset.pin}`,
+            address: dataset.pin,
+            port: Number(dataset.port),
+            protocol: $('#gameProto').value,
+            medianMs: Number(dataset.median),
+            jitterMs: Number(dataset.jitter),
+            lossPct: Number(dataset.loss),
+            grade: dataset.grade,
+        }),
+    });
+    notify(t('game.pinned.ok'));
+    await loadAll();
+}
+
+async function unpinProfile(id) {
+    await request('/gaming/unpin', { method: 'POST', body: JSON.stringify({ id }) });
+    await loadAll();
+}
+
+function renderGamingProfiles() {
+    const box = $('#gamePinned');
+    const profiles = settings.gaming?.profiles ?? [];
+    $('#gameCount').textContent = String(profiles.length);
+
+    const linksCard = $('#gameLinksCard');
+    if (linksCard) linksCard.hidden = profiles.length === 0;
+
+    if (!profiles.length) {
+        box.innerHTML = `<p class="empty">${escapeHtml(t('game.none'))}</p>`;
+    } else {
+        box.innerHTML = profiles.map((p) => `
+            <div class="game-row pinned">
+              <span class="game-grade ${GRADE_CLASS[p.grade] ?? ''}">${escapeHtml(p.grade)}</span>
+              <span class="game-addr">${escapeHtml(p.address)}<small>:${p.port} · ${escapeHtml(p.protocol)}</small></span>
+              <span class="game-metrics">
+                <b><bdi>${p.medianMs >= 0 ? `${p.medianMs} ms` : '—'}</bdi></b>
+                <small>${escapeHtml(t('game.jitter'))} <bdi>${p.jitterMs} ms</bdi></small>
+              </span>
+              <button class="btn tiny danger" data-unpin="${escapeHtml(p.id)}">${escapeHtml(t('game.unpin'))}</button>
+            </div>`).join('');
+    }
+
+    // Subscription links carrying only the pinned routes.
+    const base = meta.subscriptionBase ?? '';
+    const links = $('#gameLinks');
+    if (links && base) {
+        const rows = [
+            ['Xray / v2rayNG', `${base}?gaming=1`],
+            ['Clash / Mihomo', `${base}?gaming=1&format=clash`],
+            ['Sing-box / Hiddify', `${base}?gaming=1&format=singbox`],
+        ];
+        links.innerHTML = rows.map(([label, url]) => `
+            <div class="sub-row">
+              <span class="sub-label">${escapeHtml(label)}</span>
+              <input class="sub-url" readonly value="${escapeHtml(url)}">
+              <button class="btn tiny" data-copy="${escapeHtml(url)}">${escapeHtml(t('usr.copy'))}</button>
+              <button class="btn tiny" data-qr="${escapeHtml(url)}">QR</button>
+            </div>`).join('');
+    }
+
+    const g = settings.gaming ?? {};
+    if ($('#gLock')) $('#gLock').checked = g.lockToProfile !== false;
+    if ($('#gBypass')) $('#gBypass').checked = g.bypassRelay !== false;
+    if ($('#gSplit')) $('#gSplit').checked = !!g.splitTunnel;
+}
+
+function renderGamingPorts() {
+    const sel = $('#gamePort');
+    if (!sel || sel.options.length) return;
+    for (const port of [443, 2053, 2083, 2087, 2096, 8443]) {
+        const opt = document.createElement('option');
+        opt.value = String(port);
+        opt.textContent = String(port);
+        sel.appendChild(opt);
+    }
+}
+
+async function saveGamingOptions() {
+    await request('/settings', {
+        method: 'PUT',
+        body: JSON.stringify({
+            gaming: {
+                ...(settings.gaming ?? {}),
+                lockToProfile: $('#gLock').checked,
+                bypassRelay: $('#gBypass').checked,
+                splitTunnel: $('#gSplit').checked,
+            },
+        }),
+    });
+    notify(t('game.opts.saved'));
+    await loadAll();
+}
 
 /* ═════════════════════════════════ scanner ══════════════════════════════ */
 
@@ -949,6 +1248,12 @@ function bindEvents() {
         if (e.key === 'Escape') closeQrModal();
     });
 
+    renderGamingPorts();
+    $('#gameScan')?.addEventListener('click', () => runGamingScan());
+    $('#gameStop')?.addEventListener('click', () => { gameAbort = true; });
+    $('#gameSaveOpts')?.addEventListener('click',
+        () => saveGamingOptions().catch((e) => notify(e.message, 'error')));
+
     $('#scanRelays')?.addEventListener('click', scanRelays);
     $('#applyRelays')?.addEventListener('click', () => applyRelays().catch((e) => notify(e.message, 'error')));
     $('#scanClean')?.addEventListener('click', scanCleanIPs);
@@ -984,6 +1289,20 @@ function bindEvents() {
 
     // Delegated: copy / QR / user row actions
     document.addEventListener('click', async (event) => {
+        const pinEl = event.target.closest('[data-pin],[data-unpin]');
+        if (pinEl) {
+            pinEl.disabled = true;
+            try {
+                if (pinEl.dataset.unpin) await unpinProfile(pinEl.dataset.unpin);
+                else await pinProfile(pinEl.dataset);
+            } catch (err) {
+                notify(err.message, 'error');
+            } finally {
+                pinEl.disabled = false;
+            }
+            return;
+        }
+
         const el = event.target.closest('[data-copy],[data-qr],[data-edit],[data-toggle],[data-reset],[data-del],[data-gen]');
         if (!el) return;
 

@@ -9,6 +9,7 @@ import { BROWSER_UA_MARKERS, CLIENT_UA_MARKERS, PROJECT } from '@config/obfuscat
 import { subscriptionResponse, htmlResponse, notFound } from '@common/http';
 import { gunzipBase64, formatBytes, formatDate } from '@common/utils';
 import { renderTemplate } from '@common/template';
+import { renderGamingSubscription } from './gaming';
 
 type Format = 'auto' | 'base64' | 'plain' | 'clash' | 'singbox';
 
@@ -44,6 +45,14 @@ export async function handleSubscription(
     const accept = (request.headers.get('Accept') ?? '').toLowerCase();
     const dest = (request.headers.get('Sec-Fetch-Dest') ?? '').toLowerCase();
 
+    // A gaming subscription serves only the pinned profiles. It is a separate
+    // output because its whole value is that it contains exactly one route —
+    // merging it with the normal list would reintroduce the switching we are
+    // trying to prevent.
+    const wantsGaming =
+        ctx.searchParams.get('gaming') === '1' ||
+        ctx.searchParams.get('mode') === 'gaming';
+
     // Identify the subscriber. Without ?u= we serve the panel-wide credentials.
     const requested = ctx.searchParams.get('u') ?? ctx.searchParams.get('sub') ?? '';
     const user = requested ? await users.get(requested) : null;
@@ -68,14 +77,19 @@ export async function handleSubscription(
         return renderSubscriptionPage(settings, users, user);
     }
 
+    const requestedFormat = resolveFormat(
+        ctx.searchParams.get('format') ?? ctx.searchParams.get('app') ?? '',
+        ua,
+    );
+    if (wantsGaming) {
+        return renderGamingSubscription(settings, requestedFormat, user);
+    }
+
     const usage = user ? (await users.getUsage(user.id)) : null;
     const buildCtx = resolveBuildContext(settings, user);
     const infoLabels = renderInfoLabels(settings, user, usage?.totalBytes ?? 0);
 
-    const format = resolveFormat(
-        ctx.searchParams.get('format') ?? ctx.searchParams.get('app') ?? '',
-        ua,
-    );
+    const format = requestedFormat;
 
     const headers: Record<string, string> = {};
     if (user) {

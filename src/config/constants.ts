@@ -62,3 +62,43 @@ export const DEFAULT_PROXY_IPS = [
 
 export const GB = 1024 ** 3;
 export const MB = 1024 ** 2;
+
+/**
+ * Ports to pin a gaming profile on, best first.
+ *
+ * 443 is the least likely to be shaped or blocked on a home ISP, and it is the
+ * port middleboxes are most used to seeing carry long-lived TLS. The rest are
+ * fallbacks for networks that interfere with 443 specifically.
+ */
+export const GAMING_PORTS = [443, 2053, 2083, 2087, 2096, 8443];
+
+/**
+ * Cloudflare edge ranges that consistently answer with low latency from Iran
+ * and the wider region.
+ *
+ * The generic scanner samples every published range because it only asks
+ * "is this reachable". Gaming needs a stable low-RTT edge, so we sample a
+ * narrower set: these three /13-/16 blocks host the anycast edges that
+ * terminate closest to the region's transit, which is where the good routes
+ * actually are.
+ */
+export const GAMING_RANGES = [
+    '104.16.0.0/13',
+    '162.159.0.0/16',
+    '172.64.0.0/13',
+];
+
+/** Probes per candidate when measuring jitter. One sample says nothing about stability. */
+export const GAMING_PROBES_PER_IP = 5;
+
+/**
+ * Grade thresholds on the composite score (median + 2*jitter + 500*loss).
+ * Jitter is weighted because a steady 90 ms plays better than a 40-200 ms swing.
+ */
+export const GAMING_GRADES: Array<{ grade: string; maxScore: number }> = [
+    { grade: 'S', maxScore: 80 },
+    { grade: 'A', maxScore: 140 },
+    { grade: 'B', maxScore: 220 },
+    { grade: 'C', maxScore: 350 },
+    { grade: 'D', maxScore: Infinity },
+];

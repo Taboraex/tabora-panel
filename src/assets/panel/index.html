@@ -50,6 +50,7 @@
   <button class="tab" data-tab="subscriptions"><span class="tab-ico">↗</span><span data-i18n="tab.subs">Links</span></button>
   <button class="tab" data-tab="users"><span class="tab-ico">◎</span><span data-i18n="tab.users">Users</span></button>
   <button class="tab" data-tab="settings"><span class="tab-ico">⚙</span><span data-i18n="tab.settings">Settings</span></button>
+  <button class="tab" data-tab="gaming"><span class="tab-ico">🎮</span><span data-i18n="tab.gaming">Gaming</span></button>
   <button class="tab" data-tab="scanner"><span class="tab-ico">◈</span><span data-i18n="tab.scanner">Scanner</span></button>
   <button class="tab" data-tab="logs"><span class="tab-ico">≡</span><span data-i18n="tab.logs">Logs</span></button>
 </nav>
@@ -267,7 +268,84 @@
     </form>
   </section>
 
-  <!-- ───────────────────────────────── Logs ───────────────────────────────── -->
+
+  <!-- ──────────────────────────────── Gaming ─────────────────────────────── -->
+  <section class="panel" data-panel="gaming">
+
+    <div class="card">
+      <div class="card-head">
+        <h2 data-i18n="game.find.title">Find a low-ping route</h2>
+        <div class="btn-row">
+          <button class="btn primary" id="gameScan" data-i18n="game.find.run">Measure edges</button>
+          <button class="btn ghost" id="gameStop" data-i18n="game.find.stop" hidden>Stop</button>
+        </div>
+      </div>
+      <p class="hint" data-i18n="game.find.hint">
+        Each address is measured several times from your own connection. Ranking favours
+        steady ping over fast ping — a stable 90 ms plays better than a 40–200 ms swing.
+      </p>
+      <div class="game-controls">
+        <label class="field"><span data-i18n="game.port">Port</span>
+          <select id="gamePort"></select>
+        </label>
+        <label class="field"><span data-i18n="game.proto">Protocol</span>
+          <select id="gameProto">
+            <option value="vless">VLESS</option>
+            <option value="trojan">Trojan</option>
+          </select>
+        </label>
+      </div>
+      <div id="gameProgress" class="hint"></div>
+      <div id="gameResults" class="game-list"><p class="empty">—</p></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2 data-i18n="game.pinned.title">Pinned profiles</h2>
+        <span class="badge" id="gameCount">0</span>
+      </div>
+      <p class="hint" data-i18n="game.pinned.hint">
+        A pinned profile locks one IP, one port and one protocol. No auto-select group is
+        emitted, so your client cannot switch route in the middle of a match.
+      </p>
+      <div id="gamePinned" class="game-list"><p class="empty" data-i18n="game.none">Nothing pinned yet.</p></div>
+    </div>
+
+    <div class="card" id="gameOptionsCard">
+      <h2 data-i18n="game.opts.title">Behaviour</h2>
+      <div class="grid">
+        <label class="field toggle"><input type="checkbox" id="gLock" checked>
+          <span data-i18n="game.opts.lock">Lock to profile (no auto-switching)</span></label>
+        <label class="field toggle"><input type="checkbox" id="gBypass" checked>
+          <span data-i18n="game.opts.bypass">Skip relay hop for game traffic</span></label>
+        <label class="field toggle"><input type="checkbox" id="gSplit">
+          <span data-i18n="game.opts.split">Split tunnel — route only games</span></label>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="gameSaveOpts" data-i18n="game.opts.save">Save</button>
+      </div>
+    </div>
+
+    <div class="card" id="gameLinksCard" hidden>
+      <h2 data-i18n="game.links.title">Gaming subscription</h2>
+      <p class="hint" data-i18n="game.links.hint">These links contain only your pinned profiles.</p>
+      <div id="gameLinks" class="sub-list"></div>
+    </div>
+
+    <div class="card note">
+      <h2 data-i18n="game.honest.title">What this can and cannot do</h2>
+      <p class="hint" data-i18n="game.honest.body">
+        Cloudflare Workers carry TCP, not UDP. Most competitive shooters send gameplay over
+        UDP and will not pass through any Workers-based tunnel — no panel can change that.
+        What a pinned profile does give you: a route that never changes, no DNS lookup at
+        connect time, no mid-match switching, and no extra relay hop. That is a real and
+        measurable win for TCP games, launchers, and matchmaking.
+      </p>
+    </div>
+
+  </section>
+
+  <!-- ──────────────────────────────── Scanner ────────────────────────────── -->
   <section class="panel" data-panel="scanner">
 
     <div class="card">

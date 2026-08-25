@@ -54,7 +54,7 @@ export default {
                 case '':
                 case 'panel':
                     return (await verifySession(request, store))
-                        ? renderPanel(settings, store, env)
+                        ? renderPanel(settings, store)
                         : Response.redirect(`${reqCtx.origin}${base}/login`, HttpStatus.FOUND);
 
                 case 'login':

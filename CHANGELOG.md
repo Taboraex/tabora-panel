@@ -5,6 +5,38 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] — 2026-08-25
+
+### Fixed
+
+- **Two modals appeared over the dashboard on load.** The "Add user" and
+  "Change password" dialogs both carry the `hidden` attribute, but `hidden` is
+  only `display: none` in the user-agent stylesheet — and
+  `.modal-backdrop { display: grid }` outranks it. Both dialogs rendered on top
+  of the panel immediately after signing in.
+
+  The display rule is now scoped with `:not([hidden])`, so a hidden element
+  never receives a `display` value from our stylesheet and the UA default
+  applies cleanly. This was chosen over `!important` because the latter cannot
+  be verified in the test environment.
+
+### Removed
+
+- **The Change password dialog.** Panels are provisioned by the Telegram
+  launcher, which hands the password to the operator at install time, so an
+  in-panel change flow added a modal, a form and three fields for no benefit.
+  The `POST /api/set-password` endpoint is retained: it still guards first-run
+  setup for panels deployed by hand.
+- The unused `WARN_PASSWORD` template placeholder and the default-password
+  toast that pointed at the now-removed button.
+
+### Added
+
+- The browser-level UI test now asserts that **no element carrying `hidden` is
+  rendered**, and that the Add-user modal still opens and closes on click.
+
+---
+
 ## [0.1.2] — 2026-08-25
 
 ### Fixed
@@ -128,7 +160,8 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.3
 [0.1.2]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.2
 [0.1.1]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.0

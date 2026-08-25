@@ -144,9 +144,6 @@
             <input name="fallback" id="fFallback" placeholder="https://example.com">
           </label>
         </div>
-        <div class="btn-row">
-          <button type="button" class="btn" id="changePassBtn" data-i18n="set.changePass">Change panel password</button>
-        </div>
       </details>
 
       <details class="card">
@@ -299,26 +296,9 @@
   </div>
 </div>
 
-<!-- ───────────────────────────── Password modal ───────────────────────────── -->
-<div class="modal-backdrop" id="passModal" hidden>
-  <div class="modal">
-    <div class="modal-head"><h3>Change password</h3><button class="icon-btn" id="closePassModal">✕</button></div>
-    <form id="passForm" class="modal-body">
-      <label class="field"><span>Current password</span><input type="password" id="pCurrent" required></label>
-      <label class="field"><span>New password</span><input type="password" id="pNew" required minlength="6"></label>
-      <label class="field"><span>Confirm new password</span><input type="password" id="pConfirm" required minlength="6"></label>
-      <div class="modal-actions">
-        <button type="button" class="btn ghost" id="cancelPass">Cancel</button>
-        <button type="submit" class="btn primary">Update</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <script>
   window.TABORA_BASE = "{{BASE}}";
   window.TABORA_WARN_STORAGE = "{{WARN_STORAGE}}";
-  window.TABORA_WARN_PASSWORD = "{{WARN_PASSWORD}}";
 </script>
 <script>/* JS_PLACEHOLDER */</script>
 </body>

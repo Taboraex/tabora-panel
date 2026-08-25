@@ -594,9 +594,6 @@ async function loadAll() {
     if (!meta.persistent) {
         notify('No D1 or KV binding found — settings will not persist.', 'warn', 9000);
     }
-    if (meta.defaultPassword) {
-        notify('You are still using the default password. Change it now.', 'warn', 9000);
-    }
 }
 
 function bindEvents() {
@@ -739,28 +736,6 @@ function bindEvents() {
             settings = await request('/settings/reset', { method: 'POST' });
             fillSettingsForm();
             notify('Settings restored');
-        } catch (err) {
-            notify(err.message, 'error');
-        }
-    });
-
-    // Password modal
-    $('#changePassBtn').addEventListener('click', () => { $('#passModal').hidden = false; });
-    $('#closePassModal').addEventListener('click', () => { $('#passModal').hidden = true; });
-    $('#cancelPass').addEventListener('click', () => { $('#passModal').hidden = true; });
-
-    $('#passForm').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        if ($('#pNew').value !== $('#pConfirm').value) {
-            return notify('Passwords do not match.', 'error');
-        }
-        try {
-            await request('/set-password', {
-                method: 'POST',
-                body: JSON.stringify({ current: $('#pCurrent').value, password: $('#pNew').value }),
-            });
-            notify('Password updated — signing out…');
-            setTimeout(() => { window.location.href = `${BASE}/login`; }, 1400);
         } catch (err) {
             notify(err.message, 'error');
         }

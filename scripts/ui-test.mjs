@@ -101,8 +101,18 @@ async function testPanel(cookie) {
 
     await wait(5000);
 
+    // Anything carrying [hidden] must actually be invisible. A component rule
+    // that sets `display` silently outranks the attribute, which once left two
+    // modals stacked over the dashboard on load.
+    const wronglyVisible = [...doc.querySelectorAll('[hidden]')]
+        .filter((el) => win.getComputedStyle(el).display !== 'none')
+        .map((el) => el.id || el.className);
+
     return {
         bootRan: win.TABORA_BASE === PATH,
+        wronglyVisible,
+        modalCount: doc.querySelectorAll('.modal-backdrop').length,
+        hasPasswordModal: !!doc.getElementById('passModal'),
         tabs: doc.querySelectorAll('.tab').length,
         portChips: doc.querySelectorAll('#portChips input').length,
         subLinks: doc.querySelectorAll('#subList .sub-item').length,
@@ -137,6 +147,11 @@ if (good.cookie) {
     check('panel: secure path populated from the API', panel.pathFilled);
     check('panel: hostname populated from the API', panel.hostFilled);
     check('panel: no unsubstituted placeholders', !panel.leftoverPlaceholder);
+    check(
+        `panel: nothing with [hidden] is rendered${panel.wronglyVisible.length ? ' (' + panel.wronglyVisible.join(', ') + ')' : ''}`,
+        panel.wronglyVisible.length === 0,
+    );
+    check('panel: change-password modal removed', !panel.hasPasswordModal);
 } else {
     check('panel: could not authenticate, skipped', false);
 }

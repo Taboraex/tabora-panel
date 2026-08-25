@@ -13,7 +13,7 @@ import { PROJECT } from '@config/obfuscation';
 import { logActivity } from './logs';
 import { DAILY_REQUEST_LIMIT } from '@config/constants';
 
-export async function renderPanel(settings: Settings, store: Store, env: Env): Promise<Response> {
+export async function renderPanel(settings: Settings, store: Store): Promise<Response> {
     if (!PANEL_HTML) return new Response('Panel unavailable.', { status: 500 });
 
     const html = renderTemplate(await gunzipBase64(PANEL_HTML), {
@@ -22,7 +22,6 @@ export async function renderPanel(settings: Settings, store: Store, env: Env): P
         BASE: `/${settings.securePath}`,
         REPO: PROJECT.repo,
         WARN_STORAGE: store.isPersistent ? '' : 'true',
-        WARN_PASSWORD: (await isDefaultPassword(store, env)) ? 'true' : '',
     });
 
     return htmlResponse(html);

@@ -336,12 +336,25 @@ input[type="number"] { font-variant-numeric: tabular-nums; }
 
 /* ────────────────────────────────── modals ─────────────────────────────── */
 
+/*
+ * `hidden` is only `display: none` in the UA stylesheet, so any component rule
+ * that sets `display` outranks it and the element stays on screen. Two modals
+ * once rendered stacked over the dashboard on load because of exactly this.
+ *
+ * Rather than fight the cascade with `!important`, the display rule below is
+ * scoped with `:not([hidden])`, so a hidden element simply never receives a
+ * `display` value from us and the UA default applies cleanly.
+ */
+[hidden] { display: none; }
+
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 90;
-  display: grid; place-items: center; padding: 1rem;
+  place-items: center; padding: 1rem;
   background: rgba(3, 7, 18, .68); backdrop-filter: blur(4px);
   animation: fade .18s;
 }
+
+.modal-backdrop:not([hidden]) { display: grid; }
 .modal {
   width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto;
   background: var(--surface); border: 1px solid var(--border-strong);

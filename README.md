@@ -1,5 +1,7 @@
 <div align="center">
 
+<p align="center"><img src="brand/logo.svg" alt="Tabora" width="240"></p>
+
 # Tabora
 
 **A secure, multi-user proxy panel that runs entirely on Cloudflare Workers.**
@@ -269,3 +271,10 @@ studying prior art in this space — notably
 under GPL-3.0 so it remains compatible with that lineage.
 
 **Use responsibly and in accordance with the laws that apply to you.**
+
+## Brand
+
+The mark and wordmark live in [`brand/`](./brand). It is a hexagon holding a
+**T** with three nodes on alternating vertices — the letter and a network
+topology at the same time, deliberately avoiding the shield-and-padlock motif
+that most panels in this space share.

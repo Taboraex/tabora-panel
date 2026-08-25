@@ -1,0 +1,13 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tabora">
+  <defs>
+    <linearGradient id="tg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 5 55.38 18.5v27L32 59 8.62 45.5v-27Z" fill="url(#tg)" opacity=".12"/>
+  <path d="M32 5 55.38 18.5v27L32 59 8.62 45.5v-27Z" fill="none" stroke="url(#tg)" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M20 23h24M32 23v21" stroke="url(#tg)" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="32" cy="5" r="4.2" fill="url(#tg)"/>
+  <circle cx="55.38" cy="45.5" r="4.2" fill="url(#tg)"/>
+  <circle cx="8.62" cy="45.5" r="4.2" fill="url(#tg)"/>
+</svg>

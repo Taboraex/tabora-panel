@@ -113,6 +113,8 @@ async function testPanel(cookie) {
         wronglyVisible,
         modalCount: doc.querySelectorAll('.modal-backdrop').length,
         hasPasswordModal: !!doc.getElementById('passModal'),
+        // The repo link is built from PROJECT.repo; a stale value 404s silently.
+        repoHref: doc.getElementById('repoBtn')?.getAttribute('href') ?? '',
         tabs: doc.querySelectorAll('.tab').length,
         portChips: doc.querySelectorAll('#portChips input').length,
         subLinks: doc.querySelectorAll('#subList .sub-item').length,
@@ -152,6 +154,10 @@ if (good.cookie) {
         panel.wronglyVisible.length === 0,
     );
     check('panel: change-password modal removed', !panel.hasPasswordModal);
+    check(
+        `panel: GitHub link points at the real repo (${panel.repoHref || 'missing'})`,
+        panel.repoHref === 'https://github.com/Taboraex/tabora-panel',
+    );
 } else {
     check('panel: could not authenticate, skipped', false);
 }

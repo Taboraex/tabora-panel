@@ -3,6 +3,14 @@
   "version": "0.2.0",
   "description": "Tabora — a secure, multi-user proxy panel running entirely on Cloudflare Workers",
   "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Taboraex/tabora-panel.git"
+  },
+  "homepage": "https://github.com/Taboraex/tabora-panel#readme",
+  "bugs": {
+    "url": "https://github.com/Taboraex/tabora-panel/issues"
+  },
   "private": true,
   "type": "module",
   "scripts": {

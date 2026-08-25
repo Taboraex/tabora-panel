@@ -42,5 +42,5 @@ export const BROWSER_UA_MARKERS = [
 export const PROJECT = {
     name: 'Tabora',
     slug: 'tabora',
-    repo: 'https://github.com/tabora-panel/tabora',
+    repo: 'https://github.com/Taboraex/tabora-panel',
 } as const;

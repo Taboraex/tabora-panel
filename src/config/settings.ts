@@ -79,10 +79,24 @@ export async function loadSettings(store: Store, env: Env): Promise<Settings> {
 
         settings.panelVersion = VERSION;
 
-        // Persist the first materialised copy so the panel has something to
-        // edit, and write back the relay migration so it happens only once.
+        /*
+         * Persist the first materialised copy so the panel has something to
+         * edit, and write back the relay migration so it happens only once.
+         *
+         * Best-effort on purpose. Everything above is derived deterministically
+         * from the password, the secure path and the environment, so the exact
+         * same settings object is rebuilt on the next request whether or not
+         * this write lands. Making a read path depend on a successful write is
+         * what turned a full storage quota into a panel that would not open:
+         * the write threw, and the throw escaped as a 500 before any HTML was
+         * produced.
+         */
         if ((!stored || migrated) && store.isPersistent) {
-            await store.putJSON(SETTINGS_KEY, settings);
+            try {
+                await store.putJSON(SETTINGS_KEY, settings);
+            } catch (error) {
+                console.error('Could not persist initial settings:', error);
+            }
         }
 
         return settings;

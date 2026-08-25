@@ -92,12 +92,30 @@ export class Store {
         }
 
         if (this.env.KV) {
-            // KV rejects a TTL below 60s.
-            await this.env.KV.put(
-                key,
-                value,
-                ttlSeconds && ttlSeconds >= 60 ? { expirationTtl: ttlSeconds } : undefined,
-            );
+            /*
+             * Never let a failed write take down the page.
+             *
+             * The D1 branch above already swallows its errors, but this one
+             * did not, so any KV failure propagated all the way out as a 500.
+             * The common one is the free plan's 1000-writes-per-day ceiling:
+             * once it is hit every put() throws, and because loadSettings
+             * persists a copy on first read, simply opening the panel returned
+             * `KV put() limit exceeded for the day.` and nothing rendered.
+             *
+             * A write that does not stick is a degraded panel — settings fall
+             * back to their derived defaults on the next load — but a panel
+             * that will not open at all is a broken one.
+             */
+            try {
+                // KV rejects a TTL below 60s.
+                await this.env.KV.put(
+                    key,
+                    value,
+                    ttlSeconds && ttlSeconds >= 60 ? { expirationTtl: ttlSeconds } : undefined,
+                );
+            } catch (error) {
+                console.error(`put(${key}) failed:`, safeError(error));
+            }
         }
     }
 
@@ -117,7 +135,14 @@ export class Store {
             }
         }
 
-        if (this.env.KV) await this.env.KV.delete(key);
+        if (this.env.KV) {
+            // Same reasoning as put(): a failed delete must not become a 500.
+            try {
+                await this.env.KV.delete(key);
+            } catch (error) {
+                console.error(`delete(${key}) failed:`, safeError(error));
+            }
+        }
     }
 
     /* -------------------------------------------------------------- raw SQL */

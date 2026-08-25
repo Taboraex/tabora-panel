@@ -1,6 +1,6 @@
 {
   "name": "tabora-panel",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Tabora \u2014 a secure, multi-user proxy panel running entirely on Cloudflare Workers",
   "license": "GPL-3.0",
   "repository": {

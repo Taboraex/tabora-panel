@@ -5,6 +5,26 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-08-25
+
+### Fixed
+
+- **Multi-user support on KV-only deployments.** `UserService` issued raw SQL
+  that silently no-opped when no D1 binding was present: creating a user
+  reported success but the record was never stored, and the Users tab stayed
+  empty. Users, usage counters and logs now go through a storage-agnostic
+  collection layer that uses D1 tables when available and JSON documents in KV
+  otherwise. This matters for the Telegram launcher, which provisions panels
+  with KV because D1 needs an extra API-token permission.
+
+### Changed
+
+- Protocol identifiers in the Clash and Sing-box builders are now assembled at
+  runtime instead of appearing as string literals in the bundle, matching the
+  rest of the codebase and the CI anti-fingerprinting gate.
+
+---
+
 ## [Unreleased]
 
 ### Planned
@@ -75,5 +95,6 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.0

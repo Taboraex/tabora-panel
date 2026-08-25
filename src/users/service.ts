@@ -1,21 +1,8 @@
 import { EnrichedUser, User, UserStatus, UserUsage } from '#types/settings';
 import { Store } from '@storage/db';
+import { Collections, UserRecord as UserRow } from '@storage/collections';
 import { cacheInvalidate, CacheKeys } from '@storage/cache';
 import { randomUUID, todayKey, deriveUUID } from '@common/utils';
-
-interface UserRow {
-    id: string;
-    name: string;
-    uuid: string;
-    notes: string;
-    limit_bytes: number;
-    daily_limit: number;
-    expiry_ms: number;
-    is_paused: number;
-    disabled_reason: string;
-    created_at: number;
-    meta: string;
-}
 
 function rowToUser(row: UserRow): User {
     let meta: Partial<User> = {};
@@ -65,27 +52,30 @@ export function resolveStatus(user: User, usage: UserUsage): UserStatus {
 export const isUsable = (status: UserStatus): boolean => status === 'active';
 
 export class UserService {
-    constructor(private store: Store) {}
+    private db: Collections;
+
+    constructor(private store: Store) {
+        this.db = new Collections(store);
+    }
 
     async list(query = ''): Promise<EnrichedUser[]> {
-        const rows = query
-            ? await this.store.all<UserRow>(
-                  `SELECT * FROM users
-                   WHERE name LIKE ?1 OR id LIKE ?1 OR uuid LIKE ?1 OR notes LIKE ?1
-                   ORDER BY created_at DESC`,
-                  `%${query}%`,
-              )
-            : await this.store.all<UserRow>('SELECT * FROM users ORDER BY created_at DESC');
+        let rows = await this.db.listUsers();
+
+        if (query) {
+            const needle = query.toLowerCase();
+            rows = rows.filter((r) =>
+                [r.name, r.id, r.uuid, r.notes].some((v) =>
+                    String(v ?? '').toLowerCase().includes(needle),
+                ),
+            );
+        }
 
         const users = rows.map(rowToUser);
         return Promise.all(users.map((user) => this.enrich(user)));
     }
 
     async get(idOrName: string): Promise<User | null> {
-        const row = await this.store.first<UserRow>(
-            'SELECT * FROM users WHERE id = ?1 OR uuid = ?1 OR LOWER(name) = LOWER(?1) LIMIT 1',
-            idOrName,
-        );
+        const row = await this.db.findUser(idOrName);
         return row ? rowToUser(row) : null;
     }
 
@@ -114,14 +104,19 @@ export class UserService {
             maxConfigs: input.maxConfigs ?? 0,
         };
 
-        await this.store.run(
-            `INSERT INTO users
-             (id, name, uuid, notes, limit_bytes, daily_limit, expiry_ms, is_paused, disabled_reason, created_at, meta)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            user.id, user.name, user.uuid, user.notes,
-            user.limitBytes, user.dailyLimitBytes, user.expiryMs,
-            user.isPaused ? 1 : 0, '', user.createdAt, userMeta(user),
-        );
+        await this.db.insertUser({
+            id: user.id,
+            name: user.name,
+            uuid: user.uuid,
+            notes: user.notes,
+            limit_bytes: user.limitBytes,
+            daily_limit: user.dailyLimitBytes,
+            expiry_ms: user.expiryMs,
+            is_paused: user.isPaused ? 1 : 0,
+            disabled_reason: '',
+            created_at: user.createdAt,
+            meta: userMeta(user),
+        });
 
         cacheInvalidate(CacheKeys.users);
         return user;
@@ -133,26 +128,30 @@ export class UserService {
 
         const merged: User = { ...existing, ...patch, id: existing.id };
 
-        await this.store.run(
-            `UPDATE users SET
-               name = ?, uuid = ?, notes = ?, limit_bytes = ?, daily_limit = ?,
-               expiry_ms = ?, is_paused = ?, disabled_reason = ?, meta = ?
-             WHERE id = ?`,
-            merged.name, merged.uuid, merged.notes,
-            merged.limitBytes, merged.dailyLimitBytes, merged.expiryMs,
-            merged.isPaused ? 1 : 0, merged.disabledReason, userMeta(merged),
-            merged.id,
-        );
+        await this.db.updateUser({
+            id: merged.id,
+            name: merged.name,
+            uuid: merged.uuid,
+            notes: merged.notes,
+            limit_bytes: merged.limitBytes,
+            daily_limit: merged.dailyLimitBytes,
+            expiry_ms: merged.expiryMs,
+            is_paused: merged.isPaused ? 1 : 0,
+            disabled_reason: merged.disabledReason,
+            created_at: merged.createdAt,
+            meta: userMeta(merged),
+        });
 
         cacheInvalidate(CacheKeys.users);
         return merged;
     }
 
     async remove(id: string): Promise<boolean> {
-        const removed = await this.store.run('DELETE FROM users WHERE id = ?', id);
-        await this.store.run('DELETE FROM usage WHERE user_id = ?', id);
+        const existing = await this.db.findUser(id);
+        if (!existing) return false;
+        await this.db.deleteUser(existing.id);
         cacheInvalidate(CacheKeys.users);
-        return removed;
+        return true;
     }
 
     async toggle(id: string): Promise<User | null> {
@@ -169,38 +168,27 @@ export class UserService {
     async getUsage(userId: string): Promise<UserUsage> {
         const day = todayKey();
 
-        const totals = await this.store.first<{ bytes: number; reqs: number }>(
-            'SELECT COALESCE(SUM(bytes), 0) AS bytes, COALESCE(SUM(reqs), 0) AS reqs FROM usage WHERE user_id = ?',
-            userId,
-        );
-
-        const today = await this.store.first<{ bytes: number; reqs: number }>(
-            'SELECT bytes, reqs FROM usage WHERE user_id = ? AND day = ?',
-            userId, day,
-        );
+        const [totals, today] = await Promise.all([
+            this.db.usageTotals(userId),
+            this.db.usageForDay(userId, day),
+        ]);
 
         return {
-            totalBytes: totals?.bytes ?? 0,
-            totalReqs: totals?.reqs ?? 0,
-            dailyBytes: today?.bytes ?? 0,
-            dailyReqs: today?.reqs ?? 0,
+            totalBytes: totals.bytes,
+            totalReqs: totals.reqs,
+            dailyBytes: today.bytes,
+            dailyReqs: today.reqs,
             day,
         };
     }
 
     /** Increment counters for a user. Safe to call from ctx.waitUntil(). */
     async recordUsage(userId: string, bytes: number, reqs = 1): Promise<void> {
-        await this.store.run(
-            `INSERT INTO usage (user_id, day, bytes, reqs) VALUES (?, ?, ?, ?)
-             ON CONFLICT(user_id, day) DO UPDATE SET
-               bytes = bytes + excluded.bytes,
-               reqs  = reqs  + excluded.reqs`,
-            userId, todayKey(), bytes, reqs,
-        );
+        await this.db.addUsage(userId, todayKey(), bytes, reqs);
     }
 
     async resetUsage(userId: string): Promise<void> {
-        await this.store.run('DELETE FROM usage WHERE user_id = ?', userId);
+        await this.db.clearUsage(userId);
         await this.update(userId, { isPaused: false, disabledReason: '' });
     }
 

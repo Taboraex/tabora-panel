@@ -1,69 +1,163 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#070b14">
 <title>{{NAME}} — {{PROJECT}}</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%2338bdf8%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%236366f1%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22url(%23g)%22%20stroke-width%3D%2218%22%20stroke-linejoin%3D%22round%22%3E%3Cpolygon%20points%3D%22256%2C66%20420.55%2C161%20420.55%2C351%20256%2C446%2091.45%2C351%2091.45%2C161%22%2F%3E%3C%2Fg%3E%3Cpath%20fill%3D%22url(%23g)%22%20d%3D%22M199%20216h114v33h-40v96h-34v-96h-40z%22%2F%3E%3C%2Fsvg%3E">
 <style>/* CSS_PLACEHOLDER */</style>
 </head>
 <body>
+
+<button class="lang-toggle" id="langBtn" type="button" aria-label="Language">EN</button>
+
 <main class="wrap">
 
   <header class="head">
-    <svg viewBox="0 0 48 48" class="logo" aria-hidden="true">
-      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <svg viewBox="0 0 512 512" class="logo" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#6366f1"/>
       </linearGradient></defs>
-      <path fill="url(#g)" d="M24 3 7 11v12c0 10.5 7.2 19.6 17 22 9.8-2.4 17-11.5 17-22V11L24 3Z"/>
-      <path fill="#0b1120" opacity=".85" d="M24 14.5 15 18.7v6.1c0 5.3 3.8 10 9 11.4 5.2-1.4 9-6.1 9-11.4v-6.1L24 14.5Z"/>
-      <circle cx="24" cy="24" r="3.4" fill="#38bdf8"/>
+      <g fill="none" stroke="url(#lg)" stroke-linejoin="round" stroke-linecap="round">
+        <polygon points="256.00,66.00 420.55,161.00 420.55,351.00 256.00,446.00 91.45,351.00 91.45,161.00" stroke-width="18"/>
+        <polygon points="256.00,142.00 354.73,199.00 354.73,313.00 256.00,370.00 157.27,313.00 157.27,199.00" stroke-width="12" opacity=".55"/>
+        <g stroke-width="12" opacity=".55">
+          <line x1="256.00" y1="66.00" x2="256.00" y2="142.00"/>
+          <line x1="420.55" y1="351.00" x2="354.73" y2="313.00"/>
+          <line x1="91.45" y1="351.00" x2="157.27" y2="313.00"/>
+        </g>
+      </g>
+      <g fill="url(#lg)">
+        <circle cx="256.00" cy="66.00" r="27"/>
+        <circle cx="420.55" cy="351.00" r="27"/>
+        <circle cx="91.45" cy="351.00" r="27"/>
+      </g>
+      <path fill="url(#lg)" d="M199 216h114v33h-40v96h-34v-96h-40z"/>
     </svg>
     <h1>{{NAME}}</h1>
-    <span class="pill" id="status">{{STATUS}}</span>
+    <div class="head-badges">
+      <span class="pill" id="status" data-status="{{STATUS}}">{{STATUS}}</span>
+      <span class="pill mode" id="modePill" hidden>🎮 <span data-i18n="mode.gaming">Gaming</span></span>
+    </div>
   </header>
 
   <section class="card">
     <div class="usage-head">
-      <span class="usage-label">Traffic</span>
-      <span class="usage-value"><strong>{{USED}}</strong> / {{LIMIT}}</span>
+      <span class="usage-label" data-i18n="usage.traffic">Traffic</span>
+      <span class="usage-value"><strong>{{USED}}</strong> <span class="dim">/ {{LIMIT}}</span></span>
     </div>
     <div class="bar"><i id="bar" style="width:{{PERCENT}}%"></i></div>
     <div class="usage-foot">
-      <span id="pct">{{PERCENT}}% used</span>
-      <span>Expires: {{EXPIRY}}</span>
+      <span><bdi><span id="pct">{{PERCENT}}</span>%</bdi> <span data-i18n="usage.used">used</span></span>
+      <span><span data-i18n="usage.expires">Expires</span>:&nbsp;<bdi>{{EXPIRY}}</bdi></span>
     </div>
   </section>
 
+  <!-- ─────────────────────── One-tap import into an app ────────────────────── -->
   <section class="card">
-    <h2>Subscription links</h2>
-    <div class="link" data-url="{{SUB_URL}}">
-      <span class="link-name">Auto</span>
-      <code>{{SUB_URL}}</code>
-      <button class="btn" data-copy="{{SUB_URL}}">Copy</button>
-    </div>
-    <div class="link" data-url="{{SUB_CLASH}}">
-      <span class="link-name">Clash</span>
-      <code>{{SUB_CLASH}}</code>
-      <button class="btn" data-copy="{{SUB_CLASH}}">Copy</button>
-    </div>
-    <div class="link" data-url="{{SUB_SINGBOX}}">
-      <span class="link-name">Sing-box</span>
-      <code>{{SUB_SINGBOX}}</code>
-      <button class="btn" data-copy="{{SUB_SINGBOX}}">Copy</button>
+    <h2 data-i18n="apps.title">Open in your app</h2>
+    <p class="hint" data-i18n="apps.hint">Tap your app — it opens and imports the subscription automatically.</p>
+
+    <div class="apps" id="apps">
+      <button class="app" type="button" data-app="hiddify">
+        <span class="app-ico" style="--c1:#5b6ef5;--c2:#8b5cf6">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path fill="currentColor" d="M12 2 2 7.5 12 13l10-5.5L12 2Zm0 2.6 5.3 2.9L12 10.4 6.7 7.5 12 4.6ZM3.6 11.2 2 12.1l10 5.5 10-5.5-1.6-.9L12 15.7l-8.4-4.5Zm0 4.4L2 16.5 12 22l10-5.5-1.6-.9-8.4 4.6-8.4-4.6Z"/>
+          </svg>
+        </span>
+        <span class="app-name">Hiddify</span>
+      </button>
+
+      <button class="app" type="button" data-app="v2rayng">
+        <span class="app-ico" style="--c1:#38bdf8;--c2:#0ea5e9">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path fill="currentColor" d="M3 4h4l5 12 5-12h4l-7.2 16h-3.6L3 4Z"/>
+          </svg>
+        </span>
+        <span class="app-name">v2rayNG</span>
+      </button>
+
+      <button class="app" type="button" data-app="v2box">
+        <span class="app-ico" style="--c1:#34d399;--c2:#10b981">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path fill="currentColor" d="M12 2 3 6.5v11L12 22l9-4.5v-11L12 2Zm0 2.3 6.5 3.2-6.5 3.3-6.5-3.3L12 4.3ZM5 9.3l6 3v6.9l-6-3V9.3Zm8 9.9V12.3l6-3v6.9l-6 3Z"/>
+          </svg>
+        </span>
+        <span class="app-name">V2Box</span>
+      </button>
+
+      <button class="app" type="button" data-app="happ">
+        <span class="app-ico" style="--c1:#fbbf24;--c2:#f59e0b">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path fill="currentColor" d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"/>
+          </svg>
+        </span>
+        <span class="app-name">Happ</span>
+      </button>
     </div>
   </section>
 
-  <section class="card center">
-    <h2>Scan to import</h2>
-    <canvas id="qr" width="230" height="230"></canvas>
-    <p class="hint">Open your client and scan, or copy a link above.</p>
+  <!-- ──────────────────────────── Copy actions ─────────────────────────────── -->
+  <section class="card">
+    <h2 data-i18n="copy.title">Copy</h2>
+    <div class="copy-grid" id="copyGrid">
+      <button class="cbtn primary" type="button" data-copy-key="sub">
+        <span class="cbtn-t" data-i18n="copy.sub">Subscription link</span>
+        <span class="cbtn-s" data-i18n="copy.sub.d">Auto-updates in your app</span>
+      </button>
+      <button class="cbtn" type="button" data-copy-key="vless" id="btnVless">
+        <span class="cbtn-t" data-i18n="copy.vless">VLESS config</span>
+        <span class="cbtn-s" data-i18n="copy.vless.d">Single server, paste anywhere</span>
+      </button>
+      <button class="cbtn" type="button" data-copy-key="clash">
+        <span class="cbtn-t" data-i18n="copy.clash">Clash link</span>
+        <span class="cbtn-s">Clash · Mihomo · Verge</span>
+      </button>
+      <button class="cbtn" type="button" data-copy-key="singbox">
+        <span class="cbtn-t" data-i18n="copy.singbox">Sing-box link</span>
+        <span class="cbtn-s">sing-box · Hiddify</span>
+      </button>
+      <button class="cbtn wide" type="button" data-copy-key="all" id="btnAll">
+        <span class="cbtn-t" data-i18n="copy.all">Copy all configs</span>
+        <span class="cbtn-s" data-i18n="copy.all.d">Every server as plain text</span>
+      </button>
+    </div>
   </section>
+
+  <!-- ────────────────────────────── QR code ────────────────────────────────── -->
+  <section class="card center">
+    <h2 data-i18n="qr.title">Scan to import</h2>
+    <div class="qr-holder"><canvas id="qr" width="230" height="230"></canvas></div>
+    <div class="qr-switch" id="qrSwitch">
+      <button class="seg active" type="button" data-qr="sub" data-i18n="qr.sub">Subscription</button>
+      <button class="seg" type="button" data-qr="vless" data-i18n="qr.vless">VLESS</button>
+    </div>
+    <p class="hint" data-i18n="qr.hint">Open your client and scan the code.</p>
+  </section>
+
+  <details class="card adv">
+    <summary><span data-i18n="adv.title">Raw links</span></summary>
+    <div class="raw" id="rawList"></div>
+  </details>
 
   <footer class="foot">{{PROJECT}} · v{{VERSION}}</footer>
 </main>
 
 <div id="toast" class="toast" hidden></div>
+
+<script>
+  window.TABORA_SUB = {
+    sub: "{{SUB_URL}}",
+    clash: "{{SUB_CLASH}}",
+    singbox: "{{SUB_SINGBOX}}",
+    plain: "{{SUB_PLAIN}}",
+    name: "{{NAME}}",
+    gaming: "{{GAMING}}" === "true"
+  };
+</script>
 <script>/* JS_PLACEHOLDER */</script>
 </body>
 </html>

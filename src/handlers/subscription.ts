@@ -74,7 +74,7 @@ export async function handleSubscription(
         ua.includes(settings.subUserAgent.trim().toLowerCase());
 
     if (!allowlisted && !looksLikeClient(ua) && looksLikeBrowser(ua, accept, dest)) {
-        return renderSubscriptionPage(settings, users, user);
+        return renderSubscriptionPage(settings, users, user, wantsGaming);
     }
 
     const requestedFormat = resolveFormat(
@@ -147,6 +147,7 @@ async function renderSubscriptionPage(
     settings: Settings,
     users: UserService,
     user: Awaited<ReturnType<UserService['get']>>,
+    gaming = false,
 ): Promise<Response> {
     if (!SUBSCRIPTION_HTML) {
         return subscriptionResponse('Subscription page unavailable.', 'info.txt');
@@ -165,7 +166,16 @@ async function renderSubscriptionPage(
     const base = user?.panelUrl?.trim()
         ? normaliseOrigin(user.panelUrl.trim())
         : ctx.origin;
-    const subUrl = `${base}/${settings.securePath}/sub${user ? `?u=${encodeURIComponent(user.name)}` : ''}`;
+    // Preserve the gaming flag through every link the page offers, otherwise
+    // the buttons would silently hand back the full server list instead of the
+    // pinned profile the visitor actually opened.
+    const params = new URLSearchParams();
+    if (user) params.set('u', user.name);
+    if (gaming) params.set('gaming', '1');
+    const query = params.toString();
+    const subUrl = `${base}/${settings.securePath}/sub${query ? `?${query}` : ''}`;
+    const withFormat = (format: string) =>
+        `${subUrl}${subUrl.includes('?') ? '&' : '?'}format=${format}`;
 
     const out = renderTemplate(html, {
         NAME: user?.name ?? settings.namePrefix,
@@ -175,8 +185,10 @@ async function renderSubscriptionPage(
         PERCENT: percent.toFixed(1),
         EXPIRY: user?.expiryMs ? formatDate(user.expiryMs) : '\u221e',
         SUB_URL: subUrl,
-        SUB_CLASH: `${subUrl}${subUrl.includes('?') ? '&' : '?'}format=clash`,
-        SUB_SINGBOX: `${subUrl}${subUrl.includes('?') ? '&' : '?'}format=singbox`,
+        SUB_CLASH: withFormat('clash'),
+        SUB_SINGBOX: withFormat('singbox'),
+        SUB_PLAIN: withFormat('plain'),
+        GAMING: gaming ? 'true' : 'false',
         PROJECT: PROJECT.name,
         VERSION,
     });

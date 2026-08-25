@@ -87,30 +87,135 @@ h2 {
   margin-top: .55rem; font-size: .76rem; color: var(--muted);
 }
 
-.link {
-  display: flex; align-items: center; gap: .55rem;
-  padding: .6rem .7rem; margin-bottom: .5rem;
-  background: rgba(9, 14, 26, .6);
-  border: 1px solid var(--border); border-radius: 11px;
+/* ── language toggle ───────────────────────────────────────────────────── */
+
+.lang-toggle {
+  position: fixed; top: .9rem; inset-inline-end: .9rem; z-index: 5;
+  min-width: 42px; padding: .35rem .6rem;
+  font: inherit; font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+  color: var(--muted); background: var(--surface);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border); border-radius: 999px;
+  cursor: pointer; transition: .18s;
 }
-.link:last-child { margin-bottom: 0; }
-.link-name { flex-shrink: 0; font-size: .76rem; font-weight: 650; color: var(--accent); min-width: 58px; }
-.link code {
-  flex: 1; min-width: 0;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .72rem;
-  color: var(--muted);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.lang-toggle:hover { color: var(--accent); border-color: rgba(56,189,248,.4); }
+
+.head-badges { display: flex; gap: .4rem; justify-content: center; flex-wrap: wrap; }
+/* .pill sets display:inline-block, which outranks the UA [hidden] rule —
+   without this the gaming pill shows on every page. */
+[hidden] { display: none !important; }
+.pill.mode { color: var(--accent); background: rgba(56,189,248,.14); text-transform: none; }
+
+/* ── app buttons ───────────────────────────────────────────────────────── */
+
+.apps {
+  display: grid;
+  /* Fixed 2x2 rather than auto-fit: with four tiles auto-fit stranded the last
+     one alone on a second row at common phone widths. */
+  grid-template-columns: repeat(2, 1fr);
+  gap: .6rem;
+}
+@media (min-width: 460px) { .apps { grid-template-columns: repeat(4, 1fr); } }
+
+.app {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  padding: .9rem .5rem;
+  font: inherit; color: var(--text);
+  background: rgba(9, 14, 26, .55);
+  border: 1px solid var(--border); border-radius: 14px;
+  cursor: pointer; overflow: hidden;
+  transition: transform .18s cubic-bezier(.22,1,.36,1), border-color .18s, background .18s;
+}
+.app::after {
+  /* Tinted wash keyed to each app's own colours, revealed on hover. */
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(140deg, var(--c1, var(--accent)), var(--c2, var(--accent-2)));
+  opacity: 0; transition: opacity .18s;
+}
+.app:hover { transform: translateY(-2px); border-color: rgba(148,163,184,.32); }
+.app:hover::after { opacity: .07; }
+.app:active { transform: translateY(0) scale(.985); }
+
+.app-ico {
+  display: grid; place-items: center;
+  width: 42px; height: 42px; border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(140deg, var(--c1, var(--accent)), var(--c2, var(--accent-2)));
+  box-shadow: 0 6px 18px -6px var(--c1, var(--accent));
+}
+.app-name { font-size: .8rem; font-weight: 600; }
+
+/* ── copy grid ─────────────────────────────────────────────────────────── */
+
+.copy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+.copy-grid .wide { grid-column: 1 / -1; }
+
+.cbtn {
+  position: relative;
+  display: flex; flex-direction: column; gap: .15rem;
+  padding: .7rem .8rem;
+  font: inherit; text-align: start; color: var(--text);
+  background: rgba(9, 14, 26, .55);
+  border: 1px solid var(--border); border-radius: 12px;
+  cursor: pointer; transition: .18s;
+}
+.cbtn:hover { border-color: rgba(56,189,248,.4); background: rgba(56,189,248,.07); }
+.cbtn:active { transform: scale(.99); }
+.cbtn.primary { border-color: rgba(56,189,248,.35); background: rgba(56,189,248,.1); }
+.cbtn.primary .cbtn-t { color: var(--accent); }
+
+.cbtn-t { font-size: .84rem; font-weight: 620; }
+.cbtn-s { font-size: .7rem; color: var(--muted); }
+
+.cbtn.busy { opacity: .6; pointer-events: none; }
+.cbtn.done { border-color: rgba(52,211,153,.55); background: rgba(52,211,153,.12); }
+.cbtn.done::after {
+  content: '✓'; position: absolute; top: .5rem; inset-inline-end: .6rem;
+  font-size: .85rem; font-weight: 700; color: var(--ok);
 }
 
-.btn {
-  flex-shrink: 0;
-  padding: .35rem .7rem;
-  font: inherit; font-size: .76rem; font-weight: 580;
-  color: var(--text); background: rgba(56, 189, 248, .1);
-  border: 1px solid rgba(56, 189, 248, .3); border-radius: 8px;
-  cursor: pointer; transition: .15s;
+/* ── QR ────────────────────────────────────────────────────────────────── */
+
+.qr-holder { display: flex; justify-content: center; }
+
+.qr-switch {
+  display: inline-flex; gap: .2rem; margin-top: .9rem; padding: .2rem;
+  background: rgba(9,14,26,.6); border: 1px solid var(--border); border-radius: 999px;
 }
-.btn:hover { color: var(--accent); background: rgba(56, 189, 248, .2); }
+.seg {
+  padding: .32rem .85rem;
+  font: inherit; font-size: .76rem; font-weight: 580;
+  color: var(--muted); background: none; border: 0; border-radius: 999px;
+  cursor: pointer; transition: .18s;
+}
+.seg.active { color: #04121c; background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+
+/* ── raw links ─────────────────────────────────────────────────────────── */
+
+.adv summary {
+  font-size: .78rem; font-weight: 650; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted);
+  cursor: pointer; list-style: none;
+}
+.adv summary::-webkit-details-marker { display: none; }
+.adv summary::before { content: '▸ '; }
+.adv[open] summary::before { content: '▾ '; }
+.adv[open] summary { margin-bottom: .8rem; }
+
+.raw-row {
+  display: flex; flex-direction: column; gap: .2rem;
+  padding: .5rem .6rem; margin-bottom: .4rem;
+  background: rgba(9,14,26,.6);
+  border: 1px solid var(--border); border-radius: 10px;
+}
+.raw-row span { font-size: .7rem; font-weight: 650; color: var(--accent); }
+.raw-row code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .68rem;
+  color: var(--muted); word-break: break-all;
+  /* URLs read left-to-right even when the page is in RTL. */
+  direction: ltr; text-align: start; unicode-bidi: embed;
+}
 
 #qr { border-radius: 12px; background: #fff; padding: 10px; max-width: 100%; height: auto; }
 
@@ -127,3 +232,25 @@ h2 {
   animation: rise .25s cubic-bezier(.22,1,.36,1);
 }
 @keyframes rise { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ── RTL ───────────────────────────────────────────────────────────────── */
+
+[dir="rtl"] .cbtn-t, [dir="rtl"] .cbtn-s { text-align: right; }
+[dir="rtl"] .usage-value { direction: ltr; }
+
+/* Numbers and units stay LTR so "٪۱۲ used" cannot reorder into nonsense. */
+[dir="rtl"] .usage-foot span { unicode-bidi: isolate; }
+.usage-foot bdi { unicode-bidi: isolate; }
+
+/* ── motion / responsive ───────────────────────────────────────────────── */
+
+@media (max-width: 380px) {
+  .copy-grid { grid-template-columns: 1fr; }
+  .apps { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+.toast.warn { color: var(--warn); border-color: rgba(251,191,36,.4); }

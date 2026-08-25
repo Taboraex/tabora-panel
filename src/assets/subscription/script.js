@@ -159,44 +159,330 @@ function drawQR(canvas, text) {
 
 /* ── page wiring ───────────────────────────────────────────────────────── */
 
+/**
+ * Template values reach this script HTML-escaped.
+ *
+ * renderTemplate escapes for HTML *and* for a JS string literal, which is the
+ * right default — it is what stops a hostile setting breaking out of either
+ * context. But a subscription URL legitimately contains `&`, so it arrives as
+ * `&amp;` and every multi-parameter link (?gaming=1&format=clash) would be
+ * handed to the client apps broken. Decoding here keeps the escaping strict at
+ * the boundary and correct at the point of use.
+ */
+const decodeEntities = (value) => String(value ?? '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+
+const RAW = window.TABORA_SUB || {};
+const S = {
+    ...RAW,
+    sub: decodeEntities(RAW.sub),
+    clash: decodeEntities(RAW.clash),
+    singbox: decodeEntities(RAW.singbox),
+    plain: decodeEntities(RAW.plain),
+    name: decodeEntities(RAW.name),
+};
+
+/* ── i18n ──────────────────────────────────────────────────────────────── */
+
+const I18N = {
+    en: {
+        'mode.gaming': 'Gaming',
+        'usage.traffic': 'Traffic', 'usage.used': 'used', 'usage.expires': 'Expires',
+        'apps.title': 'Open in your app',
+        'apps.hint': 'Tap your app — it opens and imports the subscription automatically.',
+        'apps.opening': 'Opening {app}\u2026',
+        'apps.fallback': "If nothing opened, the app isn't installed. The link was copied instead.",
+        'copy.title': 'Copy',
+        'copy.sub': 'Subscription link', 'copy.sub.d': 'Auto-updates in your app',
+        'copy.vless': 'VLESS config', 'copy.vless.d': 'Single server, paste anywhere',
+        'copy.clash': 'Clash link', 'copy.singbox': 'Sing-box link',
+        'copy.all': 'Copy all configs', 'copy.all.d': 'Every server as plain text',
+        'copy.ok': 'Copied', 'copy.fail': 'Could not copy — select the link manually',
+        'copy.loading': 'Fetching\u2026',
+        'copy.empty': 'Nothing to copy yet',
+        'qr.title': 'Scan to import', 'qr.sub': 'Subscription', 'qr.vless': 'VLESS',
+        'qr.hint': 'Open your client and scan the code.',
+        'qr.long': 'Too long for a QR — use Copy instead',
+        'adv.title': 'Raw links',
+    },
+    fa: {
+        'mode.gaming': 'گیمینگ',
+        'usage.traffic': 'ترافیک', 'usage.used': 'مصرف شده', 'usage.expires': 'انقضا',
+        'apps.title': 'باز کردن در برنامه',
+        'apps.hint': 'روی برنامه‌ات بزن — خودش باز می‌شود و کانفیگ را وارد می‌کند.',
+        'apps.opening': 'در حال باز کردن {app}\u2026',
+        'apps.fallback': 'اگر چیزی باز نشد، برنامه نصب نیست. لینک به‌جایش کپی شد.',
+        'copy.title': 'کپی',
+        'copy.sub': 'لینک ساب', 'copy.sub.d': 'در برنامه خودکار به‌روز می‌شود',
+        'copy.vless': 'کانفیگ VLESS', 'copy.vless.d': 'یک سرور، هرجا بچسبان',
+        'copy.clash': 'لینک Clash', 'copy.singbox': 'لینک Sing-box',
+        'copy.all': 'کپی همه کانفیگ‌ها', 'copy.all.d': 'همه سرورها به‌صورت متن',
+        'copy.ok': 'کپی شد', 'copy.fail': 'کپی نشد — لینک را دستی انتخاب کنید',
+        'copy.loading': 'در حال دریافت\u2026',
+        'copy.empty': 'هنوز چیزی برای کپی نیست',
+        'qr.title': 'اسکن برای ورود', 'qr.sub': 'اشتراک', 'qr.vless': 'VLESS',
+        'qr.hint': 'برنامه‌ات را باز کن و کد را اسکن کن.',
+        'qr.long': 'برای QR طولانی است — از کپی استفاده کن',
+        'adv.title': 'لینک‌های خام',
+    },
+};
+
+const storedLang = localStorage.getItem('tabora.lang');
+let lang = storedLang || ((navigator.language || '').startsWith('fa') ? 'fa' : 'en');
+if (!I18N[lang]) lang = 'en';
+
+const t = (key) => (I18N[lang] || I18N.en)[key] ?? I18N.en[key] ?? key;
+
+function applyLang() {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
+    document.getElementById('langBtn').textContent = lang === 'fa' ? 'FA' : 'EN';
+    for (const el of document.querySelectorAll('[data-i18n]')) {
+        el.textContent = t(el.dataset.i18n);
+    }
+}
+
+document.getElementById('langBtn').addEventListener('click', () => {
+    lang = lang === 'fa' ? 'en' : 'fa';
+    localStorage.setItem('tabora.lang', lang);
+    applyLang();
+});
+
+/* ── toast ─────────────────────────────────────────────────────────────── */
+
 const toast = document.getElementById('toast');
 let toastTimer;
 
-function showToast(message) {
+function showToast(message, kind = 'ok') {
     toast.textContent = message;
+    toast.className = `toast ${kind}`;
     toast.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 2600);
 }
 
-document.addEventListener('click', async (event) => {
-    const btn = event.target.closest('[data-copy]');
-    if (!btn) return;
-
-    const text = btn.dataset.copy;
+async function writeClipboard(text) {
+    // navigator.clipboard needs a secure context and can be blocked; the
+    // textarea path is the fallback that still works on older mobile browsers.
     try {
         await navigator.clipboard.writeText(text);
+        return true;
     } catch {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        ta.remove();
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '-1000px';
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand('copy');
+            ta.remove();
+            return ok;
+        } catch {
+            return false;
+        }
     }
-    showToast('Copied to clipboard');
+}
+
+/* ── deep links ────────────────────────────────────────────────────────── */
+
+/**
+ * Per-app import schemes.
+ *
+ * Each app registers its own scheme and expects the subscription URL in its
+ * own shape, so this cannot be one generic link:
+ *
+ *   Hiddify  hiddify://install-sub?url=<enc>   documented in their URL-Scheme wiki
+ *   v2rayNG  v2rayng://install-sub?url=<enc>   handled by UrlSchemeActivity
+ *   V2Box    v2box://install-sub?url=<enc>     added in V2Box 3.1.2
+ *   Happ     happ://add/<raw url>              path-style, not a query parameter
+ *
+ * Hiddify and Happ also accept the sing-box JSON profile, but the plain
+ * subscription is the most compatible choice for all four, so every app gets
+ * the same source URL and picks its own format from the User-Agent.
+ */
+const APPS = {
+    hiddify: {
+        label: 'Hiddify',
+        build: (url, name) =>
+            `hiddify://install-sub?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`,
+    },
+    v2rayng: {
+        label: 'v2rayNG',
+        build: (url, name) =>
+            `v2rayng://install-sub?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`,
+    },
+    v2box: {
+        label: 'V2Box',
+        build: (url, name) =>
+            `v2box://install-sub?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`,
+    },
+    happ: {
+        label: 'Happ',
+        // Happ takes the URL as a path segment rather than a query parameter.
+        build: (url) => `happ://add/${url}`,
+    },
+};
+
+/**
+ * Open a deep link, and fall back to the clipboard when nothing handles it.
+ *
+ * There is no reliable way to ask a browser whether a scheme is registered.
+ * The usual trick is to note that a successful hand-off backgrounds the page:
+ * if the document is still visible a moment later, nothing opened. Copying the
+ * link then means the tap is never a dead end.
+ */
+function openInApp(key) {
+    const app = APPS[key];
+    if (!app) return;
+
+    const url = S.sub;
+    const deepLink = app.build(url, S.name || 'Tabora');
+
+    showToast(t('apps.opening').replace('{app}', app.label));
+
+    let handedOff = false;
+    const noteHandoff = () => { if (document.hidden) handedOff = true; };
+    document.addEventListener('visibilitychange', noteHandoff);
+
+    // A hidden iframe avoids the "page cannot be displayed" interstitial some
+    // browsers show when navigating straight to an unknown scheme.
+    const frame = document.createElement('iframe');
+    frame.style.display = 'none';
+    frame.src = deepLink;
+    document.body.appendChild(frame);
+
+    // Some browsers only honour a top-level navigation, so try that too.
+    setTimeout(() => { if (!handedOff) window.location.href = deepLink; }, 100);
+
+    setTimeout(async () => {
+        document.removeEventListener('visibilitychange', noteHandoff);
+        frame.remove();
+        if (handedOff || document.hidden) return;
+        const ok = await writeClipboard(url);
+        showToast(ok ? t('apps.fallback') : t('copy.fail'), 'warn');
+    }, 1600);
+}
+
+/* ── config fetching ───────────────────────────────────────────────────── */
+
+let plainCache = null;
+
+/** The plain endpoint returns one URI per line; used for VLESS and copy-all. */
+async function loadPlain() {
+    if (plainCache !== null) return plainCache;
+    // User-Agent is a forbidden header for fetch(), so the format has to be
+    // requested in the query string — S.plain already carries ?format=plain.
+    const res = await fetch(S.plain, { cache: 'no-store', credentials: 'omit' });
+    if (!res.ok) throw new Error('fetch failed');
+    const text = (await res.text()).trim();
+    // Some clients receive base64; detect and decode so the UI always has URIs.
+    plainCache = /^[A-Za-z0-9+/=\s]+$/.test(text) && !text.includes('://')
+        ? atob(text.replace(/\s/g, ''))
+        : text;
+    return plainCache;
+}
+
+const firstVless = (text) =>
+    text.split('\n').map((l) => l.trim()).find((l) => l.startsWith('vless://')) || '';
+
+/* ── copy actions ──────────────────────────────────────────────────────── */
+
+async function resolveCopy(key) {
+    if (key === 'sub') return S.sub;
+    if (key === 'clash') return S.clash;
+    if (key === 'singbox') return S.singbox;
+
+    const text = await loadPlain();
+    if (key === 'all') return text;
+    if (key === 'vless') return firstVless(text);
+    return '';
+}
+
+document.getElementById('copyGrid').addEventListener('click', async (event) => {
+    const btn = event.target.closest('[data-copy-key]');
+    if (!btn) return;
+
+    const key = btn.dataset.copyKey;
+    const needsFetch = key === 'vless' || key === 'all';
+    if (needsFetch) { btn.classList.add('busy'); showToast(t('copy.loading')); }
+
+    try {
+        const value = await resolveCopy(key);
+        if (!value) { showToast(t('copy.empty'), 'warn'); return; }
+        const ok = await writeClipboard(value);
+        showToast(ok ? t('copy.ok') : t('copy.fail'), ok ? 'ok' : 'warn');
+        if (ok) {
+            btn.classList.add('done');
+            setTimeout(() => btn.classList.remove('done'), 1200);
+        }
+    } catch {
+        showToast(t('copy.fail'), 'warn');
+    } finally {
+        btn.classList.remove('busy');
+    }
 });
 
-// Status colour + over-quota bar tint.
-const status = document.getElementById('status');
-status.className = `pill ${status.textContent.trim()}`;
+document.getElementById('apps').addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-app]');
+    if (btn) openInApp(btn.dataset.app);
+});
+
+/* ── QR ────────────────────────────────────────────────────────────────── */
+
+const canvas = document.getElementById('qr');
+
+function renderQr(text) {
+    if (!text) return;
+    drawQR(canvas, text);
+}
+
+document.getElementById('qrSwitch').addEventListener('click', async (event) => {
+    const btn = event.target.closest('[data-qr]');
+    if (!btn) return;
+
+    for (const seg of document.querySelectorAll('#qrSwitch .seg')) {
+        seg.classList.toggle('active', seg === btn);
+    }
+
+    if (btn.dataset.qr === 'sub') { renderQr(S.sub); return; }
+
+    try {
+        const uri = firstVless(await loadPlain());
+        if (uri) renderQr(uri);
+        else showToast(t('copy.empty'), 'warn');
+    } catch {
+        showToast(t('copy.fail'), 'warn');
+    }
+});
+
+/* ── raw links ─────────────────────────────────────────────────────────── */
+
+const rawRows = [
+    ['Subscription', S.sub],
+    ['Clash', S.clash],
+    ['Sing-box', S.singbox],
+];
+document.getElementById('rawList').innerHTML = rawRows
+    .map(([label, url]) => `<div class="raw-row"><span>${label}</span><code>${url}</code></div>`)
+    .join('');
+
+/* ── boot ──────────────────────────────────────────────────────────────── */
+
+const statusEl = document.getElementById('status');
+statusEl.className = `pill ${(statusEl.dataset.status || '').trim()}`;
 
 const bar = document.getElementById('bar');
 if (parseFloat(bar.style.width) >= 100) bar.parentElement.classList.add('over');
 
-const primary = document.querySelector('.link')?.dataset.url;
-if (primary) drawQR(document.getElementById('qr'), primary);
+if (S.gaming) document.getElementById('modePill').hidden = false;
+
+applyLang();
+renderQr(S.sub);
 
 })();

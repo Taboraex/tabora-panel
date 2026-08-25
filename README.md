@@ -41,6 +41,10 @@ with no server to maintain.
   YAML, and Sing-box JSON. Format is auto-detected from the client User-Agent.
 - **Bilingual dashboard** — English and Persian with full RTL support, dark and
   light themes, and a responsive layout that works on phones.
+- **One-tap import** — the subscription page opens Hiddify, v2rayNG, V2Box or
+  Happ through their own URL schemes and imports the profile automatically, so
+  nobody has to copy and paste a link by hand. See
+  [The subscription page](#the-subscription-page).
 - **Decoy page** — any request outside the secret path mirrors a real website,
   so casual probes never see that a panel exists.
 - **Gaming profiles** — pin one fixed IP, port and protocol so the route never
@@ -264,6 +268,46 @@ can change that. What a pinned profile does deliver: a route that never
 changes, no DNS lookup at connect time, no mid-match switching, and no extra
 relay hop. That is a real, measurable win for TCP games, launchers, matchmaking
 and downloads.
+
+
+---
+
+## The subscription page
+
+Opening a subscription URL in a browser serves a page built for the person
+holding the link rather than for a client app.
+
+### One-tap import
+
+Each supported app registers its own URL scheme and expects the subscription in
+its own shape, so the page builds a different link per app:
+
+| App | Deep link |
+| --- | --- |
+| Hiddify | `hiddify://install-sub?url=<encoded>&name=<name>` |
+| v2rayNG | `v2rayng://install-sub?url=<encoded>&name=<name>` |
+| V2Box | `v2box://install-sub?url=<encoded>&name=<name>` |
+| Happ | `happ://add/<url>` — path segment, not a query parameter |
+
+A browser cannot be asked whether a scheme is registered, so the page infers it:
+a successful hand-off backgrounds the document, and if the page is still visible
+a moment later nothing opened. In that case the link is copied to the clipboard
+instead, so tapping an app you do not have installed is never a dead end.
+
+### Copy actions
+
+Subscription link, VLESS config, Clash link, Sing-box link, and copy-all. The
+VLESS and copy-all actions fetch `?format=plain` and pull the URIs out of the
+response, so they return real configs rather than another link.
+
+`User-Agent` is a forbidden header for `fetch()`, which is why the format is
+requested in the query string rather than by spoofing a client UA.
+
+### Gaming subscriptions
+
+Opening `?gaming=1` in a browser shows the same page marked with a Gaming badge,
+and every link it produces — deep links, copies and QR — keeps the flag, so the
+visitor always receives the pinned profile rather than the full server list.
 
 ---
 

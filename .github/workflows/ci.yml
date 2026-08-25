@@ -53,6 +53,12 @@ jobs:
             echo "::error::Plaintext protocol identifier found in bundle"
             exit 1
           fi
+          # Legacy __X__ placeholders can collide with JS identifiers and
+          # silently break every inline script. See src/common/template.ts.
+          if grep -qE '__[A-Z_]+__' dist/worker.js; then
+            echo "::error::Legacy __PLACEHOLDER__ found in bundle"
+            exit 1
+          fi
 
       - name: Upload bundle
         if: matrix.node-version == '20.x'
@@ -146,5 +152,10 @@ jobs:
           curl -s -A clash    "$P/tabora/sub" | python3 -c "import yaml,sys; yaml.safe_load(sys.stdin); print('  ok   clash yaml parses')"
           curl -s -A sing-box "$P/tabora/sub" | python3 -c "import json,sys; json.load(sys.stdin); print('  ok   sing-box json parses')"
           curl -s -A v2rayNG  "$P/tabora/sub" | base64 -d | grep -q '://' && echo "  ok   base64 subscription decodes"
+
+      - name: Browser-level UI test
+        run: |
+          npm i --no-save jsdom@25
+          node scripts/ui-test.mjs http://127.0.0.1:8787 tabora ci-test-password
 
           exit $fail

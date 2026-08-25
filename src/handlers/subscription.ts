@@ -8,6 +8,7 @@ import { buildSingboxConfig } from '@cores/singbox';
 import { BROWSER_UA_MARKERS, CLIENT_UA_MARKERS, PROJECT } from '@config/obfuscation';
 import { subscriptionResponse, htmlResponse, notFound } from '@common/http';
 import { gunzipBase64, formatBytes, formatDate } from '@common/utils';
+import { renderTemplate } from '@common/template';
 
 type Format = 'auto' | 'base64' | 'plain' | 'clash' | 'singbox';
 
@@ -152,24 +153,19 @@ async function renderSubscriptionPage(
         : ctx.origin;
     const subUrl = `${base}/${settings.securePath}/sub${user ? `?u=${encodeURIComponent(user.name)}` : ''}`;
 
-    const replacements: Record<string, string> = {
-        __NAME__: user?.name ?? settings.namePrefix,
-        __STATUS__: enriched?.status ?? 'active',
-        __USED__: formatBytes(used),
-        __LIMIT__: limit ? formatBytes(limit) : '∞',
-        __PERCENT__: percent.toFixed(1),
-        __EXPIRY__: user?.expiryMs ? formatDate(user.expiryMs) : '∞',
-        __SUB_URL__: subUrl,
-        __SUB_CLASH__: `${subUrl}${subUrl.includes('?') ? '&' : '?'}format=clash`,
-        __SUB_SINGBOX__: `${subUrl}${subUrl.includes('?') ? '&' : '?'}format=singbox`,
-        __PROJECT__: PROJECT.name,
-        __VERSION__: VERSION,
-    };
-
-    let out = html;
-    for (const [token, value] of Object.entries(replacements)) {
-        out = out.replaceAll(token, escapeHtml(value));
-    }
+    const out = renderTemplate(html, {
+        NAME: user?.name ?? settings.namePrefix,
+        STATUS: enriched?.status ?? 'active',
+        USED: formatBytes(used),
+        LIMIT: limit ? formatBytes(limit) : '\u221e',
+        PERCENT: percent.toFixed(1),
+        EXPIRY: user?.expiryMs ? formatDate(user.expiryMs) : '\u221e',
+        SUB_URL: subUrl,
+        SUB_CLASH: `${subUrl}${subUrl.includes('?') ? '&' : '?'}format=clash`,
+        SUB_SINGBOX: `${subUrl}${subUrl.includes('?') ? '&' : '?'}format=singbox`,
+        PROJECT: PROJECT.name,
+        VERSION,
+    });
 
     return htmlResponse(out);
 }
@@ -181,12 +177,4 @@ function normaliseOrigin(value: string): string {
     } catch {
         return value;
     }
-}
-
-function escapeHtml(value: string): string {
-    return value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
 }

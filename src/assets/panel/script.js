@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 
-const BASE = window.__BASE__ || '';
+const BASE = window.TABORA_BASE || '';
 const api = (path) => `${BASE}/api${path}`;
 
 /* ═══════════════════════════════════ i18n ═══════════════════════════════ */
@@ -301,8 +301,17 @@ const QR = (() => {
 })();
 
 function drawQR(canvas, text) {
+    // Canvas can be unavailable (older embedded webviews). A missing QR code
+    // must never stop the rest of the dashboard from rendering.
+    let ctx;
+    try {
+        ctx = canvas?.getContext('2d');
+    } catch {
+        ctx = null;
+    }
+    if (!ctx) return;
+
     const matrix = QR(text);
-    const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -570,10 +579,17 @@ async function loadAll() {
     settings = data.settings;
     meta = data.meta;
 
+    // Populate the form first: it is the part users actually depend on.
+    // Anything decorative runs afterwards and is individually guarded.
+    fillSettingsForm();
     renderMeta();
     renderStats(data.stats);
-    renderSubscriptions();
-    fillSettingsForm();
+
+    try {
+        renderSubscriptions();
+    } catch (err) {
+        console.error('Could not render subscription links:', err);
+    }
 
     if (!meta.persistent) {
         notify('No D1 or KV binding found — settings will not persist.', 'warn', 9000);

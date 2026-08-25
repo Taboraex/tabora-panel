@@ -6,6 +6,7 @@ import {
     HttpStatus, respond, ok, badRequest, unauthorized, methodNotAllowed, htmlResponse,
 } from '@common/http';
 import { gunzipBase64 } from '@common/utils';
+import { renderTemplate } from '@common/template';
 import { PROJECT } from '@config/obfuscation';
 import { logActivity } from './logs';
 import { getContext } from '@config/settings';
@@ -93,10 +94,11 @@ async function renderLoginPage(settings: Settings): Promise<Response> {
         return new Response('Login page unavailable.', { status: 500 });
     }
 
-    const html = (await gunzipBase64(LOGIN_HTML))
-        .replaceAll('__PROJECT__', PROJECT.name)
-        .replaceAll('__VERSION__', VERSION)
-        .replaceAll('__BASE__', `/${settings.securePath}`);
+    const html = renderTemplate(await gunzipBase64(LOGIN_HTML), {
+        PROJECT: PROJECT.name,
+        VERSION,
+        BASE: `/${settings.securePath}`,
+    });
 
     return htmlResponse(html);
 }

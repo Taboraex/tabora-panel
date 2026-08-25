@@ -5,6 +5,39 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] — 2026-08-25
+
+### Fixed
+
+- **Sign in did nothing.** The login and panel pages bootstrapped their config
+  with `window.__BASE__ = "__BASE__";`. Substitution replaced *both*
+  occurrences, including the identifier, producing `window./secretpath =
+  "/secretpath";` — a `SyntaxError` that aborted the entire inline script.
+  No submit handler was ever attached, so clicking Sign in was inert. The API
+  was healthy throughout, which is why request-level testing missed it.
+
+  Placeholders now use a `{{NAME}}` delimiter that cannot appear inside a
+  JavaScript identifier, and substitution runs through
+  `src/common/template.ts`, which escapes values for both HTML and JS-string
+  contexts.
+
+- **Dashboard fields stayed empty when canvas was unavailable.** QR rendering
+  ran before the settings form was populated, so a `getContext` failure in a
+  restricted webview left every input blank. QR drawing is now guarded and the
+  form is filled first.
+
+### Added
+
+- `scripts/ui-test.mjs` — a browser-level test that loads the pages in a real
+  DOM and clicks through login, rather than calling the API directly. Verified
+  to fail against the broken build and pass against the fix.
+- Build-time guard that substitutes every placeholder with a hostile value and
+  re-parses each inline script, failing the build if one breaks.
+- CI checks for leftover `__PLACEHOLDER__` tokens in the bundle and runs the
+  browser-level test.
+
+---
+
 ## [0.1.1] — 2026-08-25
 
 ### Fixed
@@ -95,6 +128,7 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.2
 [0.1.1]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.0

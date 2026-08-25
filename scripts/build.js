@@ -40,7 +40,8 @@ async function processAssets() {
         const base = (file) => join(ASSET_PATH, dir, file);
         if (!existsSync(base('index.html'))) continue;
 
-        let html = readFileSync(base('index.html'), 'utf8').replaceAll('__VERSION__', pkg.version);
+        // Placeholders are substituted at runtime by src/common/template.ts.
+        let html = readFileSync(base('index.html'), 'utf8');
 
         if (existsSync(base('style.css'))) {
             html = html.replace('/* CSS_PLACEHOLDER */', readFileSync(base('style.css'), 'utf8'));
@@ -60,6 +61,11 @@ async function processAssets() {
             minifyCSS: true,
         });
 
+        // Guard: every inline script must still parse once placeholders are
+        // filled in. A placeholder that doubles as a JS identifier (the old
+        // `window.__BASE__ = "__BASE__"` form) silently breaks the whole page.
+        assertScriptsSurviveSubstitution(dir, minified);
+
         result[dir] = gzipSync(minified, { level: 9 }).toString('base64');
         const kb = (result[dir].length / 1024).toFixed(1);
         console.log(`  ${dim}${dir.padEnd(14)} ${kb} KB (gzip+b64)${reset}`);
@@ -67,6 +73,34 @@ async function processAssets() {
 
     console.log(`${ok} Assets bundled`);
     return result;
+}
+
+/**
+ * Substitute every {{PLACEHOLDER}} with a hostile sample value and confirm the
+ * inline scripts still parse. Catches placeholders that sit inside identifiers.
+ */
+function assertScriptsSurviveSubstitution(dir, html) {
+    const sample = '/a-b_c9';
+    const filled = html.replace(/\{\{[A-Z_]+\}\}/g, sample);
+
+    const scripts = [...filled.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
+    for (const [, code] of scripts) {
+        if (!code.trim()) continue;
+        try {
+            new Function(code);
+        } catch (error) {
+            throw new Error(
+                `${dir}: inline script does not parse after placeholder ` +
+                `substitution — ${error.message}\n` +
+                `Check for a placeholder used as part of an identifier.`,
+            );
+        }
+    }
+
+    const leftover = filled.match(/__[A-Z_]+__/g);
+    if (leftover) {
+        throw new Error(`${dir}: legacy placeholders remain: ${[...new Set(leftover)].join(', ')}`);
+    }
 }
 
 async function buildWorker() {

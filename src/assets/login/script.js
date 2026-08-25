@@ -1,5 +1,5 @@
 (() => {
-    const base = window.__BASE__ || '';
+    const base = window.TABORA_BASE || '';
     const form = document.getElementById('form');
     const input = document.getElementById('password');
     const submit = document.getElementById('submit');

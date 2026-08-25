@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>__NAME__ — __PROJECT__</title>
+<title>{{NAME}} — {{PROJECT}}</title>
 <style>/* CSS_PLACEHOLDER */</style>
 </head>
 <body>
@@ -19,38 +19,38 @@
       <path fill="#0b1120" opacity=".85" d="M24 14.5 15 18.7v6.1c0 5.3 3.8 10 9 11.4 5.2-1.4 9-6.1 9-11.4v-6.1L24 14.5Z"/>
       <circle cx="24" cy="24" r="3.4" fill="#38bdf8"/>
     </svg>
-    <h1>__NAME__</h1>
-    <span class="pill" id="status">__STATUS__</span>
+    <h1>{{NAME}}</h1>
+    <span class="pill" id="status">{{STATUS}}</span>
   </header>
 
   <section class="card">
     <div class="usage-head">
       <span class="usage-label">Traffic</span>
-      <span class="usage-value"><strong>__USED__</strong> / __LIMIT__</span>
+      <span class="usage-value"><strong>{{USED}}</strong> / {{LIMIT}}</span>
     </div>
-    <div class="bar"><i id="bar" style="width:__PERCENT__%"></i></div>
+    <div class="bar"><i id="bar" style="width:{{PERCENT}}%"></i></div>
     <div class="usage-foot">
-      <span id="pct">__PERCENT__% used</span>
-      <span>Expires: __EXPIRY__</span>
+      <span id="pct">{{PERCENT}}% used</span>
+      <span>Expires: {{EXPIRY}}</span>
     </div>
   </section>
 
   <section class="card">
     <h2>Subscription links</h2>
-    <div class="link" data-url="__SUB_URL__">
+    <div class="link" data-url="{{SUB_URL}}">
       <span class="link-name">Auto</span>
-      <code>__SUB_URL__</code>
-      <button class="btn" data-copy="__SUB_URL__">Copy</button>
+      <code>{{SUB_URL}}</code>
+      <button class="btn" data-copy="{{SUB_URL}}">Copy</button>
     </div>
-    <div class="link" data-url="__SUB_CLASH__">
+    <div class="link" data-url="{{SUB_CLASH}}">
       <span class="link-name">Clash</span>
-      <code>__SUB_CLASH__</code>
-      <button class="btn" data-copy="__SUB_CLASH__">Copy</button>
+      <code>{{SUB_CLASH}}</code>
+      <button class="btn" data-copy="{{SUB_CLASH}}">Copy</button>
     </div>
-    <div class="link" data-url="__SUB_SINGBOX__">
+    <div class="link" data-url="{{SUB_SINGBOX}}">
       <span class="link-name">Sing-box</span>
-      <code>__SUB_SINGBOX__</code>
-      <button class="btn" data-copy="__SUB_SINGBOX__">Copy</button>
+      <code>{{SUB_SINGBOX}}</code>
+      <button class="btn" data-copy="{{SUB_SINGBOX}}">Copy</button>
     </div>
   </section>
 
@@ -60,7 +60,7 @@
     <p class="hint">Open your client and scan, or copy a link above.</p>
   </section>
 
-  <footer class="foot">__PROJECT__ · v__VERSION__</footer>
+  <footer class="foot">{{PROJECT}} · v{{VERSION}}</footer>
 </main>
 
 <div id="toast" class="toast" hidden></div>

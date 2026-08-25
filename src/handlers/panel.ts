@@ -8,6 +8,7 @@ import {
     ok, badRequest, methodNotAllowed, htmlResponse, respond, HttpStatus,
 } from '@common/http';
 import { gunzipBase64, parseList, parsePorts, formatBytes } from '@common/utils';
+import { renderTemplate } from '@common/template';
 import { PROJECT } from '@config/obfuscation';
 import { logActivity } from './logs';
 import { DAILY_REQUEST_LIMIT } from '@config/constants';
@@ -15,13 +16,14 @@ import { DAILY_REQUEST_LIMIT } from '@config/constants';
 export async function renderPanel(settings: Settings, store: Store, env: Env): Promise<Response> {
     if (!PANEL_HTML) return new Response('Panel unavailable.', { status: 500 });
 
-    const html = (await gunzipBase64(PANEL_HTML))
-        .replaceAll('__PROJECT__', PROJECT.name)
-        .replaceAll('__VERSION__', VERSION)
-        .replaceAll('__BASE__', `/${settings.securePath}`)
-        .replaceAll('__REPO__', PROJECT.repo)
-        .replaceAll('__WARN_STORAGE__', store.isPersistent ? '' : 'true')
-        .replaceAll('__WARN_PASSWORD__', (await isDefaultPassword(store, env)) ? 'true' : '');
+    const html = renderTemplate(await gunzipBase64(PANEL_HTML), {
+        PROJECT: PROJECT.name,
+        VERSION,
+        BASE: `/${settings.securePath}`,
+        REPO: PROJECT.repo,
+        WARN_STORAGE: store.isPersistent ? '' : 'true',
+        WARN_PASSWORD: (await isDefaultPassword(store, env)) ? 'true' : '',
+    });
 
     return htmlResponse(html);
 }

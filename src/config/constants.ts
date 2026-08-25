@@ -56,6 +56,8 @@ export const DEFAULT_CLEAN_IPS = [
 export const DEFAULT_PROXY_IPS = [
     'proxyip.cmliussss.net:443',
     'proxyip.fxxk.dedyn.io:443',
+    'proxyip.oracle.fxxk.dedyn.io:443',
+    'proxyip.digitalocean.fxxk.dedyn.io:443',
 ];
 
 export const GB = 1024 ** 3;

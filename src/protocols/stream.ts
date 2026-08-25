@@ -76,16 +76,65 @@ export async function handleTCPOutbound(
         return socket;
     }
 
+    /**
+     * Relays fail intermittently — a third-party host can be busy, rate-limit
+     * us, or accept the socket and then send nothing. Trying a single random
+     * relay turned roughly one connection in six into a dead config, so walk
+     * the list instead and only give up once every relay has been tried.
+     */
+    async function retryViaRelays(): Promise<boolean> {
+        // Start at a random offset so load spreads across the list, but cover
+        // every entry rather than betting the connection on one draw.
+        const relays = [...settings.proxyIPs];
+        const offset = Math.floor(Math.random() * relays.length);
+        const ordered = [...relays.slice(offset), ...relays.slice(0, offset)];
+
+        for (let i = 0; i < ordered.length; i++) {
+            const parsed = parseHostPort(ordered[i]);
+            const host = parsed.host || address;
+            const targetPort = parsed.port || port;
+            const isLast = i === ordered.length - 1;
+
+            try {
+                log(`direct dial failed, retrying via ProxyIP ${host}:${targetPort}`);
+                const socket = await connectAndWrite(host, targetPort);
+
+                // A relay can accept the socket and still send nothing back.
+                // Hand the pump a continuation so that case advances to the
+                // next relay instead of surfacing as a dead connection; on the
+                // last entry there is nothing left to try.
+                const advance = isLast
+                    ? null
+                    : async () => {
+                          log(`relay ${host}:${targetPort} sent no data, trying next`);
+                          if (!(await retryViaRelays())) {
+                              closeWebSocket(webSocket, 1011, 'All relays failed');
+                          }
+                      };
+
+                void pipeRemoteToWebSocket(socket, webSocket, responseHeader, advance, log)
+                    .catch((error) => {
+                        log('relay pipe failed', safeError(error));
+                        closeWebSocket(webSocket);
+                    });
+                return true;
+            } catch (error) {
+                log(`relay ${host}:${targetPort} failed`, safeError(error));
+            }
+        }
+
+        return false;
+    }
+
     async function retry(): Promise<void> {
         let host = address;
         let targetPort = port;
 
         if (settings.proxyIpMode === 'proxyip' && settings.proxyIPs.length) {
-            const candidate = pickRandom(settings.proxyIPs);
-            const parsed = parseHostPort(candidate);
-            host = parsed.host || address;
-            targetPort = parsed.port || port;
-            log(`direct dial failed, retrying via ProxyIP ${host}:${targetPort}`);
+            if (await retryViaRelays()) return;
+            log('all relays failed');
+            closeWebSocket(webSocket, 1011, 'All relays failed');
+            return;
         } else if (settings.proxyIpMode === 'nat64' && settings.nat64Prefixes.length) {
             const ipv4 = await resolveToIPv4(address);
             const mapped = ipv4 ? ipv4ToNat64(ipv4, pickRandom(settings.nat64Prefixes)) : null;

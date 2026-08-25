@@ -49,6 +49,12 @@ async function resolveToIPv4(host: string): Promise<string | null> {
  * Strategy: try a direct dial first. If the remote sends nothing back — the
  * usual signature of a blocked egress — retry through a ProxyIP or a NAT64
  * mapped address, per the panel's configured mode.
+ *
+ * Resolves as soon as the socket is connected and the first chunk is written.
+ * The remote-to-client pump keeps running in the background: awaiting it here
+ * would block the caller's WritableStream — which processes writes strictly in
+ * order — so the client's *second* and later chunks would never be delivered.
+ * That breaks anything past a single request/response, TLS included.
  */
 export async function handleTCPOutbound(
     remote: SocketWrapper,
@@ -97,7 +103,12 @@ export async function handleTCPOutbound(
         try {
             const socket = await connectAndWrite(host, targetPort);
             socket.closed.catch(() => {}).finally(() => closeWebSocket(webSocket));
-            await pipeRemoteToWebSocket(socket, webSocket, responseHeader, null, log);
+            // Background pump, for the same reason as the direct path below.
+            void pipeRemoteToWebSocket(socket, webSocket, responseHeader, null, log)
+                .catch((error) => {
+                    log('relay pipe failed', safeError(error));
+                    closeWebSocket(webSocket);
+                });
         } catch (error) {
             log('retry failed', safeError(error));
             closeWebSocket(webSocket, 1011, 'Retry failed');
@@ -106,7 +117,12 @@ export async function handleTCPOutbound(
 
     try {
         const socket = await connectAndWrite(address, port);
-        await pipeRemoteToWebSocket(socket, webSocket, responseHeader, retry, log);
+        // Deliberately not awaited — see the note above.
+        void pipeRemoteToWebSocket(socket, webSocket, responseHeader, retry, log)
+            .catch((error) => {
+                log('relay pipe failed', safeError(error));
+                closeWebSocket(webSocket);
+            });
     } catch (error) {
         log('initial dial failed', safeError(error));
         await retry();

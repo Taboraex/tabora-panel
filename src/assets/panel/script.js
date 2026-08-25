@@ -9,7 +9,20 @@ const api = (path) => `${BASE}/api${path}`;
 const I18N = {
     en: {
         'tab.overview': 'Overview', 'tab.subs': 'Links', 'tab.users': 'Users',
-        'tab.settings': 'Settings', 'tab.logs': 'Logs',
+        'tab.settings': 'Settings', 'tab.logs': 'Logs', 'tab.scanner': 'Scanner',
+        'scan.relay.title': 'Relay health',
+        'scan.relay.run': 'Test relays',
+        'scan.relay.apply': 'Use fastest',
+        'scan.relay.hint': 'Relays carry your traffic when a site sits behind Cloudflare. Tested from the worker.',
+        'scan.clean.title': 'Clean IP scan',
+        'scan.clean.run': 'Scan from my network',
+        'scan.clean.apply': 'Use fastest',
+        'scan.clean.hint': 'Runs in your browser, so results reflect your own connection. Cloudflare blocks the worker from testing its own edges, which is why this runs here.',
+        'scan.running': 'Testing…',
+        'scan.progress': 'Tested {done} of {total}',
+        'scan.done': '{n} working address(es) found',
+        'scan.applied': 'Applied — your links now use these',
+        'scan.unreachable': 'unreachable',
         'stat.users': 'Total users', 'stat.active': 'Active', 'stat.paused': 'Paused',
         'stat.traffic': 'Total traffic', 'stat.today': 'Today', 'stat.expired': 'Expired',
         'ov.system': 'System', 'ov.host': 'Hostname', 'ov.colo': 'Edge node',
@@ -40,7 +53,20 @@ const I18N = {
     },
     fa: {
         'tab.overview': 'نمای کلی', 'tab.subs': 'لینک‌ها', 'tab.users': 'کاربران',
-        'tab.settings': 'تنظیمات', 'tab.logs': 'گزارش‌ها',
+        'tab.settings': 'تنظیمات', 'tab.logs': 'گزارش‌ها', 'tab.scanner': 'اسکنر',
+        'scan.relay.title': 'سلامت رله‌ها',
+        'scan.relay.run': 'تست رله‌ها',
+        'scan.relay.apply': 'استفاده از سریع‌ترین',
+        'scan.relay.hint': 'وقتی سایتی پشت کلادفلر باشد، رله‌ها ترافیک شما را عبور می‌دهند. تست از سمت ورکر انجام می‌شود.',
+        'scan.clean.title': 'اسکن آی‌پی تمیز',
+        'scan.clean.run': 'اسکن از شبکه من',
+        'scan.clean.apply': 'استفاده از سریع‌ترین',
+        'scan.clean.hint': 'این اسکن در مرورگر شما اجرا می‌شود تا نتیجه با اینترنت خودتان بخواند. کلادفلر اجازه نمی‌دهد ورکر لبه‌های خودش را تست کند، برای همین اینجا اجرا می‌شود.',
+        'scan.running': 'در حال تست…',
+        'scan.progress': '{done} از {total} تست شد',
+        'scan.done': '{n} آدرس سالم پیدا شد',
+        'scan.applied': 'اعمال شد — لینک‌های شما از این آدرس‌ها استفاده می‌کنند',
+        'scan.unreachable': 'در دسترس نیست',
         'stat.users': 'کل کاربران', 'stat.active': 'فعال', 'stat.paused': 'متوقف',
         'stat.traffic': 'ترافیک کل', 'stat.today': 'امروز', 'stat.expired': 'منقضی',
         'ov.system': 'سیستم', 'ov.host': 'نام میزبان', 'ov.colo': 'نود لبه',
@@ -72,6 +98,9 @@ const I18N = {
 };
 
 let lang = localStorage.getItem('tabora.lang') || 'en';
+
+/** Translate a key for use in dynamically generated markup. */
+const t = (key) => (I18N[lang] || I18N.en)[key] ?? I18N.en[key] ?? key;
 
 function applyLang() {
     const dict = I18N[lang] || I18N.en;
@@ -596,7 +625,158 @@ async function loadAll() {
     }
 }
 
+
+/* ═════════════════════════════════ scanner ══════════════════════════════ */
+
+let relayBest = [];
+let cleanBest = [];
+
+const fmtMs = (ms) => `${ms} ms`;
+
+function renderProbeRows(container, rows, unit = 'ms') {
+    if (!rows.length) {
+        container.innerHTML = '<p class="empty">—</p>';
+        return;
+    }
+    container.innerHTML = rows.map((r) => {
+        const label = r.ok ? `${r.latency} ${unit}` : (r.error ?? 'failed');
+        return `<div class="log-row">
+            <span class="log-type ${r.ok ? '' : 'danger'}">${r.ok ? '●' : '○'}</span>
+            <span class="log-detail">${escapeHtml(r.address)}</span>
+            <span class="log-time">${escapeHtml(label)}</span>
+        </div>`;
+    }).join('');
+}
+
+/** Relay probing happens worker-side — relays are outside Cloudflare's network. */
+async function scanRelays() {
+    const btn = $('#scanRelays');
+    const box = $('#relayResults');
+    btn.disabled = true;
+    box.innerHTML = `<p class="empty">${t('scan.running')}</p>`;
+
+    try {
+        const res = await request('/scan', {
+            method: 'POST',
+            body: JSON.stringify({ source: 'relay', mode: 'tcp', timeoutMs: 5000, concurrency: 6 }),
+        });
+        const results = res.results ?? [];
+        renderProbeRows(box, results);
+        relayBest = results.filter((r) => r.ok).map((r) => `${r.address}:${r.port}`);
+        $('#applyRelays').disabled = relayBest.length === 0;
+        notify(t('scan.done').replace('{n}', String(relayBest.length)));
+    } catch (err) {
+        box.innerHTML = `<p class="empty">${escapeHtml(err.message)}</p>`;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+/**
+ * Clean-IP probing happens here in the browser.
+ *
+ * A worker cannot open sockets to Cloudflare's own edges, and even if it
+ * could, its latency would describe the datacentre rather than the operator's
+ * network. Timing an image fetch from the browser measures the path that
+ * actually matters.
+ */
+async function scanCleanIPs() {
+    const btn = $('#scanClean');
+    const box = $('#cleanResults');
+    const prog = $('#cleanProgress');
+    btn.disabled = true;
+    box.innerHTML = '';
+    cleanBest = [];
+
+    try {
+        const { domains = [] } = await request('/scan/candidates');
+        const results = [];
+        let done = 0;
+
+        // Small concurrency: browsers cap connections per host anyway.
+        const queue = [...domains];
+        const workers = Array.from({ length: 4 }, async () => {
+            for (;;) {
+                const host = queue.shift();
+                if (!host) return;
+                results.push(await probeFromBrowser(host));
+                done++;
+                prog.textContent = t('scan.progress')
+                    .replace('{done}', String(done))
+                    .replace('{total}', String(domains.length));
+                renderProbeRows(box, [...results].sort(sortProbes));
+            }
+        });
+        await Promise.all(workers);
+
+        results.sort(sortProbes);
+        renderProbeRows(box, results);
+        cleanBest = results.filter((r) => r.ok).map((r) => r.address);
+        $('#applyClean').disabled = cleanBest.length === 0;
+        prog.textContent = '';
+        notify(t('scan.done').replace('{n}', String(cleanBest.length)));
+    } catch (err) {
+        box.innerHTML = `<p class="empty">${escapeHtml(err.message)}</p>`;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+const sortProbes = (a, b) => (a.ok === b.ok ? a.latency - b.latency : (a.ok ? -1 : 1));
+
+/**
+ * Time a request to one candidate edge.
+ *
+ * /cdn-cgi/trace is blocked by CORS, so we cannot read the response — but a
+ * no-cors fetch still completes the TCP + TLS round trip, and that timing is
+ * exactly what we want. A failure means the edge is unreachable from here.
+ */
+function probeFromBrowser(host, timeoutMs = 5000) {
+    return new Promise((resolve) => {
+        const started = performance.now();
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+        fetch(`https://${host}/cdn-cgi/trace`, {
+            mode: 'no-cors',
+            cache: 'no-store',
+            signal: controller.signal,
+        })
+            .then(() => {
+                clearTimeout(timer);
+                resolve({ address: host, ok: true, latency: Math.round(performance.now() - started) });
+            })
+            .catch(() => {
+                clearTimeout(timer);
+                resolve({ address: host, ok: false, latency: -1, error: t('scan.unreachable') });
+            });
+    });
+}
+
+async function applyRelays() {
+    await request('/settings', {
+        method: 'PUT',
+        body: JSON.stringify({ proxyIPs: relayBest.slice(0, 3) }),
+    });
+    notify(t('scan.applied'));
+    await loadAll();
+}
+
+async function applyCleanIPs() {
+    await request('/scan/apply', {
+        method: 'POST',
+        body: JSON.stringify({ addresses: cleanBest.slice(0, 10) }),
+    });
+    notify(t('scan.applied'));
+    await loadAll();
+}
+
 function bindEvents() {
+    $('#scanRelays')?.addEventListener('click', scanRelays);
+    $('#applyRelays')?.addEventListener('click', () => applyRelays().catch((e) => notify(e.message, 'error')));
+    $('#scanClean')?.addEventListener('click', scanCleanIPs);
+    $('#applyClean')?.addEventListener('click', () => applyCleanIPs().catch((e) => notify(e.message, 'error')));
+
     // Tabs
     $$('.tab').forEach((tab) => tab.addEventListener('click', () => {
         $$('.tab').forEach((t) => t.classList.toggle('active', t === tab));

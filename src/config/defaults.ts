@@ -1,6 +1,11 @@
 import { Settings } from '#types/settings';
 import { P } from './obfuscation';
-import { DEFAULT_CLEAN_IPS, DEFAULT_NAT64_PREFIXES, HTTPS_PORTS } from './constants';
+import {
+    DEFAULT_CLEAN_IPS,
+    DEFAULT_NAT64_PREFIXES,
+    DEFAULT_PROXY_IPS,
+    HTTPS_PORTS,
+} from './constants';
 
 export const DEFAULT_SETTINGS: Settings = {
     // identity — populated from env/derived values on first boot
@@ -21,7 +26,7 @@ export const DEFAULT_SETTINGS: Settings = {
     localDNS: '8.8.8.8',
     enableIPv6: false,
     proxyIpMode: 'proxyip',
-    proxyIPs: [],
+    proxyIPs: [...DEFAULT_PROXY_IPS],
     nat64Prefixes: [...DEFAULT_NAT64_PREFIXES],
     cleanIPs: [...DEFAULT_CLEAN_IPS],
     customDomain: '',

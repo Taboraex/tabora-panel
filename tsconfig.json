@@ -21,6 +21,7 @@
       "@protocols/*": ["src/protocols/*"],
       "@cores/*": ["src/cores/*"],
       "@handlers/*": ["src/handlers/*"],
+      "@scanner/*": ["src/scanner/*"],
       "@users/*": ["src/users/*"],
       "@i18n/*": ["src/i18n/*"],
       "#types/*": ["src/types/*"]

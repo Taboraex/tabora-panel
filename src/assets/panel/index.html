@@ -46,6 +46,7 @@
   <button class="tab" data-tab="subscriptions"><span class="tab-ico">↗</span><span data-i18n="tab.subs">Links</span></button>
   <button class="tab" data-tab="users"><span class="tab-ico">◎</span><span data-i18n="tab.users">Users</span></button>
   <button class="tab" data-tab="settings"><span class="tab-ico">⚙</span><span data-i18n="tab.settings">Settings</span></button>
+  <button class="tab" data-tab="scanner"><span class="tab-ico">◈</span><span data-i18n="tab.scanner">Scanner</span></button>
   <button class="tab" data-tab="logs"><span class="tab-ico">≡</span><span data-i18n="tab.logs">Logs</span></button>
 </nav>
 
@@ -251,6 +252,40 @@
   </section>
 
   <!-- ───────────────────────────────── Logs ───────────────────────────────── -->
+  <section class="panel" data-panel="scanner">
+
+    <div class="card">
+      <div class="card-head">
+        <h2 data-i18n="scan.relay.title">Relay health</h2>
+        <div class="btn-row">
+          <button class="btn" id="scanRelays" data-i18n="scan.relay.run">Test relays</button>
+          <button class="btn primary" id="applyRelays" data-i18n="scan.relay.apply" disabled>Use fastest</button>
+        </div>
+      </div>
+      <p class="hint" data-i18n="scan.relay.hint">
+        Relays carry your traffic when a site sits behind Cloudflare. Tested from the worker.
+      </p>
+      <div id="relayResults" class="log-list"><p class="empty">—</p></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2 data-i18n="scan.clean.title">Clean IP scan</h2>
+        <div class="btn-row">
+          <button class="btn" id="scanClean" data-i18n="scan.clean.run">Scan from my network</button>
+          <button class="btn primary" id="applyClean" data-i18n="scan.clean.apply" disabled>Use fastest</button>
+        </div>
+      </div>
+      <p class="hint" data-i18n="scan.clean.hint">
+        Runs in your browser, so results reflect your own connection. Cloudflare blocks the
+        worker from testing its own edges, which is why this runs here.
+      </p>
+      <div id="cleanProgress" class="hint"></div>
+      <div id="cleanResults" class="log-list"><p class="empty">—</p></div>
+    </div>
+
+  </section>
+
   <section class="panel" data-panel="logs">
     <div class="card">
       <div class="card-head">

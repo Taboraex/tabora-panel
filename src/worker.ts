@@ -10,6 +10,7 @@ import { renderFallback } from '@handlers/fallback';
 import { handleLogin, handleLogout, handleChangePassword } from '@handlers/login';
 import { handleUsers } from '@handlers/users';
 import { handleLogs } from '@handlers/logs';
+import { handleScan, handleScanCandidates, handleScanApply } from '@handlers/scan';
 import {
     renderPanel,
     handleGetSettings,
@@ -94,6 +95,15 @@ export default {
 
                 case 'api/import':
                     return handleImport(request, settings, store, users);
+
+                case 'api/scan':
+                    return handleScan(request, settings, store);
+
+                case 'api/scan/candidates':
+                    return handleScanCandidates();
+
+                case 'api/scan/apply':
+                    return handleScanApply(request, settings, store);
 
                 case 'api/my-ip':
                     return handleMyIp();

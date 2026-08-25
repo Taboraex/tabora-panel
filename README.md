@@ -113,7 +113,26 @@ All variables are optional except `ADMIN_PASSWORD`.
 | `UUID` | derived | Fixed VLESS UUID (v4). Derived from the password if unset. |
 | `TROJAN_PASSWORD` | derived | Trojan password. Derived from the password if unset. |
 | `FALLBACK` | Wikipedia | Site mirrored for unauthorised requests. |
-| `PROXY_IP` | — | Comma-separated relay hosts, e.g. `1.2.3.4:443`. |
+| `PROXY_IP` | built-in defaults | Comma-separated relay hosts, e.g. `1.2.3.4:443`. Seeds the relay list on a fresh deploy; once you save relays in the panel (or apply a scan), those win. |
+
+### Relays and the scanner
+
+Cloudflare does not allow a Worker to open a TCP socket back into its own
+network, and much of the web sits behind Cloudflare. Without a relay the
+tunnel completes its handshake and then stalls with no data — which looks
+exactly like a broken config. Tabora therefore ships working relay defaults so
+a fresh install carries traffic immediately.
+
+The **Scanner** tab tests and replaces them:
+
+- **Relay health** probes each relay from the Worker and reports latency.
+  Relays sit outside Cloudflare's network, so the Worker can measure them.
+- **Clean IP scan** runs in your browser instead. A Worker cannot reach
+  Cloudflare edges at all, and its timings would describe the datacentre
+  rather than your connection — so the browser measures the path that actually
+  matters to you.
+
+Both let you apply the fastest results to your live configs in one click.
 
 Everything else — ports, clean IPs, DNS, routing rules, naming templates — is
 edited in the dashboard and stored in D1.

@@ -43,5 +43,20 @@ export const DEFAULT_CLEAN_IPS = [
     'singapore.com',
 ];
 
+/**
+ * Default relay hosts used when a direct dial returns nothing.
+ *
+ * Cloudflare does not let a Worker open a TCP socket back into its own
+ * network, and a large share of the web sits behind Cloudflare. Without a
+ * relay the tunnel completes its handshake and then stalls with no data —
+ * which looks exactly like a broken config. Shipping working defaults means a
+ * freshly installed panel carries traffic straight away; operators can replace
+ * them in the panel or scan for their own.
+ */
+export const DEFAULT_PROXY_IPS = [
+    'proxyip.cmliussss.net:443',
+    'proxyip.fxxk.dedyn.io:443',
+];
+
 export const GB = 1024 ** 3;
 export const MB = 1024 ** 2;

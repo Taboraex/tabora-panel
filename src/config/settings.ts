@@ -46,8 +46,12 @@ export async function loadSettings(store: Store, env: Env): Promise<Settings> {
         // env wins for deployment-level knobs
         if (env.SECURE_PATH) settings.securePath = env.SECURE_PATH;
         if (env.FALLBACK) settings.fallback = env.FALLBACK;
-        if (env.PROXY_IP && settings.proxyIPs.length === 0) {
-            settings.proxyIPs = env.PROXY_IP.split(',').map((s) => s.trim()).filter(Boolean);
+        // PROXY_IP seeds the relay list, overriding the shipped defaults — but
+        // it must not mask a list the operator saved from the panel or a scan,
+        // otherwise applying scan results would silently do nothing.
+        if (env.PROXY_IP && !stored?.proxyIPs?.length) {
+            const fromEnv = env.PROXY_IP.split(',').map((s) => s.trim()).filter(Boolean);
+            if (fromEnv.length) settings.proxyIPs = fromEnv;
         }
 
         const password = env.ADMIN_PASSWORD || 'admin';

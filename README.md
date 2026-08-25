@@ -115,6 +115,31 @@ All variables are optional except `ADMIN_PASSWORD`.
 | `FALLBACK` | Wikipedia | Site mirrored for unauthorised requests. |
 | `PROXY_IP` | built-in defaults | Comma-separated relay hosts, e.g. `1.2.3.4:443`. Seeds the relay list on a fresh deploy; once you save relays in the panel (or apply a scan), those win. |
 
+### Security
+
+The panel is a single-credential admin surface reachable from anywhere, so the
+protections are aimed at that reality:
+
+- **Login throttling.** Eight failed attempts from one IP, or forty across all
+  IPs, lock the form for fifteen minutes. Both buckets are needed: the per-IP
+  limit stops one host hammering the form, the global one stops a distributed
+  attempt using a fresh IP per guess.
+- **PBKDF2-HMAC-SHA256** at 100,000 iterations (the Workers ceiling) for the
+  admin password, replacing an iterated-SHA-256 chain. Existing panels keep
+  working and are re-hashed transparently on the next sign-in.
+- **Session cookies** are `HttpOnly`, `Secure`, `SameSite=Strict`.
+- **Security headers** on every page: CSP with `frame-ancestors 'none'` and
+  `base-uri 'none'`, `X-Frame-Options: DENY`, `nosniff`, `no-referrer`, HSTS.
+
+`scripts/security-test.mjs` asserts all of the above against a deployed
+worker. Run it after any change to auth.
+
+> Note on obfuscation: the shipped `worker.js` is minified, but minification
+> is not a security boundary — a Worker must be able to run its own code, so
+> anything embedded in it can be recovered. Real protection comes from the
+> controls above and from keeping your `ADMIN_PASSWORD`, `SECURE_PATH` and API
+> tokens secret.
+
 ### Relays and the scanner
 
 Cloudflare does not allow a Worker to open a TCP socket back into its own

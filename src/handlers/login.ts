@@ -2,6 +2,7 @@ import { Store } from '@storage/db';
 import { Settings } from '#types/settings';
 import { verifyPassword, setPassword, isPasswordStored } from '@auth/password';
 import { issueToken, sessionCookie, clearCookie, verifySession, rotateSecret } from '@auth/jwt';
+import { checkLoginAllowed, recordFailure, clearFailures } from '@auth/ratelimit';
 import {
     HttpStatus, respond, ok, badRequest, unauthorized, methodNotAllowed, htmlResponse,
 } from '@common/http';
@@ -29,14 +30,31 @@ export async function handleLogin(
 
     if (!body.password) return badRequest('Password is required.');
 
-    const valid = await verifyPassword(store, env, body.password);
     const ctx = getContext();
 
+    // Throttle before touching the password so a locked-out caller cannot use
+    // the endpoint as an oracle, and so hashing cost is not spent on abuse.
+    const throttle = await checkLoginAllowed(store, ctx.clientIp);
+    if (throttle.blocked) {
+        await logActivity(store, 'login-blocked', `ip=${ctx.clientIp}`);
+        return respond(false, HttpStatus.TOO_MANY_REQUESTS, 'Too many attempts. Try again later.', null, {
+            'Retry-After': String(throttle.retryAfter),
+        });
+    }
+
+    const valid = await verifyPassword(store, env, body.password);
+
     if (!valid) {
-        await logActivity(store, 'login-failed', `ip=${ctx.clientIp} ua=${ctx.userAgent.slice(0, 80)}`);
+        await recordFailure(store, ctx.clientIp);
+        await logActivity(
+            store,
+            'login-failed',
+            `ip=${ctx.clientIp} remaining=${Math.max(0, throttle.remaining - 1)} ua=${ctx.userAgent.slice(0, 60)}`,
+        );
         return unauthorized('Incorrect password.');
     }
 
+    await clearFailures(store, ctx.clientIp);
     const token = await issueToken(store, 'admin');
     await logActivity(store, 'login', `ip=${ctx.clientIp}`);
 

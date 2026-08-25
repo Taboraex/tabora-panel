@@ -73,9 +73,45 @@ export function textResponse(
     });
 }
 
+/**
+ * Security headers for the admin UI.
+ *
+ * The panel ships its CSS and JS inline in a single document, so the policy
+ * has to permit inline script and style — locking those down would mean
+ * restructuring the asset pipeline for no real gain, since there is no
+ * third-party code in the page to constrain.
+ *
+ * What the policy does buy: no framing (clickjacking), no plugins or base-tag
+ * hijacking, no form posts to another origin, and no external script sources.
+ * `connect-src` stays open to https because the clean-IP scanner deliberately
+ * probes arbitrary Cloudflare edges from the browser.
+ */
+const SECURITY_HEADERS = {
+    'Content-Security-Policy': [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "connect-src 'self' https:",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'none'",
+        "object-src 'none'",
+    ].join('; '),
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=()',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+};
+
 export function htmlResponse(html: string): Response {
     return new Response(html, {
-        headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE },
+        headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            ...NO_STORE,
+            ...SECURITY_HEADERS,
+        },
     });
 }
 

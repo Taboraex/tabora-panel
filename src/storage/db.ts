@@ -69,7 +69,12 @@ export class Store {
         }
     }
 
-    async put(key: string, value: string): Promise<void> {
+    /**
+     * Store a value. `ttlSeconds` is honoured on KV, which expires the key on
+     * its own; D1 has no TTL, so callers that rely on expiry must treat a
+     * stale value as absent (the rate limiter checks the window itself).
+     */
+    async put(key: string, value: string, ttlSeconds?: number): Promise<void> {
         if (this.env.DB) {
             await this.init();
             try {
@@ -86,11 +91,18 @@ export class Store {
             }
         }
 
-        if (this.env.KV) await this.env.KV.put(key, value);
+        if (this.env.KV) {
+            // KV rejects a TTL below 60s.
+            await this.env.KV.put(
+                key,
+                value,
+                ttlSeconds && ttlSeconds >= 60 ? { expirationTtl: ttlSeconds } : undefined,
+            );
+        }
     }
 
-    async putJSON(key: string, value: unknown): Promise<void> {
-        await this.put(key, JSON.stringify(value));
+    async putJSON(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
+        await this.put(key, JSON.stringify(value), ttlSeconds);
     }
 
     async delete(key: string): Promise<void> {

@@ -306,28 +306,61 @@ async function writeClipboard(text) {
  * subscription is the most compatible choice for all four, so every app gets
  * the same source URL and picks its own format from the User-Agent.
  */
+/**
+ * Per-app import schemes.
+ *
+ * Two things vary per app and both matter:
+ *
+ * 1. The scheme shape. Hiddify, v2rayNG and V2Box take the URL as an encoded
+ *    `url=` query parameter; Happ takes it as a path segment.
+ *
+ *      Hiddify  hiddify://install-sub?url=<enc>   (their URL-Scheme wiki)
+ *      v2rayNG  v2rayng://install-sub?url=<enc>   (UrlSchemeActivity)
+ *      V2Box    v2box://install-sub?url=<enc>     (added in V2Box 3.1.2)
+ *      Happ     happ://add/<raw url>
+ *
+ * 2. The `format` we pin onto the subscription URL. This is not cosmetic —
+ *    these importers fetch over plain HTTP with a generic WebView/Dart
+ *    User-Agent and `Accept: text/html`, which the worker cannot tell apart
+ *    from a real browser. Without an explicit ?format= it would serve them the
+ *    human status page and the app fails with "unable to determine config
+ *    format". Sending the format each app parses natively also skips the
+ *    server's UA guesswork entirely.
+ */
 const APPS = {
     hiddify: {
         label: 'Hiddify',
+        // Hiddify is sing-box based and imports that profile directly.
+        format: 'singbox',
         build: (url, name) =>
             `hiddify://install-sub?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`,
     },
     v2rayng: {
         label: 'v2rayNG',
+        // Xray core: wants the base64 URI list.
+        format: 'base64',
         build: (url, name) =>
             `v2rayng://install-sub?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`,
     },
     v2box: {
         label: 'V2Box',
+        format: 'base64',
         build: (url, name) =>
             `v2box://install-sub?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`,
     },
     happ: {
         label: 'Happ',
+        format: 'base64',
         // Happ takes the URL as a path segment rather than a query parameter.
         build: (url) => `happ://add/${url}`,
     },
 };
+
+/** Pin an explicit format onto the subscription URL for a given app. */
+function subUrlFor(app) {
+    const base = S.sub;
+    return `${base}${base.includes('?') ? '&' : '?'}format=${app.format}`;
+}
 
 /**
  * Open a deep link, and fall back to the clipboard when nothing handles it.
@@ -341,7 +374,7 @@ function openInApp(key) {
     const app = APPS[key];
     if (!app) return;
 
-    const url = S.sub;
+    const url = subUrlFor(app);
     const deepLink = app.build(url, S.name || 'Tabora');
 
     showToast(t('apps.opening').replace('{app}', app.label));

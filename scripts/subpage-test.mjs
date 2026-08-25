@@ -70,13 +70,14 @@ check('gaming badge hidden on a normal subscription',
 /* ── deep links ─────────────────────────────────────────────────────────── */
 
 const deepLinks = await page.evaluate(() => {
-    const url = window.TABORA_SUB.sub.replace(/&amp;/g, '&');
+    const base = window.TABORA_SUB.sub.replace(/&amp;/g, '&');
     const name = window.TABORA_SUB.name;
+    const withFormat = (f) => `${base}${base.includes('?') ? '&' : '?'}format=${f}`;
     return {
-        hiddify: `hiddify://install-sub?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`,
-        v2rayng: `v2rayng://install-sub?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`,
-        v2box: `v2box://install-sub?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`,
-        happ: `happ://add/${url}`,
+        hiddify: `hiddify://install-sub?url=${encodeURIComponent(withFormat('singbox'))}&name=${encodeURIComponent(name)}`,
+        v2rayng: `v2rayng://install-sub?url=${encodeURIComponent(withFormat('base64'))}&name=${encodeURIComponent(name)}`,
+        v2box: `v2box://install-sub?url=${encodeURIComponent(withFormat('base64'))}&name=${encodeURIComponent(name)}`,
+        happ: `happ://add/${withFormat('base64')}`,
     };
 });
 
@@ -86,6 +87,39 @@ check('v2rayng uses its own scheme', deepLinks.v2rayng.startsWith('v2rayng://ins
 check('v2box uses its own scheme', deepLinks.v2box.startsWith('v2box://install-sub?url='));
 check('happ takes the url as a path segment, not a query param',
     deepLinks.happ.startsWith('happ://add/http') && !deepLinks.happ.includes('?url='));
+
+// Every deep link must pin a format. Importers fetch with a generic
+// WebView/Dart UA and Accept: text/html, which the worker cannot distinguish
+// from a browser — without ?format= they were served the HTML status page and
+// failed with "unable to determine config format".
+check('hiddify deep link requests sing-box', deepLinks.hiddify.includes('format%3Dsingbox'),
+    deepLinks.hiddify);
+check('v2rayng deep link requests base64', deepLinks.v2rayng.includes('format%3Dbase64'));
+check('v2box deep link requests base64', deepLinks.v2box.includes('format%3Dbase64'));
+check('happ deep link requests base64', deepLinks.happ.includes('format=base64'));
+
+/* ── the importer must never receive HTML ───────────────────────────────── */
+
+const WEBVIEW =
+    'Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36';
+
+for (const [format, starts] of [['singbox', '{'], ['base64', 'dmxlc3M'], ['clash', '#']]) {
+    const res = await ctx.request.get(`${ROOT}/sub?format=${format}`, {
+        headers: { 'User-Agent': WEBVIEW, Accept: 'text/html' },
+    });
+    const body = (await res.text()).slice(0, 40);
+    check(`explicit format=${format} beats browser sniffing`, body.startsWith(starts),
+        `got ${body.slice(0, 28)}`);
+}
+
+const humanPage = await ctx.request.get(`${ROOT}/sub`, {
+    headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+        Accept: 'text/html',
+    },
+});
+check('a real browser with no format still gets the page',
+    (await humanPage.text()).trimStart().startsWith('<!DOCTYPE html'));
 
 /* ── copy actions ───────────────────────────────────────────────────────── */
 

@@ -73,14 +73,36 @@ export async function handleSubscription(
         settings.subUserAgent.trim().length > 0 &&
         ua.includes(settings.subUserAgent.trim().toLowerCase());
 
-    if (!allowlisted && !looksLikeClient(ua) && looksLikeBrowser(ua, accept, dest)) {
+    const explicitFormat = (
+        ctx.searchParams.get('format') ?? ctx.searchParams.get('app') ?? ''
+    ).trim();
+
+    /*
+     * An explicit ?format= always means "give me config", never the HTML page.
+     *
+     * Client apps import over a plain HTTP GET, and several of them — Hiddify
+     * and anything else built on a WebView or Dart's http stack — send a
+     * generic `Mozilla/5.0 (Linux; Android …)` User-Agent with
+     * `Accept: text/html`. That is indistinguishable from a real browser by UA
+     * sniffing alone, so the status page was served to the importer and it
+     * failed with "unable to determine config format".
+     *
+     * The query string is the one signal that cannot be faked by accident: a
+     * human opening the link never has ?format= on it, while every deep link
+     * we generate does.
+     */
+    const wantsMachineOutput = explicitFormat.length > 0 || ctx.searchParams.has('raw');
+
+    if (
+        !wantsMachineOutput &&
+        !allowlisted &&
+        !looksLikeClient(ua) &&
+        looksLikeBrowser(ua, accept, dest)
+    ) {
         return renderSubscriptionPage(settings, users, user, wantsGaming);
     }
 
-    const requestedFormat = resolveFormat(
-        ctx.searchParams.get('format') ?? ctx.searchParams.get('app') ?? '',
-        ua,
-    );
+    const requestedFormat = resolveFormat(explicitFormat, ua);
     if (wantsGaming) {
         return renderGamingSubscription(settings, requestedFormat, user);
     }

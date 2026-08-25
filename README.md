@@ -289,6 +289,14 @@ its own shape, so the page builds a different link per app:
 | V2Box | `v2box://install-sub?url=<encoded>&name=<name>` |
 | Happ | `happ://add/<url>` — path segment, not a query parameter |
 
+Each link also pins an explicit `?format=` — sing-box for Hiddify, base64 for
+the Xray-based clients. That is load-bearing, not cosmetic: importers fetch over
+plain HTTP with a generic WebView or Dart User-Agent and `Accept: text/html`,
+which is indistinguishable from a real browser by sniffing alone. Without the
+format the worker served them the human status page and the app reported
+*unable to determine config format*. An explicit `?format=` now always wins over
+UA detection.
+
 A browser cannot be asked whether a scheme is registered, so the page infers it:
 a successful hand-off backgrounds the document, and if the page is still visible
 a moment later nothing opened. In that case the link is copied to the clipboard

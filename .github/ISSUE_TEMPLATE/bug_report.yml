@@ -1,0 +1,90 @@
+name: Bug report
+description: Something is not working as documented
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please **redact UUIDs, passwords, tokens and your
+        secret path** from anything you paste below.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Describe the problem and what you expected instead.
+      placeholder: |
+        Expected: the Clash subscription imports cleanly.
+        Actual: the client rejects it with a parse error.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Deploy with ...
+        2. Open the panel and set ...
+        3. Fetch /{path}/sub?format=clash
+        4. See the error
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Tabora version
+      description: Shown next to the logo in the panel header.
+      placeholder: v0.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Workers (dashboard paste)
+        - Workers (wrangler deploy)
+        - Cloudflare Pages
+        - Local (wrangler dev)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: storage
+    attributes:
+      label: Storage binding
+      options:
+        - D1
+        - KV
+        - None
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: Client and version
+      description: Only if the issue involves a proxy client.
+      placeholder: v2rayNG 1.9.5 / Clash Verge 2.0.3 / sing-box 1.12.0
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output from `npx wrangler tail`, or the browser console. Redact secrets.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I am running the latest release
+          required: true
+        - label: I searched existing issues
+          required: true
+        - label: I removed all secrets from this report
+          required: true

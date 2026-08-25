@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>__PROJECT__</title>
+<style>/* CSS_PLACEHOLDER */</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 48 48" class="logo" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#6366f1"/>
+      </linearGradient></defs>
+      <path fill="url(#lg)" d="M24 3 7 11v12c0 10.5 7.2 19.6 17 22 9.8-2.4 17-11.5 17-22V11L24 3Z"/>
+      <path fill="#0b1120" opacity=".85" d="M24 14.5 15 18.7v6.1c0 5.3 3.8 10 9 11.4 5.2-1.4 9-6.1 9-11.4v-6.1L24 14.5Z"/>
+      <circle cx="24" cy="24" r="3.4" fill="#38bdf8"/>
+    </svg>
+    <span class="brand-name">__PROJECT__</span>
+    <span class="badge">v__VERSION__</span>
+  </div>
+
+  <div class="topbar-actions">
+    <button class="icon-btn" id="langBtn" title="Language">
+      <span id="langLabel">EN</span>
+    </button>
+    <button class="icon-btn" id="themeBtn" title="Theme">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12Zm0-16a1 1 0 0 1 1 1v1.5a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Zm0 17a1 1 0 0 1 1 1v1.5a1 1 0 1 1-2 0V20a1 1 0 0 1 1-1ZM2 12a1 1 0 0 1 1-1h1.5a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Zm17.5-1H21a1 1 0 1 1 0 2h-1.5a1 1 0 1 1 0-2ZM5.6 4.2l1 1a1 1 0 0 1-1.4 1.4l-1-1a1 1 0 0 1 1.4-1.4Zm12.8 12.8 1 1a1 1 0 0 1-1.4 1.4l-1-1a1 1 0 0 1 1.4-1.4ZM4.2 18.4l1-1a1 1 0 0 1 1.4 1.4l-1 1a1 1 0 0 1-1.4-1.4ZM17 5.2l1-1a1 1 0 1 1 1.4 1.4l-1 1A1 1 0 0 1 17 5.2Z"/></svg>
+    </button>
+    <a class="icon-btn" id="repoBtn" href="__REPO__" target="_blank" rel="noopener" title="Repository">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2A10 10 0 0 0 8.8 21.5c.5.1.7-.2.7-.5v-1.7C6.7 19.9 6.1 18 6.1 18c-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .3.3.7 1 .7 2v2.9c0 .3.2.6.7.5A10 10 0 0 0 12 2Z"/></svg>
+    </a>
+    <button class="icon-btn danger" id="logoutBtn" title="Sign out">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M16 13v-2H7V8l-5 4 5 4v-3h9ZM20 3h-8a2 2 0 0 0-2 2v3h2V5h8v14h-8v-3h-2v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div id="alerts" class="alerts"></div>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="overview"><span class="tab-ico">◆</span><span data-i18n="tab.overview">Overview</span></button>
+  <button class="tab" data-tab="subscriptions"><span class="tab-ico">↗</span><span data-i18n="tab.subs">Links</span></button>
+  <button class="tab" data-tab="users"><span class="tab-ico">◎</span><span data-i18n="tab.users">Users</span></button>
+  <button class="tab" data-tab="settings"><span class="tab-ico">⚙</span><span data-i18n="tab.settings">Settings</span></button>
+  <button class="tab" data-tab="logs"><span class="tab-ico">≡</span><span data-i18n="tab.logs">Logs</span></button>
+</nav>
+
+<main class="content">
+
+  <!-- ─────────────────────────────── Overview ─────────────────────────────── -->
+  <section class="panel active" data-panel="overview">
+    <div class="stat-grid">
+      <div class="stat"><span class="stat-label" data-i18n="stat.users">Total users</span><span class="stat-value" id="stTotal">—</span></div>
+      <div class="stat ok"><span class="stat-label" data-i18n="stat.active">Active</span><span class="stat-value" id="stActive">—</span></div>
+      <div class="stat warn"><span class="stat-label" data-i18n="stat.paused">Paused</span><span class="stat-value" id="stPaused">—</span></div>
+      <div class="stat"><span class="stat-label" data-i18n="stat.traffic">Total traffic</span><span class="stat-value" id="stTraffic">—</span></div>
+      <div class="stat"><span class="stat-label" data-i18n="stat.today">Today</span><span class="stat-value" id="stToday">—</span></div>
+      <div class="stat"><span class="stat-label" data-i18n="stat.expired">Expired</span><span class="stat-value" id="stExpired">—</span></div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="ov.system">System</h2>
+      <dl class="kv">
+        <dt data-i18n="ov.host">Hostname</dt><dd id="ovHost">—</dd>
+        <dt data-i18n="ov.colo">Edge node</dt><dd id="ovColo">—</dd>
+        <dt data-i18n="ov.storage">Storage</dt><dd id="ovStorage">—</dd>
+        <dt data-i18n="ov.ip">Your IP</dt><dd id="ovIp">—</dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="ov.quick">Quick actions</h2>
+      <div class="btn-row">
+        <button class="btn" id="qaAddUser" data-i18n="ov.addUser">Add user</button>
+        <button class="btn" id="qaExport" data-i18n="ov.export">Export backup</button>
+        <button class="btn" id="qaImport" data-i18n="ov.import">Import backup</button>
+        <button class="btn" id="qaEnforce" data-i18n="ov.enforce">Enforce quotas</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
+    </div>
+  </section>
+
+  <!-- ────────────────────────────── Subscriptions ─────────────────────────── -->
+  <section class="panel" data-panel="subscriptions">
+    <div class="card">
+      <h2 data-i18n="sub.title">Subscription links</h2>
+      <p class="hint" data-i18n="sub.hint">Panel-wide links. For per-user links, open a user in the Users tab.</p>
+      <div id="subList" class="sub-list"></div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="sub.qr">QR code</h2>
+      <div class="qr-wrap"><canvas id="qrCanvas" width="220" height="220"></canvas></div>
+      <p class="hint" id="qrCaption">—</p>
+    </div>
+  </section>
+
+  <!-- ───────────────────────────────── Users ──────────────────────────────── -->
+  <section class="panel" data-panel="users">
+    <div class="card">
+      <div class="card-head">
+        <h2 data-i18n="usr.title">Users</h2>
+        <button class="btn primary" id="addUserBtn" data-i18n="usr.add">+ Add user</button>
+      </div>
+      <div class="filter-row">
+        <input type="search" id="userSearch" placeholder="Search by name, UUID or note…">
+        <select id="userFilter">
+          <option value="all" data-i18n="usr.all">All</option>
+          <option value="active" data-i18n="usr.active">Active</option>
+          <option value="paused" data-i18n="usr.paused">Paused</option>
+          <option value="expired" data-i18n="usr.expired">Expired</option>
+        </select>
+      </div>
+      <div id="userList" class="user-list"><p class="empty" data-i18n="usr.loading">Loading…</p></div>
+    </div>
+  </section>
+
+  <!-- ──────────────────────────────── Settings ────────────────────────────── -->
+  <section class="panel" data-panel="settings">
+    <form id="settingsForm">
+
+      <details class="card" open>
+        <summary><h2 data-i18n="set.identity">Identity &amp; access</h2></summary>
+        <div class="grid">
+          <label class="field"><span>UUID (VLESS)</span>
+            <div class="with-btn">
+              <input name="uuid" id="fUuid" spellcheck="false">
+              <button type="button" class="mini" data-gen="uuid">↻</button>
+            </div>
+          </label>
+          <label class="field"><span>Trojan password</span>
+            <div class="with-btn">
+              <input name="trojanPassword" id="fTrojan" spellcheck="false">
+              <button type="button" class="mini" data-gen="pass">↻</button>
+            </div>
+          </label>
+          <label class="field"><span data-i18n="set.path">Secret path</span>
+            <input name="securePath" id="fPath" spellcheck="false">
+          </label>
+          <label class="field"><span data-i18n="set.fallback">Decoy site</span>
+            <input name="fallback" id="fFallback" placeholder="https://example.com">
+          </label>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn" id="changePassBtn" data-i18n="set.changePass">Change panel password</button>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary><h2 data-i18n="set.protocol">Protocol &amp; transport</h2></summary>
+        <div class="grid">
+          <div class="field"><span data-i18n="set.protocols">Protocols</span>
+            <div class="chips" id="protocolChips">
+              <label class="chip"><input type="checkbox" value="vless" checked><span>VLESS</span></label>
+              <label class="chip"><input type="checkbox" value="trojan" checked><span>Trojan</span></label>
+            </div>
+          </div>
+          <div class="field"><span data-i18n="set.ports">Ports</span>
+            <div class="chips" id="portChips"></div>
+          </div>
+          <label class="field"><span data-i18n="set.fp">TLS fingerprint</span>
+            <select name="fingerprint" id="fFingerprint">
+              <option value="chrome">chrome</option><option value="firefox">firefox</option>
+              <option value="safari">safari</option><option value="ios">ios</option>
+              <option value="android">android</option><option value="edge">edge</option>
+              <option value="random">random</option><option value="randomized">randomized</option>
+            </select>
+          </label>
+          <label class="field toggle"><input type="checkbox" name="enableECH" id="fEch"><span data-i18n="set.ech">Enable ECH</span></label>
+          <label class="field"><span>ECH server name</span><input name="echServerName" id="fEchName"></label>
+          <label class="field toggle"><input type="checkbox" name="enableTFO" id="fTfo"><span>TCP Fast Open</span></label>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary><h2 data-i18n="set.network">Network &amp; DNS</h2></summary>
+        <div class="grid">
+          <label class="field"><span>Remote DNS (DoH)</span><input name="remoteDNS" id="fRemoteDns"></label>
+          <label class="field"><span>Local DNS</span><input name="localDNS" id="fLocalDns"></label>
+          <label class="field"><span data-i18n="set.proxyMode">Proxy IP mode</span>
+            <select name="proxyIpMode" id="fProxyMode">
+              <option value="proxyip">ProxyIP</option>
+              <option value="nat64">NAT64</option>
+              <option value="off">Off</option>
+            </select>
+          </label>
+          <label class="field toggle"><input type="checkbox" name="enableIPv6" id="fIpv6"><span>Enable IPv6</span></label>
+          <label class="field wide"><span>Proxy IPs</span>
+            <textarea name="proxyIPs" id="fProxyIps" rows="3" placeholder="one per line, host or host:port"></textarea>
+          </label>
+          <label class="field wide"><span>NAT64 prefixes</span>
+            <textarea name="nat64Prefixes" id="fNat64" rows="2"></textarea>
+          </label>
+          <label class="field wide"><span data-i18n="set.cleanIps">Clean IPs / domains</span>
+            <textarea name="cleanIPs" id="fCleanIps" rows="3"></textarea>
+          </label>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary><h2 data-i18n="set.sub">Subscription output</h2></summary>
+        <div class="grid">
+          <label class="field"><span data-i18n="set.prefix">Name prefix</span><input name="namePrefix" id="fPrefix"></label>
+          <label class="field"><span data-i18n="set.max">Max configs</span><input type="number" name="maxConfigs" id="fMax" min="1" max="200"></label>
+          <label class="field wide"><span data-i18n="set.template">Name template</span>
+            <input name="nameTemplate" id="fTemplate">
+            <small class="hint">Tags: {FLAG} {PREFIX} {INDEX} {PROTOCOL} {PORT} {ADDRESS}</small>
+          </label>
+          <label class="field wide"><span data-i18n="set.ua">Browser bypass User-Agent</span>
+            <input name="subUserAgent" id="fSubUa" placeholder="leave empty to disable">
+          </label>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary><h2 data-i18n="set.routing">Routing rules</h2></summary>
+        <div class="grid">
+          <label class="field toggle"><input type="checkbox" name="bypassIran" id="fBypassIran"><span data-i18n="set.bypassIran">Bypass Iran</span></label>
+          <label class="field toggle"><input type="checkbox" name="bypassLAN" id="fBypassLan"><span data-i18n="set.bypassLan">Bypass LAN / private</span></label>
+          <label class="field toggle"><input type="checkbox" name="blockAds" id="fBlockAds"><span data-i18n="set.blockAds">Block ads</span></label>
+          <label class="field toggle"><input type="checkbox" name="blockPorn" id="fBlockPorn"><span data-i18n="set.blockPorn">Block adult content</span></label>
+          <label class="field toggle"><input type="checkbox" name="blockUDP443" id="fBlockQuic"><span>Block QUIC (UDP 443)</span></label>
+          <label class="field wide"><span data-i18n="set.bypassRules">Custom direct rules</span>
+            <textarea name="customBypassRules" id="fBypassRules" rows="3" placeholder="one domain per line"></textarea>
+          </label>
+          <label class="field wide"><span data-i18n="set.blockRules">Custom block rules</span>
+            <textarea name="customBlockRules" id="fBlockRules" rows="3"></textarea>
+          </label>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary><h2 data-i18n="set.ops">Operations</h2></summary>
+        <div class="grid">
+          <label class="field toggle"><input type="checkbox" name="isPaused" id="fPaused"><span data-i18n="set.kill">Kill switch (pause all proxy traffic)</span></label>
+          <label class="field"><span>Log level</span>
+            <select name="logLevel" id="fLogLevel">
+              <option value="none">none</option><option value="error">error</option>
+              <option value="warning">warning</option><option value="info">info</option>
+              <option value="debug">debug</option>
+            </select>
+          </label>
+        </div>
+      </details>
+
+      <div class="sticky-actions">
+        <button type="submit" class="btn primary" id="saveBtn" data-i18n="set.save">Save settings</button>
+        <button type="button" class="btn ghost" id="resetBtn" data-i18n="set.reset">Reset to defaults</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ───────────────────────────────── Logs ───────────────────────────────── -->
+  <section class="panel" data-panel="logs">
+    <div class="card">
+      <div class="card-head">
+        <h2 data-i18n="log.title">Activity log</h2>
+        <div class="btn-row">
+          <button class="btn" id="refreshLogs" data-i18n="log.refresh">Refresh</button>
+          <button class="btn danger" id="clearLogs" data-i18n="log.clear">Clear</button>
+        </div>
+      </div>
+      <div id="logList" class="log-list"><p class="empty">—</p></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ─────────────────────────────── User modal ─────────────────────────────── -->
+<div class="modal-backdrop" id="userModal" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="userModalTitle">Add user</h3>
+      <button class="icon-btn" id="closeUserModal">✕</button>
+    </div>
+    <form id="userForm" class="modal-body">
+      <input type="hidden" id="uId">
+      <label class="field"><span>Name *</span><input id="uName" required></label>
+      <label class="field"><span>UUID</span>
+        <div class="with-btn">
+          <input id="uUuid" spellcheck="false" placeholder="auto-generated">
+          <button type="button" class="mini" data-gen="uuser">↻</button>
+        </div>
+      </label>
+      <div class="grid two">
+        <label class="field"><span>Traffic limit (GB)</span><input type="number" id="uLimit" min="0" step="0.1" placeholder="0 = unlimited"></label>
+        <label class="field"><span>Daily limit (GB)</span><input type="number" id="uDaily" min="0" step="0.1" placeholder="0 = unlimited"></label>
+      </div>
+      <label class="field"><span>Expires in (days)</span><input type="number" id="uDays" min="0" placeholder="0 = never"></label>
+      <label class="field"><span>Notes</span><textarea id="uNotes" rows="2"></textarea></label>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelUser">Cancel</button>
+        <button type="submit" class="btn primary" id="saveUser">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ───────────────────────────── Password modal ───────────────────────────── -->
+<div class="modal-backdrop" id="passModal" hidden>
+  <div class="modal">
+    <div class="modal-head"><h3>Change password</h3><button class="icon-btn" id="closePassModal">✕</button></div>
+    <form id="passForm" class="modal-body">
+      <label class="field"><span>Current password</span><input type="password" id="pCurrent" required></label>
+      <label class="field"><span>New password</span><input type="password" id="pNew" required minlength="6"></label>
+      <label class="field"><span>Confirm new password</span><input type="password" id="pConfirm" required minlength="6"></label>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelPass">Cancel</button>
+        <button type="submit" class="btn primary">Update</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  window.__BASE__ = "__BASE__";
+  window.__WARN_STORAGE__ = "__WARN_STORAGE__";
+  window.__WARN_PASSWORD__ = "__WARN_PASSWORD__";
+</script>
+<script>/* JS_PLACEHOLDER */</script>
+</body>
+</html>

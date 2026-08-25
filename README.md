@@ -1,0 +1,213 @@
+<div align="center">
+
+# Tabora
+
+**A secure, multi-user proxy panel that runs entirely on Cloudflare Workers.**
+
+[![CI](https://github.com/Taboraex/tabora-panel/actions/workflows/ci.yml/badge.svg)](https://github.com/Taboraex/tabora-panel/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Taboraex/tabora-panel?color=38bdf8)](https://github.com/Taboraex/tabora-panel/releases)
+[![Licence](https://img.shields.io/badge/licence-GPL--3.0-6366f1)](./LICENSE)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
+🌐 [فارسی](./README_fa.md)
+
+</div>
+
+---
+
+Tabora provides **VLESS** and **Trojan** over WebSocket, a modern bilingual
+(English / فارسی) dashboard, per-user quotas and expiry, and subscription output
+for Xray, Sing-box and Clash/Mihomo clients — all from a single `worker.js` file
+with no server to maintain.
+
+```
+┌──────────────┐   WebSocket    ┌─────────────────┐   TCP    ┌──────────┐
+│    Client    │ ─────────────► │ Tabora (Worker) │ ───────► │  Target  │
+│ v2rayN/Clash │   VLESS/Trojan │  + D1 database  │          │          │
+└──────────────┘                └─────────────────┘          └──────────┘
+```
+
+---
+
+## Features
+
+- **Two protocols** — VLESS and Trojan over WebSocket, with 0-RTT early data.
+- **Multi-user** — per-subscriber UUID, traffic quota, daily cap, and expiry
+  date. Users are auto-disabled when they exceed their limits.
+- **Four subscription formats** — base64 URI list, plain URIs, Clash/Mihomo
+  YAML, and Sing-box JSON. Format is auto-detected from the client User-Agent.
+- **Bilingual dashboard** — English and Persian with full RTL support, dark and
+  light themes, and a responsive layout that works on phones.
+- **Decoy page** — any request outside the secret path mirrors a real website,
+  so casual probes never see that a panel exists.
+- **ProxyIP and NAT64** — automatic retry through a relay when Cloudflare's
+  egress is blocked by the destination.
+- **Private DoH** — UDP DNS is tunnelled to a DoH resolver of your choice.
+- **JWT sessions** — HttpOnly, Secure, SameSite=Strict cookies with a rotating
+  server-side secret; changing the password invalidates all sessions.
+- **Backup and restore** — export the whole configuration as JSON and import it
+  into another deployment.
+- **Audit log** — logins, failed attempts, and every configuration change.
+
+---
+
+## Requirements
+
+- A Cloudflare account (the free plan is enough)
+- A **D1** database (recommended) or a **KV** namespace
+- Node.js 18+ to build
+
+---
+
+## Quick start
+
+### 1. Create the database
+
+```bash
+npx wrangler d1 create tabora-db
+```
+
+Copy the returned `database_id` into `wrangler.toml`.
+
+### 2. Configure
+
+Edit the `[vars]` block in `wrangler.toml`:
+
+```toml
+ADMIN_PASSWORD = "pick-something-strong"
+SECURE_PATH    = "a-hard-to-guess-path"
+FALLBACK       = "https://www.wikipedia.org"
+```
+
+Better still, keep the password out of the file:
+
+```bash
+npx wrangler secret put ADMIN_PASSWORD
+```
+
+### 3. Build and deploy
+
+```bash
+npm install
+npm run build
+npx wrangler deploy
+```
+
+### 4. Sign in
+
+Open `https://<your-worker>.workers.dev/<SECURE_PATH>/panel`.
+
+Every other path shows the decoy page.
+
+---
+
+## Configuration reference
+
+All variables are optional except `ADMIN_PASSWORD`.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `ADMIN_PASSWORD` | `admin` | Panel password. **Change this.** |
+| `SECURE_PATH` | `tabora` | Hidden base path for the panel and subscriptions. |
+| `UUID` | derived | Fixed VLESS UUID (v4). Derived from the password if unset. |
+| `TROJAN_PASSWORD` | derived | Trojan password. Derived from the password if unset. |
+| `FALLBACK` | Wikipedia | Site mirrored for unauthorised requests. |
+| `PROXY_IP` | — | Comma-separated relay hosts, e.g. `1.2.3.4:443`. |
+
+Everything else — ports, clean IPs, DNS, routing rules, naming templates — is
+edited in the dashboard and stored in D1.
+
+---
+
+## Routes
+
+| Path | Purpose |
+| --- | --- |
+| `/{path}/panel` | Dashboard (requires session) |
+| `/{path}/login` | Sign-in page |
+| `/{path}/sub` | Subscription endpoint |
+| `/{path}/sub?u=NAME` | Per-user subscription |
+| `/{path}/api/*` | JSON API (requires session) |
+| `/vl`, `/tr` | WebSocket proxy endpoints |
+| anything else | Decoy page |
+
+### Subscription formats
+
+Append `?format=` to force an output, or let Tabora sniff the User-Agent:
+
+```
+?format=base64     v2rayN, v2rayNG, Streisand, Shadowrocket
+?format=clash      Clash Meta, Mihomo, Clash Verge, FlClash, Stash
+?format=singbox    sing-box, husi, Hiddify, Karing, NekoBox
+?format=plain      raw URI list, one per line
+```
+
+Opening a subscription URL in a browser shows a status page with the user's
+quota, expiry and QR code instead of raw config.
+
+---
+
+## Project layout
+
+```
+src/
+├── worker.ts              entry point and router
+├── config/                defaults, constants, settings, validators
+├── storage/               D1 layer, schema, in-isolate cache
+├── auth/                  JWT sessions and password hashing
+├── protocols/             VLESS, Trojan, WebSocket ↔ TCP relay
+├── cores/                 URI, Clash and Sing-box config builders
+├── users/                 subscriber model, quotas, usage accounting
+├── handlers/              one module per route
+└── assets/                panel, login and subscription pages
+```
+
+`npm run build` inlines each asset page, gzips it, bundles the worker with
+esbuild, and writes a single self-contained `dist/worker.js`.
+
+```bash
+npm run check    # type-check
+npm run build    # produce dist/worker.js
+npm run dev      # local dev server via wrangler
+```
+
+---
+
+## Limitations
+
+Cloudflare Workers impose a few constraints that no panel can work around:
+
+- **100,000 requests/day** on the free plan — comfortable for a handful of users.
+- **No real UDP.** Only DNS (port 53) is supported, tunnelled over DoH. Telegram
+  and WhatsApp voice/video calls will not work.
+- **CPU time limits** per request.
+- Cloudflare may disable Workers that match well-known proxy fingerprints.
+  Tabora avoids literal protocol strings in the bundle, but no obfuscation is
+  permanent.
+
+---
+
+## Security notes
+
+- Change the default password immediately; the dashboard warns until you do.
+- Pick a long, random `SECURE_PATH` — it is the first line of defence.
+- Passwords are salted and hashed with 10,000 SHA-256 iterations.
+- Sessions expire after 24 hours; changing the password rotates the signing
+  secret and invalidates every existing session.
+- The decoy proxy strips upstream cookies and CSP headers.
+
+---
+
+## Licence
+
+GPL-3.0. See [LICENSE](./LICENSE).
+
+Tabora is an independent implementation. Its architecture was informed by
+studying prior art in this space — notably
+[BPB-Worker-Panel](https://github.com/bia-pain-bache/BPB-Worker-Panel) (GPL-3.0),
+[Nahan](https://github.com/itsyebekhe/nahan) (MIT) and
+[edgetunnel](https://github.com/cmliu/edgetunnel) (GPL-2.0). Tabora is released
+under GPL-3.0 so it remains compatible with that lineage.
+
+**Use responsibly and in accordance with the laws that apply to you.**

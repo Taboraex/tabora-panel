@@ -1,0 +1,42 @@
+# Tabora Panel — Cloudflare Workers configuration
+#
+# Quick start:
+#   1) npx wrangler d1 create tabora-db
+#   2) paste the returned database_id below
+#   3) npm run build && npx wrangler deploy
+
+name = "tabora"
+main = "dist/worker.js"
+compatibility_date = "2024-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[dev]
+port = 8787
+
+# D1 is the primary datastore (settings, users, usage, logs, api keys).
+[[d1_databases]]
+binding = "DB"
+database_name = "tabora-db"
+database_id = "YOUR_D1_DATABASE_ID_HERE"
+
+# Optional KV fallback. If bound, Tabora uses it when D1 is unavailable.
+# [[kv_namespaces]]
+# binding = "KV"
+# id = "YOUR_KV_NAMESPACE_ID"
+
+[vars]
+# Admin password. Change this, or set it as a secret:
+#   npx wrangler secret put ADMIN_PASSWORD
+ADMIN_PASSWORD = "admin"
+
+# Hidden base path for the panel. Visiting any other path shows the decoy page.
+SECURE_PATH = "tabora"
+
+# Optional: fixed UUIDv4 for VLESS. Leave empty to derive it from the password.
+UUID = ""
+
+# Optional: Trojan password. Leave empty to derive it from the admin password.
+TROJAN_PASSWORD = ""
+
+# Optional: decoy target for unauthorized requests.
+FALLBACK = "https://www.wikipedia.org"

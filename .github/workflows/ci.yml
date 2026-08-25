@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Type-check and build
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: ['20.x', '22.x']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run check
+
+      - name: Build worker
+        run: npm run build
+
+      - name: Verify bundle
+        run: |
+          test -f dist/worker.js || { echo "::error::dist/worker.js was not produced"; exit 1; }
+          size=$(stat -c%s dist/worker.js)
+          echo "Bundle size: $((size / 1024)) KB"
+          # A healthy bundle is well under the 1 MB free-plan script limit.
+          if [ "$size" -gt 1000000 ]; then
+            echo "::error::Bundle exceeds the 1 MB Workers limit"
+            exit 1
+          fi
+          # The build must not leak plaintext protocol identifiers.
+          if grep -qE '"(vless|trojan)"' dist/worker.js; then
+            echo "::error::Plaintext protocol identifier found in bundle"
+            exit 1
+          fi
+
+      - name: Upload bundle
+        if: matrix.node-version == '20.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: worker
+          path: dist/worker.js
+          retention-days: 14
+
+  smoke:
+    name: Smoke test
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Write dev config
+        run: |
+          cat > wrangler.ci.toml <<'EOF'
+          name = "tabora"
+          main = "dist/worker.js"
+          compatibility_date = "2024-09-01"
+          compatibility_flags = ["nodejs_compat"]
+
+          [[d1_databases]]
+          binding = "DB"
+          database_name = "tabora-db"
+          database_id = "ci-placeholder"
+
+          [vars]
+          ADMIN_PASSWORD = "ci-test-password"
+          SECURE_PATH = "tabora"
+          FALLBACK = ""
+          EOF
+
+      - name: Start worker
+        run: |
+          npx wrangler dev --config wrangler.ci.toml --local --port 8787 &
+          for i in $(seq 1 45); do
+            curl -sf -o /dev/null "http://127.0.0.1:8787/tabora/login" && break
+            sleep 2
+          done
+
+      - name: Run smoke tests
+        run: |
+          set -e
+          P=http://127.0.0.1:8787
+          J=$(mktemp)
+          fail=0
+
+          check() {
+            if [ "$2" = "$3" ]; then
+              echo "  ok   $1"
+            else
+              echo "  FAIL $1 — got '$2', expected '$3'"
+              fail=1
+            fi
+          }
+
+          check "decoy page"        "$(curl -s -o /dev/null -w %{http_code} $P/)" "200"
+          check "panel redirects"   "$(curl -s -o /dev/null -w %{http_code} $P/tabora/panel)" "302"
+          check "login page"        "$(curl -s -o /dev/null -w %{http_code} $P/tabora/login)" "200"
+          check "api requires auth" "$(curl -s -o /dev/null -w %{http_code} $P/tabora/api/settings)" "401"
+          check "wrong password"    "$(curl -s -o /dev/null -w %{http_code} -X POST $P/tabora/login -H 'Content-Type: application/json' -d '{"password":"wrong"}')" "401"
+
+          curl -s -c "$J" -X POST $P/tabora/login \
+            -H 'Content-Type: application/json' \
+            -d '{"password":"ci-test-password"}' > /dev/null
+
+          check "login succeeds"    "$(curl -s -b $J -o /dev/null -w %{http_code} $P/tabora/api/settings)" "200"
+          check "panel renders"     "$(curl -s -b $J -o /dev/null -w %{http_code} $P/tabora/panel)" "200"
+          check "user list"         "$(curl -s -b $J -o /dev/null -w %{http_code} $P/tabora/api/users)" "200"
+          check "validation"        "$(curl -s -b $J -o /dev/null -w %{http_code} -X PUT $P/tabora/api/settings -H 'Content-Type: application/json' -d '{"ports":[]}')" "400"
+          check "unknown user 404"  "$(curl -s -o /dev/null -w %{http_code} "$P/tabora/sub?u=nobody")" "404"
+
+          echo "Validating generated configs..."
+          curl -s -A clash    "$P/tabora/sub" | python3 -c "import yaml,sys; yaml.safe_load(sys.stdin); print('  ok   clash yaml parses')"
+          curl -s -A sing-box "$P/tabora/sub" | python3 -c "import json,sys; json.load(sys.stdin); print('  ok   sing-box json parses')"
+          curl -s -A v2rayNG  "$P/tabora/sub" | base64 -d | grep -q '://' && echo "  ok   base64 subscription decodes"
+
+          exit $fail

@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ESNext"],
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@config/*": ["src/config/*"],
+      "@storage/*": ["src/storage/*"],
+      "@auth/*": ["src/auth/*"],
+      "@common/*": ["src/common/*"],
+      "@protocols/*": ["src/protocols/*"],
+      "@cores/*": ["src/cores/*"],
+      "@handlers/*": ["src/handlers/*"],
+      "@users/*": ["src/users/*"],
+      "@i18n/*": ["src/i18n/*"],
+      "#types/*": ["src/types/*"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

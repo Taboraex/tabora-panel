@@ -1,0 +1,49 @@
+name: Feature request
+description: Suggest a capability or improvement
+labels: ['enhancement']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: Describe the situation you run into today.
+      placeholder: I manage several panels and have to open each one to check quotas.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: A read-only aggregate view that pulls stats from other panels via an API key.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Panel UI
+        - Subscription output / client support
+        - Protocols and networking
+        - User management and quotas
+        - Deployment and setup
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Constraints
+      description: Tabora ships as one file on Cloudflare's free plan.
+      options:
+        - label: This works within Workers limits (no UDP, 100k requests/day)
+        - label: I am willing to help implement it

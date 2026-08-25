@@ -1,17 +1,23 @@
-<svg viewBox="0 0 220 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tabora">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" role="img" aria-label="Tabora">
+  <defs>
+    <linearGradient id="wg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(40,50) scale(0.585938)">
   <defs>
     <linearGradient id="tg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#6366f1"/>
     </linearGradient>
   </defs>
-  <g>
-    <path d="M32 5 55.38 18.5v27L32 59 8.62 45.5v-27Z" fill="url(#tg)" opacity=".12"/>
-    <path d="M32 5 55.38 18.5v27L32 59 8.62 45.5v-27Z" fill="none" stroke="url(#tg)" stroke-width="3.5" stroke-linejoin="round"/>
-    <path d="M20 23h24M32 23v21" stroke="url(#tg)" stroke-width="5" stroke-linecap="round"/>
-    <circle cx="32" cy="5" r="4.2" fill="url(#tg)"/>
-    <circle cx="55.38" cy="45.5" r="4.2" fill="url(#tg)"/>
-    <circle cx="8.62" cy="45.5" r="4.2" fill="url(#tg)"/>
+  <g fill="none" stroke="url(#tg)" stroke-linejoin="round" stroke-linecap="round">
+    <polygon points="256.00,66.00 420.54,161.00 420.54,351.00 256.00,446.00 91.46,351.00 91.46,161.00" stroke-width="18"/>
+    <polygon points="256.00,142.00 354.73,199.00 354.73,313.00 256.00,370.00 157.27,313.00 157.27,199.00" stroke-width="12" opacity=".55"/>
+    <g stroke-width="12" opacity=".55"><line x1="256.00" y1="66.00" x2="256.00" y2="142.00"/><line x1="420.54" y1="351.00" x2="354.73" y2="313.00"/><line x1="91.46" y1="351.00" x2="157.27" y2="313.00"/></g>
   </g>
-  <text x="72" y="41" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif"
-        font-size="27" font-weight="650" fill="url(#tg)">Tabora</text>
+  <g fill="url(#tg)"><circle cx="256.00" cy="66.00" r="27"/><circle cx="420.54" cy="351.00" r="27"/><circle cx="91.46" cy="351.00" r="27"/></g>
+  <path fill="url(#tg)" d="M199 216h114v33h-40v96h-34v-96h-40z"/>
+</g>
+  <text x="392" y="252" font-family="ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+        font-size="164" font-weight="700" letter-spacing="-4" fill="url(#wg)">Tabora</text>
 </svg>

@@ -2,7 +2,7 @@ import { Settings, RequestContext } from '#types/settings';
 import { DEFAULT_SETTINGS } from './defaults';
 import { Store } from '@storage/db';
 import { cached, cacheInvalidate, CacheKeys, cacheSet } from '@storage/cache';
-import { CACHE_TTL_SETTINGS, HTTP_PORTS, HTTPS_PORTS } from './constants';
+import { CACHE_TTL_SETTINGS, DEFAULT_PROXY_IPS, HTTP_PORTS, HTTPS_PORTS } from './constants';
 import { deriveUUID, isValidUUID } from '@common/utils';
 
 const SETTINGS_KEY = 'settings';
@@ -43,6 +43,16 @@ export async function loadSettings(store: Store, env: Env): Promise<Settings> {
         const stored = await store.getJSON<Partial<Settings>>(SETTINGS_KEY);
         const settings: Settings = { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
 
+        // Panels created before relays shipped stored an empty list, and an
+        // empty list means every Cloudflare-hosted destination silently fails.
+        // Treat it as "never configured" and adopt the defaults; an operator
+        // who genuinely wants no relay can pick a different proxyIpMode.
+        let migrated = false;
+        if (stored && Array.isArray(stored.proxyIPs) && stored.proxyIPs.length === 0) {
+            settings.proxyIPs = [...DEFAULT_PROXY_IPS];
+            migrated = true;
+        }
+
         // env wins for deployment-level knobs
         if (env.SECURE_PATH) settings.securePath = env.SECURE_PATH;
         if (env.FALLBACK) settings.fallback = env.FALLBACK;
@@ -69,8 +79,9 @@ export async function loadSettings(store: Store, env: Env): Promise<Settings> {
 
         settings.panelVersion = VERSION;
 
-        // Persist the first materialised copy so the panel has something to edit.
-        if (!stored && store.isPersistent) {
+        // Persist the first materialised copy so the panel has something to
+        // edit, and write back the relay migration so it happens only once.
+        if ((!stored || migrated) && store.isPersistent) {
             await store.putJSON(SETTINGS_KEY, settings);
         }
 

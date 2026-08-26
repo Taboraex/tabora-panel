@@ -5,6 +5,7 @@ import {
     isTlsPort,
     frontNeedsInsecure,
     renderRemark,
+    uniqueLabel,
     selectSniHost,
 } from './shared';
 
@@ -135,18 +136,20 @@ function formatScalar(value: unknown): string {
 export function buildClashConfig(ctx: BuildContext): string {
     const { settings } = ctx;
     const proxies: ClashProxy[] = [];
+    const used = new Set(['✅ Selector', '♻️ Auto', 'DIRECT']);
 
     for (const { address, port, index } of enumerateEndpoints(ctx)) {
         for (const protocol of ctx.protocols) {
-            const name = renderRemark(settings.nameTemplate, {
+            const proto = protocol === P.TR ? 'TR' : 'VL';
+            const name = uniqueLabel(renderRemark(settings.nameTemplate, {
                 index,
                 prefix: settings.namePrefix,
-                protocol: protocol === P.TR ? 'TR' : 'VL',
+                protocol: proto,
                 port,
                 address,
                 flag: ctx.poolFlag,
                 country: ctx.poolCountry,
-            });
+            }), used, proto);
             proxies.push(buildProxy(ctx, protocol, address, port, name));
         }
     }

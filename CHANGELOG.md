@@ -5,6 +5,17 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] — 2026-08-26
+
+### Fixed
+
+- **Hiddify refused the subscription** with
+  `duplicate outbound/endpoint tag`. The 0.7.1 name template dropped
+  `{PROTOCOL}`, so VLESS and Trojan of the same IP rendered as one tag and
+  Sing-box (which Hiddify uses) rejected the JSON. Outbound tags / Clash
+  proxy names are now forced unique, and the default template includes
+  `{PROTOCOL}` again. Existing 0.7.1 templates are migrated on load.
+
 ## [0.7.1] — 2026-08-26
 
 ### Fixed
@@ -208,7 +219,8 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.2
 [0.7.1]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.0
 [0.1.3]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.3

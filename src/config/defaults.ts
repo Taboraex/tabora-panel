@@ -7,8 +7,14 @@ import {
     HTTPS_PORTS,
 } from './constants';
 
-/** Pre-0.7.1 template. Migrated on load so Hiddify's geo flag does not hide the pin. */
-export const LEGACY_NAME_TEMPLATE = '{FLAG} {PREFIX}-{INDEX} · {PROTOCOL}:{PORT}';
+/** Templates that omit a unique per-outbound token. Migrated on load. */
+export const LEGACY_NAME_TEMPLATES = [
+    '{FLAG} {PREFIX}-{INDEX} · {PROTOCOL}:{PORT}',
+    '{FLAG} {COUNTRY} {PREFIX}-{INDEX} · {ADDRESS}',
+];
+
+/** @deprecated use LEGACY_NAME_TEMPLATES */
+export const LEGACY_NAME_TEMPLATE = LEGACY_NAME_TEMPLATES[0];
 
 export const DEFAULT_SETTINGS: Settings = {
     // identity — populated from env/derived values on first boot
@@ -35,7 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
     customDomain: '',
 
     // subscription
-    nameTemplate: '{FLAG} {COUNTRY} {PREFIX}-{INDEX} · {ADDRESS}',
+    nameTemplate: '{FLAG} {COUNTRY} {PREFIX}-{INDEX} · {PROTOCOL} · {ADDRESS}',
     namePrefix: 'Tabora',
     maxConfigs: 30,
     fakeConfigs: [

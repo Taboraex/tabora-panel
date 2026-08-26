@@ -5,6 +5,7 @@ import {
     isTlsPort,
     frontNeedsInsecure,
     renderRemark,
+    uniqueLabel,
     selectSniHost,
     wsPath,
 } from './shared';
@@ -58,23 +59,25 @@ export function buildUri(
 export function buildUriList(ctx: BuildContext, infoLabels: string[] = []): string[] {
     const lines: string[] = [];
     const { settings } = ctx;
+    const used = new Set<string>();
 
     // Informational entries first so they sit at the top of the client's list.
     for (const label of infoLabels) {
-        lines.push(buildUri(ctx, ctx.protocols[0], ctx.hostname, ctx.ports[0], label));
+        lines.push(buildUri(ctx, ctx.protocols[0], ctx.hostname, ctx.ports[0], uniqueLabel(label, used)));
     }
 
     for (const { address, port, index } of enumerateEndpoints(ctx)) {
         for (const protocol of ctx.protocols) {
-            const remark = renderRemark(settings.nameTemplate, {
+            const proto = protocol === P.TR ? 'TR' : 'VL';
+            const remark = uniqueLabel(renderRemark(settings.nameTemplate, {
                 index,
                 prefix: settings.namePrefix,
-                protocol: protocol === P.TR ? 'TR' : 'VL',
+                protocol: proto,
                 port,
                 address,
                 flag: ctx.poolFlag,
                 country: ctx.poolCountry,
-            });
+            }), used, proto);
             lines.push(buildUri(ctx, protocol, address, port, remark));
         }
     }

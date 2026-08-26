@@ -1,7 +1,7 @@
 import { Settings } from '#types/settings';
 import { Store } from '@storage/db';
 import { saveSettings } from '@config/settings';
-import { DEFAULT_SETTINGS, LEGACY_NAME_TEMPLATE } from '@config/defaults';
+import { DEFAULT_SETTINGS, LEGACY_NAME_TEMPLATES } from '@config/defaults';
 import { ok, badRequest, methodNotAllowed } from '@common/http';
 import {
     publicCountries, findCountry, candidatesFor, isPoolAddress,
@@ -137,7 +137,7 @@ export async function handlePoolApply(
         ipPool,
         cleanIPs: entries.map((e) => e.address),
     };
-    if (!settings.nameTemplate || settings.nameTemplate === LEGACY_NAME_TEMPLATE) {
+    if (!settings.nameTemplate || LEGACY_NAME_TEMPLATES.includes(settings.nameTemplate)) {
         patch.nameTemplate = DEFAULT_SETTINGS.nameTemplate;
     }
 

@@ -145,6 +145,32 @@ export function renderRemark(
     return out.replace(/\{[A-Z]+\}/g, '').replace(/\s+/g, ' ').trim() || `Node-${values.index}`;
 }
 
+/**
+ * Sing-box and Clash refuse a config whose outbound tags / proxy names collide.
+ * The 0.7.1 default template dropped `{PROTOCOL}`, so VLESS and Trojan of the
+ * same IP rendered identically and Hiddify failed with
+ * `duplicate outbound/endpoint tag`.
+ */
+export function uniqueLabel(base: string, used: Set<string>, hint = ''): string {
+    const root = (base || 'Node').replace(/\s+/g, ' ').trim() || 'Node';
+    const claim = (name: string): string | null => {
+        if (used.has(name)) return null;
+        used.add(name);
+        return name;
+    };
+    const first = claim(root);
+    if (first) return first;
+    if (hint) {
+        const withHint = claim(`${root} · ${hint}`);
+        if (withHint) return withHint;
+    }
+    for (let n = 2; n < 10_000; n++) {
+        const next = claim(`${root} · ${n}`);
+        if (next) return next;
+    }
+    return `${root} · ${used.size + 1}`;
+}
+
 /** Informational pseudo-nodes that surface quota/expiry inside the client UI. */
 export function renderInfoLabels(
     settings: Settings,

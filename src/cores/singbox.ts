@@ -5,6 +5,7 @@ import {
     isTlsPort,
     frontNeedsInsecure,
     renderRemark,
+    uniqueLabel,
     selectSniHost,
 } from './shared';
 
@@ -65,18 +66,20 @@ function buildOutbound(
 export function buildSingboxConfig(ctx: BuildContext): string {
     const { settings } = ctx;
     const outbounds: SbOutbound[] = [];
+    const used = new Set(['✅ Selector', '♻️ Auto', 'direct', 'remote-dns', 'local-dns', 'mixed-in', 'tun-in']);
 
     for (const { address, port, index } of enumerateEndpoints(ctx)) {
         for (const protocol of ctx.protocols) {
-            const tag = renderRemark(settings.nameTemplate, {
+            const proto = protocol === P.TR ? 'TR' : 'VL';
+            const tag = uniqueLabel(renderRemark(settings.nameTemplate, {
                 index,
                 prefix: settings.namePrefix,
-                protocol: protocol === P.TR ? 'TR' : 'VL',
+                protocol: proto,
                 port,
                 address,
                 flag: ctx.poolFlag,
                 country: ctx.poolCountry,
-            });
+            }), used, proto);
             outbounds.push(buildOutbound(ctx, protocol, address, port, tag));
         }
     }

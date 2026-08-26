@@ -1,5 +1,5 @@
 import { Settings, RequestContext } from '#types/settings';
-import { DEFAULT_SETTINGS, LEGACY_NAME_TEMPLATE } from './defaults';
+import { DEFAULT_SETTINGS, LEGACY_NAME_TEMPLATES } from './defaults';
 import { Store } from '@storage/db';
 import { cached, cacheInvalidate, CacheKeys, cacheSet } from '@storage/cache';
 import { CACHE_TTL_SETTINGS, DEFAULT_PROXY_IPS, HTTP_PORTS, HTTPS_PORTS } from './constants';
@@ -36,7 +36,7 @@ function healIpPool(settings: Settings): boolean {
         changed = true;
     }
 
-    if (settings.nameTemplate === LEGACY_NAME_TEMPLATE) {
+    if (LEGACY_NAME_TEMPLATES.includes(settings.nameTemplate)) {
         settings.nameTemplate = DEFAULT_SETTINGS.nameTemplate;
         changed = true;
     }

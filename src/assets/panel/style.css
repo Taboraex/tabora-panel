@@ -91,7 +91,12 @@ html[dir="rtl"] body { font-family: Vazirmatn, ui-sans-serif, system-ui, "Segoe 
 }
 
 .brand { display: flex; align-items: center; gap: .6rem; min-width: 0; }
-.logo { width: 30px; height: 30px; flex-shrink: 0; }
+.logo {
+  width: 38px; height: 38px; flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, .35), 0 0 16px rgba(139, 92, 246, .35);
+}
 .brand-name {
   font-weight: 650; font-size: 1.08rem; letter-spacing: -.01em;
   background: linear-gradient(120deg, var(--accent), var(--accent-2));

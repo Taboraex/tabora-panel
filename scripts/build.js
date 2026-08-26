@@ -54,12 +54,12 @@ async function processAssets() {
             html = html.replace('/* JS_PLACEHOLDER */', () => code);
         }
 
-        const minified = await htmlMinify(html, {
+        const minified = injectBrandImages(await htmlMinify(html, {
             collapseWhitespace: true,
             removeComments: true,
             removeAttributeQuotes: true,
             minifyCSS: true,
-        });
+        }));
 
         // Guard: every inline script must still parse once placeholders are
         // filled in. A placeholder that doubles as a JS identifier (the old
@@ -73,6 +73,37 @@ async function processAssets() {
 
     console.log(`${ok} Assets bundled`);
     return result;
+}
+
+function dataUri(file, mime) {
+    const buf = readFileSync(join(ASSET_PATH, 'shared', file));
+    return `data:${mime};base64,${buf.toString('base64')}`;
+}
+
+/**
+ * Swap brand-image tokens for data URIs *after* minify.
+ *
+ * html-minifier may strip quotes around a token. Base64 contains `=`, which
+ * is illegal in an unquoted HTML attribute, so the replacement always
+ * re-quotes the value.
+ */
+function injectBrandImages(html) {
+    const images = {
+        LOGO_BADGE_SRC: dataUri('logo-badge.webp', 'image/webp'),
+        LOGO_MARK_SRC: dataUri('logo-mark.webp', 'image/webp'),
+        FAVICON_SRC: dataUri('favicon.png', 'image/png'),
+    };
+    for (const [token, uri] of Object.entries(images)) {
+        const next = html.replace(
+            new RegExp(`(src|href)=(["']?)${token}\\2`, 'g'),
+            `$1="${uri}"`,
+        );
+        if (next === html && html.includes(token)) {
+            throw new Error(`brand token ${token} was not substituted`);
+        }
+        html = next;
+    }
+    return html;
 }
 
 /**

@@ -5,6 +5,14 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] — 2026-08-27
+
+### Changed
+
+- **The Tabora seal is now the panel logo.** Login, the dashboard topbar,
+  the subscription page and every favicon use the circular chrome-T mark
+  as a real image — not a reconstructed SVG.
+
 ## [0.14.0] — 2026-08-27
 
 ### Fixed
@@ -354,7 +362,9 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.15.0
+[0.14.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.14.0
 [0.13.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.13.0
 [0.12.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.12.0
 [0.11.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.11.0

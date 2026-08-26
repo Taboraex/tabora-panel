@@ -2,52 +2,34 @@
 
 ## The mark
 
-A point-top hexagon containing a second, smaller hexagon joined by three spokes.
-The construction reads two ways on purpose:
-
-- **An isometric cube** — the panel is infrastructure, something built and solid.
-- **A network node graph** — three luminous vertices are the relay endpoints the
-  proxy actually hops through.
-
-A bold **T** sits in the centre face. The mark deliberately avoids the
-shield-and-padlock cliché that every other proxy project uses.
-
-## Geometry
-
-Nothing is eyeballed. The outer hexagon is computed as
-`(256 + 190·cos(60i − 90°), 256 + 190·sin(60i − 90°))` for `i = 0…5`;
-the inner face uses radius `190 × 0.60`. Nodes sit on alternating outer
-vertices at r = 27. This is why the mark stays symmetrical at every size.
+A circular seal: a chrome **T** cut through a purple neon ring, circuit
+traces on a dark disc, the word **TABORA** under the letter. This is a
+raster seal — the artwork the operator supplied — not a reconstructed SVG.
 
 ## Colour
 
 | Token | Value |
 |---|---|
-| `--accent` | `#38bdf8` |
-| `--accent-2` | `#6366f1` |
-| gradient | `linear-gradient(120deg, #38bdf8, #6366f1)` |
-| dark bg | `#070b14` |
-| light bg | `#f4f7fb` |
-
-Every shape is filled with the brand gradient — there are **no hardcoded
-background fills**, so the mark works unchanged on the dark and light themes.
+| neon | `#c084fc` / `#a855f7` |
+| chrome | `#e5e7eb` → `#94a3b8` |
+| disc | `#050814` |
 
 ## Files
 
 | File | Use |
 |---|---|
-| `icon.svg` | master mark, vector, infinitely scalable |
-| `logo.svg` | horizontal lockup, mark + wordmark |
-| `icon-1024/512/256/128/64/32/16.png` | transparent PNG icon set |
-| `logo.png` | lockup, transparent |
-| `logo-dark.png` / `logo-light.png` | lockup on each theme surface |
-| `social-card.png` | 1200×630 OG / social preview |
+| `logo.webp` | master seal, 1024² |
+| `logo.png` | 256² PNG preview |
+| `logo-dark.webp` / `logo-light.webp` | 640² on the dark disc |
+| `icon-16/32/64/128.png` | favicon / small UI |
+| `icon-256/512/1024.webp` | large icon set |
+| `social-card.jpg` | 1200×630 |
 
-`icon-16.png` and `icon-32.png` are the favicon sizes; the mark was tuned so the
-T survives at 16 px.
+Embedded copies used by the worker live in `src/assets/shared/`
+(`logo-badge.webp`, `logo-mark.webp`, `favicon.png`) and are inlined as
+data URIs at build time.
 
-## Clear space & minimum size
+## Clear space
 
-Keep clear space of at least half the mark's width on all sides. Minimum size is
-16 px for the icon and 120 px wide for the lockup. Do not recolour, rotate,
-add effects, or place the gradient mark on a mid-tone background.
+Keep the circular ring intact. Do not crop into the T, recolour the neon,
+or place the seal on a busy mid-tone background.

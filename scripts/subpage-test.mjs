@@ -54,8 +54,9 @@ if (api.ok()) {
 
 await page.goto(`${ROOT}/sub`, { waitUntil: 'networkidle' });
 
-check('page renders the hexagon mark, not a shield',
-    (await page.locator('.logo polygon').count()) >= 2);
+check('page renders the Tabora seal image',
+    (await page.locator('img.logo').count()) === 1
+    && (await page.locator('img.logo').getAttribute('src') || '').startsWith('data:image/'));
 check('four app tiles are offered',
     (await page.locator('.app[data-app]').count()) === 4);
 

@@ -56,7 +56,7 @@ html[dir="rtl"] body { font-family: Vazirmatn, ui-sans-serif, system-ui, Tahoma,
 @keyframes drift { to { transform: translate3d(-2%, 3%, 0) scale(1.05); } }
 @keyframes rise { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 50% { filter: drop-shadow(0 10px 28px rgba(56,189,248,.55)); } }
+@keyframes pulse { 50% { filter: drop-shadow(0 10px 32px rgba(168,85,247,.7)); } }
 
 .lang-toggle {
   position: fixed; top: 1rem; inset-inline-end: 1rem; z-index: 5;
@@ -93,7 +93,9 @@ html[dir="rtl"] body { font-family: Vazirmatn, ui-sans-serif, system-ui, Tahoma,
 
 .brand { text-align: center; margin-bottom: 1.75rem; }
 .logo {
-  width: 58px; height: 58px; display: block; margin: 0 auto 1rem;
+  width: 156px; height: 156px; display: block; margin: 0 auto 1rem;
+  border-radius: 50%;
+  object-fit: cover;
   animation: pulse 2.8s ease-in-out infinite;
 }
 

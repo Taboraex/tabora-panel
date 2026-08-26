@@ -23,6 +23,10 @@ declare global {
         CF_API_TOKEN?: string;
         TELEGRAM_BOT_TOKEN?: string;
         TELEGRAM_ADMIN_ID?: string;
+        /** Injected by the Telegram launcher so the bot can manage this panel. */
+        BOT_KEY?: string;
+        /** Telegram user id of the operator who installed this panel. */
+        TELEGRAM_OWNER?: string;
     }
 
     interface Array<T> {

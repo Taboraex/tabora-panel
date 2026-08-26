@@ -8,6 +8,7 @@ import { handleWebSocket } from '@handlers/websocket';
 import { handleSubscription } from '@handlers/subscription';
 import { renderFallback } from '@handlers/fallback';
 import { handleLogin, handleLogout, handleChangePassword } from '@handlers/login';
+import { handleBot } from '@handlers/bot';
 import { handleUsers } from '@handlers/users';
 import { handleLogs } from '@handlers/logs';
 import {
@@ -77,6 +78,12 @@ export default {
                 case 'api/set-password':
                     // Guarded internally: allowed unauthenticated only on first run.
                     return handleChangePassword(request, store, env);
+            }
+
+            // 3b. Telegram launcher — authenticated with BOT_KEY, not a cookie.
+            if (route === 'api/bot' || route.startsWith('api/bot/')) {
+                const sub = route.slice('api/bot'.length).replace(/^\//, '');
+                return handleBot(request, env, settings, store, users, sub);
             }
 
             // 4. Everything below requires a valid session.

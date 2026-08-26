@@ -70,6 +70,12 @@ const I18N = {
         'stat.traffic': 'Total traffic', 'stat.today': 'Today', 'stat.expired': 'Expired',
         'ov.system': 'System', 'ov.host': 'Hostname', 'ov.colo': 'Edge node',
         'ov.storage': 'Storage', 'ov.ip': 'Your IP', 'ov.quick': 'Quick actions',
+        'tg.title': 'Telegram',
+        'tg.linked': 'Linked',
+        'tg.unlinked': 'Not linked',
+        'tg.owner': 'Linked account',
+        'tg.hint.linked': 'This panel can be managed from the Tabora Telegram bot — stats, users, pause — without opening the dashboard.',
+        'tg.hint.unlinked': 'Update this panel from the Telegram bot to manage users, traffic and the kill switch from chat.',
         'ov.addUser': 'Add user', 'ov.export': 'Export backup',
         'ov.import': 'Import backup', 'ov.enforce': 'Enforce quotas',
         'sub.title': 'Subscription links',
@@ -174,6 +180,12 @@ const I18N = {
         'stat.traffic': 'ترافیک کل', 'stat.today': 'امروز', 'stat.expired': 'منقضی',
         'ov.system': 'سیستم', 'ov.host': 'نام میزبان', 'ov.colo': 'نود لبه',
         'ov.storage': 'ذخیره‌سازی', 'ov.ip': 'آی‌پی شما', 'ov.quick': 'اقدامات سریع',
+        'tg.title': 'تلگرام',
+        'tg.linked': 'متصل',
+        'tg.unlinked': 'قطع',
+        'tg.owner': 'حساب متصل',
+        'tg.hint.linked': 'این پنل را می‌توان از ربات تلگرام تابورا مدیریت کرد — آمار، کاربرها، توقف — بدون باز کردن داشبورد.',
+        'tg.hint.unlinked': 'این پنل را از ربات تلگرام بروزرسانی کنید تا کاربرها، ترافیک و کلید قطع را از چت مدیریت کنید.',
         'ov.addUser': 'افزودن کاربر', 'ov.export': 'خروجی پشتیبان',
         'ov.import': 'بازیابی پشتیبان', 'ov.enforce': 'اعمال محدودیت‌ها',
         'sub.title': 'لینک‌های اشتراک',
@@ -260,6 +272,7 @@ function applyLang() {
  */
 function redrawDynamic() {
     try { renderGamingProfiles(); } catch { /* not loaded yet */ }
+    try { renderTelegram(); } catch { /* not loaded yet */ }
     try { renderCleanResults(); } catch { /* not loaded yet */ }
     try { renderCleanPinned(); } catch { /* not loaded yet */ }
     if (usersCache.length) renderUsers();
@@ -541,6 +554,28 @@ function renderMeta() {
     $('#ovColo').textContent = meta.colo || '—';
     $('#ovStorage').textContent = meta.hasD1 ? 'D1 (SQLite)'
         : meta.hasKV ? 'KV' : 'None — settings will not persist';
+    renderTelegram();
+}
+
+function renderTelegram() {
+    const card = $('#tgCard');
+    if (!card) return;
+    const tg = meta.telegram ?? {};
+    const linked = !!tg.linked;
+    card.classList.toggle('linked', linked);
+    const pill = $('#tgPill');
+    if (pill) {
+        pill.textContent = t(linked ? 'tg.linked' : 'tg.unlinked');
+        pill.className = `pill ${linked ? 'linked' : 'unlinked'}`;
+    }
+    const hint = $('#tgHint');
+    if (hint) hint.textContent = t(linked ? 'tg.hint.linked' : 'tg.hint.unlinked');
+    const row = $('#tgMeta');
+    const owner = $('#tgOwner');
+    if (row && owner) {
+        row.hidden = !linked;
+        owner.textContent = tg.owner ? `#${tg.owner}` : '—';
+    }
 }
 
 /* ═══════════════════════════════ subscriptions ══════════════════════════ */

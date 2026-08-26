@@ -41,6 +41,7 @@ jobs:
           node scripts/pool-test.mjs
           node scripts/cores-test.mjs
           node scripts/scan-test.mjs
+          node scripts/bot-test.mjs
 
       - name: Build worker
         run: npm run build

@@ -47,6 +47,9 @@ with no server to maintain.
   [The subscription page](#the-subscription-page).
 - **Decoy page** — any request outside the secret path mirrors a real website,
   so casual probes never see that a panel exists.
+- **Telegram remote control** — after install or upgrade from the bot, manage
+  users, traffic and the kill switch from chat. The dashboard shows when a
+  panel is linked.
 - **Clean IP scanner** — multi-wave scan from your own network that finds many
   low-ping Worker-front IPv4s, ranks them on stability, and lets you choose
   how many to pin. Each pinned IP becomes exactly one config.
@@ -205,6 +208,7 @@ edited in the dashboard and stored in D1.
 | `/{path}/sub?u=NAME` | Per-user subscription |
 | `/{path}/sub?gaming=1` | Pinned gaming profiles only |
 | `/{path}/api/*` | JSON API (requires session) |
+| `/{path}/api/bot/*` | Telegram launcher (`X-Tabora-Key`) |
 | `/vl`, `/tr` | WebSocket proxy endpoints |
 | anything else | Decoy page |
 

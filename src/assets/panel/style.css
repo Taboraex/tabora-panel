@@ -308,6 +308,10 @@ input[type="number"] { font-variant-numeric: tabular-nums; }
   padding: .12rem .5rem; font-size: .68rem; font-weight: 650;
   letter-spacing: .03em; text-transform: uppercase; border-radius: 999px;
 }
+.tg-card.linked { border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.tg-card .pill.linked { color: var(--ok); background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.tg-card .pill.unlinked { color: var(--muted); background: color-mix(in srgb, var(--muted) 16%, transparent); }
+
 .pill.active         { color: var(--ok);     background: color-mix(in srgb, var(--ok) 16%, transparent); }
 .pill.paused         { color: var(--warn);   background: color-mix(in srgb, var(--warn) 16%, transparent); }
 .pill.expired,

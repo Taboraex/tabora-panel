@@ -5,6 +5,16 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] — 2026-08-26
+
+### Added
+
+- **Telegram control plane.** A launcher-injected `BOT_KEY` unlocks
+  `/{path}/api/bot/*`: live stats, user list, add / pause / resume / delete
+  users, and the panel kill switch — all from chat, without a dashboard
+  session. Wrong keys are 401.
+- Overview card shows whether this panel is linked to Telegram.
+
 ## [0.10.0] — 2026-08-26
 
 ### Added
@@ -293,7 +303,8 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.11.0
 [0.10.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.10.0
 [0.9.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.9.0
 [0.8.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.8.0

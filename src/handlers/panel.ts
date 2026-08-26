@@ -50,6 +50,10 @@ export async function handleGetSettings(
             defaultPassword: await isDefaultPassword(store, env),
             dailyRequestLimit: DAILY_REQUEST_LIMIT,
             subscriptionBase: `${ctx.origin}/${settings.securePath}/sub`,
+            telegram: {
+                linked: Boolean(env.BOT_KEY),
+                owner: env.TELEGRAM_OWNER ?? '',
+            },
         },
     });
 }

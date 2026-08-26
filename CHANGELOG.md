@@ -5,6 +5,27 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] — 2026-08-26
+
+### Added
+
+- **Intelligent Clean IP scanner.** The scan now walks in waves from your own
+  network: previous winners, verified Worker fronts, a baked catalogue of
+  hundreds of Worker-front IPv4s, `/24` neighbours of whatever answered, then a
+  wider sample of the front ranges. Quick / Smart / Deep is a single control.
+  Smart mode stops once it already has enough healthy, diverse IPs.
+- **Keep-N selector.** When many IPs come back, a slider (1–20) plus per-row
+  checkboxes decide how many to pin. Ranking still requires several successful
+  probes and never pads `keep` with lossy addresses. Distinct `/24`s are
+  preferred so one throttled prefix cannot take every slot.
+- `GET /api/scan/expand` and `POST /api/scan/rank` so the browser can grow a
+  wave around winners and have the worker score median + jitter + loss.
+
+### Changed
+
+- Apply cap raised from 5 (hardcoded in the dashboard) to 24. Each pinned IPv4
+  is still exactly one config.
+
 ## [0.9.0] — 2026-08-26
 
 ### Removed
@@ -272,7 +293,9 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.10.0
+[0.9.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.9.0
 [0.8.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.8.0
 [0.7.3]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.3
 [0.7.2]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.2

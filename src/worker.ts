@@ -10,7 +10,9 @@ import { renderFallback } from '@handlers/fallback';
 import { handleLogin, handleLogout, handleChangePassword } from '@handlers/login';
 import { handleUsers } from '@handlers/users';
 import { handleLogs } from '@handlers/logs';
-import { handleScan, handleScanCandidates, handleScanApply } from '@handlers/scan';
+import {
+    handleScan, handleScanCandidates, handleScanApply, handleScanExpand, handleScanRank,
+} from '@handlers/scan';
 import {
     handleGamingCandidates,
     handleGamingRank,
@@ -111,7 +113,13 @@ export default {
                     return handleScan(request, settings, store);
 
                 case 'api/scan/candidates':
-                    return handleScanCandidates();
+                    return handleScanCandidates(request, settings);
+
+                case 'api/scan/expand':
+                    return handleScanExpand(request);
+
+                case 'api/scan/rank':
+                    return handleScanRank(request);
 
                 case 'api/scan/apply':
                     return handleScanApply(request, settings, store);

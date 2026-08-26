@@ -40,10 +40,27 @@ const I18N = {
         'scan.relay.run': 'Test relays',
         'scan.relay.apply': 'Use fastest',
         'scan.relay.hint': 'Relays carry your traffic when a site sits behind Cloudflare. Tested from the worker.',
-        'scan.clean.title': 'Clean IP scan',
+        'scan.clean.kicker': 'CLEAN IP',
+        'scan.clean.title': 'Find low-ping Worker fronts',
         'scan.clean.run': 'Scan from my network',
-        'scan.clean.apply': 'Use fastest',
-        'scan.clean.hint': 'This is how you get a real fixed IP. The scan runs in your browser against Worker-front Cloudflare addresses from your own network. Apply the fastest IPv4s and each one becomes exactly one config \u2014 no country labels.',
+        'scan.clean.stop': 'Stop',
+        'scan.clean.apply': 'Pin selected',
+        'scan.clean.keep': 'Keep',
+        'scan.clean.depth.quick': 'Quick',
+        'scan.clean.depth.smart': 'Smart',
+        'scan.clean.depth.deep': 'Deep',
+        'scan.clean.hint': 'Multi-wave scan from your own network: previous winners, verified fronts, a baked catalogue, nearby /24s, then a wider sample. Ranking favours steady low ping \u2014 lossy IPs are never kept. Each pinned IPv4 becomes exactly one config.',
+        'scan.clean.healthy': 'Healthy',
+        'scan.clean.selected': 'Selected',
+        'scan.clean.best': 'Best',
+        'scan.clean.spread': '/24s',
+        'scan.clean.pinned': 'Pinned clean IPs',
+        'scan.clean.pinnedHint': 'Each of these is the address of one config. They stay fixed until you scan again.',
+        'scan.clean.clear': 'Clear',
+        'scan.clean.cleared': 'Clean IPs cleared \u2014 configs fall back to the worker hostname',
+        'scan.clean.none': 'No healthy Worker fronts from this network. Try Deep, or another network.',
+        'scan.clean.early': 'Enough healthy IPs \u2014 skipped the wider sample',
+        'scan.clean.using': 'Using {n} of {m} healthy IPs',
         'scan.running': 'Testing…',
         'scan.progress': 'Tested {done} of {total}',
         'scan.done': '{n} working address(es) found',
@@ -127,10 +144,27 @@ const I18N = {
         'scan.relay.run': 'تست رله‌ها',
         'scan.relay.apply': 'استفاده از سریع‌ترین',
         'scan.relay.hint': 'وقتی سایتی پشت کلادفلر باشد، رله‌ها ترافیک شما را عبور می‌دهند. تست از سمت ورکر انجام می‌شود.',
-        'scan.clean.title': 'اسکن آی‌پی تمیز',
+        'scan.clean.kicker': 'آی‌پی تمیز',
+        'scan.clean.title': 'پیدا کردن لبه‌های کم‌پینگ',
         'scan.clean.run': 'اسکن از شبکه من',
-        'scan.clean.apply': 'استفاده از سریع‌ترین',
-        'scan.clean.hint': 'این راه آی‌پی ثابت واقعی است. اسکن در مرورگر شما روی آی‌پی‌هایی اجرا می‌شود که واقعاً جلوی ورکر می‌ایستند. سریع‌ترین آی‌پی‌ها را اعمال کنید؛ هر کدام دقیقاً یک کانفیگ می‌شود — بدون برچسب کشور.',
+        'scan.clean.stop': 'توقف',
+        'scan.clean.apply': 'ثابت کردن انتخاب‌شده‌ها',
+        'scan.clean.keep': 'تعداد',
+        'scan.clean.depth.quick': 'سریع',
+        'scan.clean.depth.smart': 'هوشمند',
+        'scan.clean.depth.deep': 'عمیق',
+        'scan.clean.hint': 'اسکن چندموجی از شبکه خودتان: برنده‌های قبلی، لبه‌های تاییدشده، کاتالوگ پخته، همسایه‌های /۲۴، بعد نمونهٔ گسترده‌تر. رتبه‌بندی پینگ پایدار را ترجیح می‌دهد — آی‌پی‌های پُراتلاف هرگز نگه داشته نمی‌شوند. هر آی‌پی ثابت دقیقاً یک کانفیگ می‌شود.',
+        'scan.clean.healthy': 'سالم',
+        'scan.clean.selected': 'انتخاب‌شده',
+        'scan.clean.best': 'بهترین',
+        'scan.clean.spread': '/۲۴',
+        'scan.clean.pinned': 'آی‌پی‌های تمیز ثابت',
+        'scan.clean.pinnedHint': 'هر کدام آدرس یک کانفیگ است. تا اسکن بعدی ثابت می‌مانند.',
+        'scan.clean.clear': 'پاک کردن',
+        'scan.clean.cleared': 'آی‌پی‌های تمیز پاک شد — کانفیگ‌ها به نام ورکر برمی‌گردند',
+        'scan.clean.none': 'از این شبکه هیچ لبهٔ سالمی پیدا نشد. حالت عمیق یا شبکه دیگری را امتحان کنید.',
+        'scan.clean.early': 'به اندازه کافی آی‌پی سالم — نمونهٔ گسترده‌تر رد شد',
+        'scan.clean.using': '{n} از {m} آی‌پی سالم استفاده می‌شود',
         'scan.running': 'در حال تست…',
         'scan.progress': '{done} از {total} تست شد',
         'scan.done': '{n} آدرس سالم پیدا شد',
@@ -226,6 +260,8 @@ function applyLang() {
  */
 function redrawDynamic() {
     try { renderGamingProfiles(); } catch { /* not loaded yet */ }
+    try { renderCleanResults(); } catch { /* not loaded yet */ }
+    try { renderCleanPinned(); } catch { /* not loaded yet */ }
     if (usersCache.length) renderUsers();
     if (meta.subscriptionBase) renderSubscriptions();
     // Logs are fetched and rendered together, so refetch only if that tab is
@@ -745,6 +781,12 @@ async function loadAll() {
         console.error('Could not render gaming profiles:', err);
     }
 
+    try {
+        renderCleanPinned();
+    } catch (err) {
+        console.error('Could not render pinned clean IPs:', err);
+    }
+
     // Decorative and independently guarded, like the block above.
     loadChart().catch((err) => console.error('Could not render chart:', err));
 
@@ -1089,7 +1131,12 @@ async function saveGamingOptions() {
 /* ═════════════════════════════════ scanner ══════════════════════════════ */
 
 let relayBest = [];
-let cleanBest = [];
+let cleanRanked = [];
+let cleanAbort = false;
+let cleanKeepTouched = false;
+
+const IPV4_RE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+const isV4 = (a) => IPV4_RE.test(a);
 
 const fmtMs = (ms) => `${ms} ms`;
 
@@ -1132,86 +1179,283 @@ async function scanRelays() {
     }
 }
 
+function currentDepth() {
+    return document.querySelector('.scan-depth.active')?.dataset.depth || 'smart';
+}
+
+function currentKeep() {
+    const n = Number($('#cleanKeep')?.value);
+    return Number.isFinite(n) ? Math.min(20, Math.max(1, Math.floor(n))) : 5;
+}
+
+function waveLabel(wave) {
+    return lang === 'fa' ? (wave.labelFa || wave.label) : (wave.label || wave.id);
+}
+
+function renderWaves(waves, active) {
+    const box = $('#cleanWaves');
+    if (!box) return;
+    box.innerHTML = waves.map((w, i) => {
+        const cls = w.skipped ? 'skip' : i === active ? 'active' : i < active ? 'done' : '';
+        return `<span class="scan-wave ${cls}"><b>${escapeHtml(waveLabel(w))}</b> ${w.addresses?.length ?? 0}</span>`;
+    }).join('');
+}
+
+function diverseHealthyCount(measurements, minSuccesses) {
+    const nets = new Set();
+    for (const m of measurements) {
+        const good = (m.samples || []).filter((s) => s >= 0);
+        if (good.length < minSuccesses) continue;
+        const loss = 1 - good.length / Math.max(m.samples.length, 1);
+        if (loss > 0.34) continue;
+        nets.add(String(m.address).split('.').slice(0, 3).join('.'));
+    }
+    return nets.size;
+}
+
+function localWinners(measurements, n) {
+    const rows = measurements.map((m) => {
+        const good = (m.samples || []).filter((s) => s >= 0).sort((a, b) => a - b);
+        const med = good.length ? good[Math.floor(good.length / 2)] : 99999;
+        return { address: m.address, med, ok: good.length >= 2 };
+    }).filter((r) => r.ok).sort((a, b) => a.med - b.med);
+    const used = new Set();
+    const out = [];
+    for (const r of rows) {
+        const net = r.address.split('.').slice(0, 3).join('.');
+        if (used.has(net)) continue;
+        used.add(net);
+        out.push(r.address);
+        if (out.length >= n) break;
+    }
+    return out;
+}
+
+function setScanProgress(done, total, message) {
+    const wrap = $('#cleanProgressWrap');
+    const bar = $('#cleanBar');
+    const prog = $('#cleanProgress');
+    if (wrap) wrap.hidden = false;
+    if (bar) bar.style.width = `${total ? Math.round((done / total) * 100) : 0}%`;
+    if (prog) prog.textContent = message;
+}
+
+async function measureIp(ip, probes) {
+    const samples = [];
+    for (let i = 0; i < probes; i++) {
+        if (cleanAbort) break;
+        samples.push(await probeEndpoint(ip, 443, 4000));
+    }
+    return { address: ip, samples };
+}
+
+async function scanWave(wave, probes, measurements, seen, onTick) {
+    const queue = (wave.addresses || []).filter((ip) => {
+        if (seen.has(ip) || !isV4(ip)) return false;
+        seen.add(ip);
+        return true;
+    });
+    if (!queue.length) return;
+    const workers = Array.from({ length: Math.min(4, queue.length) }, async () => {
+        for (;;) {
+            if (cleanAbort) return;
+            const ip = queue.shift();
+            if (!ip) return;
+            measurements.push(await measureIp(ip, probes));
+            onTick();
+        }
+    });
+    await Promise.all(workers);
+}
+
 /**
- * Clean-IP probing happens here in the browser.
+ * Multi-wave clean-IP scan from this browser.
  *
- * A worker cannot open sockets to Cloudflare's own edges, and even if it
- * could, its latency would describe the datacentre rather than the operator's
- * network. Timing an image fetch from the browser measures the path that
- * actually matters.
+ * Memory → seeds → catalogue → /24 neighbours of winners → wider sample.
+ * Smart mode skips the last wave once it already has `keep` diverse healthy IPs.
+ * Ranking is done by the worker (median + jitter + loss); the keep slider only
+ * decides how many of those healthy IPs to pin.
  */
 async function scanCleanIPs() {
     const btn = $('#scanClean');
+    const stopBtn = $('#stopClean');
     const box = $('#cleanResults');
-    const prog = $('#cleanProgress');
+    const hero = $('#scanHero');
+    const keep = currentKeep();
+    const depth = currentDepth();
+
+    cleanAbort = false;
+    cleanRanked = [];
+    cleanKeepTouched = false;
     btn.disabled = true;
+    if (stopBtn) stopBtn.hidden = false;
+    if (hero) hero.classList.add('scanning');
     box.innerHTML = '';
-    cleanBest = [];
+    $('#applyClean').disabled = true;
+    $('#cleanStats').hidden = true;
 
     try {
-        const { domains = [], sample = [] } = await request('/scan/candidates');
-        const results = [];
-        let done = 0;
+        const plan = await request(`/scan/candidates?depth=${encodeURIComponent(depth)}`);
+        const waves = [...(plan.waves || [])];
+        const probes = Number(plan.probesPerIp) || (depth === 'quick' ? 3 : 5);
+        const earlyStop = plan.earlyStop !== false;
+        const minSuccesses = probes >= 5 ? 3 : 2;
+        const measurements = [];
+        const seen = new Set();
+        let insertedNeighbors = false;
 
-        // Worker-front IPv4s first: those become real fixed-IP configs.
-        const queue = [...new Set([...sample, ...domains])];
-        const total = queue.length;
-        const workers = Array.from({ length: 4 }, async () => {
-            for (;;) {
-                const host = queue.shift();
-                if (!host) return;
-                results.push(await probeFromBrowser(host));
-                done++;
-                prog.textContent = t('scan.progress')
-                    .replace('{done}', String(done))
-                    .replace('{total}', String(total));
-                renderProbeRows(box, [...results].sort(sortProbes));
+        renderWaves(waves, 0);
+
+        const totalOf = () => waves.reduce((n, w) => n + (w.skipped ? 0 : (w.addresses?.length || 0)), 0);
+
+        for (let wi = 0; wi < waves.length; wi++) {
+            if (cleanAbort) break;
+            const wave = waves[wi];
+
+            if (wave.id === 'explore' && earlyStop && diverseHealthyCount(measurements, minSuccesses) >= keep) {
+                wave.skipped = true;
+                renderWaves(waves, wi);
+                notify(t('scan.clean.early'));
+                continue;
             }
-        });
-        await Promise.all(workers);
 
-        results.sort(sortProbes);
-        renderProbeRows(box, results);
-        cleanBest = results.filter((r) => r.ok).map((r) => r.address);
-        $('#applyClean').disabled = cleanBest.length === 0;
-        prog.textContent = '';
-        notify(t('scan.done').replace('{n}', String(cleanBest.length)));
+            renderWaves(waves, wi);
+            await scanWave(wave, probes, measurements, seen, () => {
+                setScanProgress(
+                    measurements.length,
+                    totalOf(),
+                    t('scan.progress')
+                        .replace('{done}', String(measurements.length))
+                        .replace('{total}', String(totalOf())),
+                );
+            });
+
+            if (!insertedNeighbors && wave.id === 'catalog' && !cleanAbort) {
+                const winners = localWinners(measurements, 4);
+                if (winners.length) {
+                    try {
+                        const expanded = await request(
+                            `/scan/expand?around=${encodeURIComponent(winners.join(','))}&count=16`,
+                        );
+                        const addrs = (expanded.addresses || []).filter((ip) => !seen.has(ip));
+                        if (addrs.length) {
+                            waves.splice(wi + 1, 0, {
+                                id: 'neighbors',
+                                label: expanded.label || 'Nearby /24',
+                                labelFa: expanded.labelFa || 'همسایه‌های /۲۴',
+                                addresses: addrs,
+                            });
+                            insertedNeighbors = true;
+                            renderWaves(waves, wi);
+                        }
+                    } catch { /* expand is optional — catalogue results still count */ }
+                }
+            }
+        }
+
+        $('#cleanProgressWrap').hidden = true;
+        $('#cleanProgress').textContent = '';
+
+        if (!measurements.length) {
+            box.innerHTML = `<p class="empty">${escapeHtml(t('scan.clean.none'))}</p>`;
+            return;
+        }
+
+        const ranked = await request('/scan/rank', {
+            method: 'POST',
+            body: JSON.stringify({ measurements, keep: 24 }),
+        });
+
+        cleanRanked = ranked.ranked || [];
+        renderCleanResults();
+
+        if (cleanRanked.length) {
+            notify(t('scan.done').replace('{n}', String(cleanRanked.length)));
+        } else {
+            notify(t('scan.clean.none'), 'warn', 6000);
+        }
     } catch (err) {
         box.innerHTML = `<p class="empty">${escapeHtml(err.message)}</p>`;
     } finally {
         btn.disabled = false;
+        if (stopBtn) stopBtn.hidden = true;
+        if (hero) hero.classList.remove('scanning');
+        const wrap = $('#cleanProgressWrap');
+        if (wrap) wrap.hidden = true;
     }
 }
 
-const sortProbes = (a, b) => (a.ok === b.ok ? a.latency - b.latency : (a.ok ? -1 : 1));
+function selectedCleanIps() {
+    return $$('#cleanResults input[type=checkbox]:checked').map((el) => el.value).filter(Boolean);
+}
 
-/**
- * Time a request to one candidate edge.
- *
- * /cdn-cgi/trace is blocked by CORS, so we cannot read the response — but a
- * no-cors fetch still completes the TCP + TLS round trip, and that timing is
- * exactly what we want. A failure means the edge is unreachable from here.
- */
-function probeFromBrowser(host, timeoutMs = 5000) {
-    return new Promise((resolve) => {
-        const started = performance.now();
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
+function updateCleanStats() {
+    const stats = $('#cleanStats');
+    if (!stats) return;
+    const selected = selectedCleanIps();
+    const best = cleanRanked[0];
+    const nets = new Set(cleanRanked.map((r) => r.address.split('.').slice(0, 3).join('.')));
+    stats.hidden = cleanRanked.length === 0;
+    const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+    set('#cleanStatHealthy', String(cleanRanked.length));
+    set('#cleanStatSelected', String(selected.length));
+    set('#cleanStatBest', best && best.medianMs > 0 ? `${best.medianMs} ms` : '—');
+    set('#cleanStatSpread', String(nets.size));
+    const apply = $('#applyClean');
+    if (apply) apply.disabled = selected.length === 0;
+}
 
-        fetch(`https://${host}/cdn-cgi/trace`, {
-            mode: 'no-cors',
-            cache: 'no-store',
-            signal: controller.signal,
-        })
-            .then(() => {
-                clearTimeout(timer);
-                resolve({ address: host, ok: true, latency: Math.round(performance.now() - started) });
-            })
-            .catch(() => {
-                clearTimeout(timer);
-                resolve({ address: host, ok: false, latency: -1, error: t('scan.unreachable') });
-            });
-    });
+function applyKeepSelection() {
+    const n = currentKeep();
+    const boxes = $$('#cleanResults input[type=checkbox]');
+    boxes.forEach((el, i) => { el.checked = i < n; });
+    $$('#cleanResults .scan-row').forEach((row, i) => row.classList.toggle('picked', i < n));
+    updateCleanStats();
+}
+
+function renderCleanResults() {
+    const box = $('#cleanResults');
+    if (!box) return;
+    if (!cleanRanked.length) {
+        if (!box.querySelector('.scan-row')) box.innerHTML = '<p class="empty">—</p>';
+        updateCleanStats();
+        return;
+    }
+
+    const maxMs = Math.max(...cleanRanked.map((r) => r.medianMs), 1);
+    const n = currentKeep();
+    box.innerHTML = cleanRanked.map((r, i) => {
+        const width = Math.max(8, Math.round((1 - (r.medianMs / (maxMs * 1.15))) * 100));
+        const checked = i < n ? 'checked' : '';
+        const picked = i < n ? 'picked' : '';
+        return `
+        <label class="scan-row ${picked}">
+          <input type="checkbox" value="${escapeHtml(r.address)}" ${checked}>
+          <span class="game-grade ${GRADE_CLASS[r.grade] ?? ''}">${escapeHtml(r.grade)}</span>
+          <span class="game-addr">${escapeHtml(r.address)}</span>
+          <span class="scan-lat">
+            <b><bdi>${r.medianMs} ms</bdi></b>
+            <span class="scan-bar"><i style="width:${width}%"></i></span>
+            <small>${escapeHtml(t('game.jitter'))} <bdi>${r.jitterMs} ms</bdi>
+              · ${escapeHtml(t('game.loss'))} <bdi>${Math.round(r.lossRate * 100)}%</bdi></small>
+          </span>
+        </label>`;
+    }).join('');
+    updateCleanStats();
+}
+
+function renderCleanPinned() {
+    const card = $('#cleanPinnedCard');
+    const box = $('#cleanPinned');
+    if (!card || !box) return;
+    const ips = (settings.cleanIPs || []).filter(isV4);
+    if (!ips.length) {
+        card.hidden = true;
+        box.innerHTML = '';
+        return;
+    }
+    card.hidden = false;
+    box.innerHTML = ips.map((ip) => `<span class="scan-pill">${escapeHtml(ip)}</span>`).join('');
 }
 
 async function applyRelays() {
@@ -1224,14 +1468,34 @@ async function applyRelays() {
 }
 
 async function applyCleanIPs() {
-    const ipv4 = cleanBest.filter((a) => /^(?:\d{1,3}\.){3}\d{1,3}$/.test(a));
-    const picked = (ipv4.length ? ipv4 : cleanBest).slice(0, 5);
+    const picked = selectedCleanIps();
+    if (!picked.length) return;
     await request('/scan/apply', {
         method: 'POST',
         body: JSON.stringify({ addresses: picked }),
     });
-    notify(t('scan.applied'));
+    notify(t('scan.clean.using')
+        .replace('{n}', String(picked.length))
+        .replace('{m}', String(cleanRanked.length)) + ' — ' + t('scan.applied'));
     await loadAll();
+}
+
+async function clearCleanIPs() {
+    await request('/scan/apply', {
+        method: 'POST',
+        body: JSON.stringify({ clear: true }),
+    });
+    notify(t('scan.clean.cleared'));
+    await loadAll();
+}
+
+function initCleanKeep() {
+    const saved = Number(localStorage.getItem('tabora.scanKeep'));
+    const el = $('#cleanKeep');
+    if (!el) return;
+    if (Number.isFinite(saved) && saved >= 1 && saved <= 20) el.value = String(saved);
+    const val = $('#cleanKeepVal');
+    if (val) val.textContent = el.value;
 }
 
 function bindEvents() {
@@ -1259,8 +1523,30 @@ function bindEvents() {
 
     $('#scanRelays')?.addEventListener('click', scanRelays);
     $('#applyRelays')?.addEventListener('click', () => applyRelays().catch((e) => notify(e.message, 'error')));
-    $('#scanClean')?.addEventListener('click', scanCleanIPs);
+    $('#scanClean')?.addEventListener('click', () => scanCleanIPs().catch((e) => notify(e.message, 'error')));
+    $('#stopClean')?.addEventListener('click', () => { cleanAbort = true; });
     $('#applyClean')?.addEventListener('click', () => applyCleanIPs().catch((e) => notify(e.message, 'error')));
+    $('#clearClean')?.addEventListener('click', () => {
+        if (!confirm(t('scan.clean.clear') + '?')) return;
+        clearCleanIPs().catch((e) => notify(e.message, 'error'));
+    });
+    $$('.scan-depth').forEach((btn) => btn.addEventListener('click', () => {
+        $$('.scan-depth').forEach((b) => b.classList.toggle('active', b === btn));
+    }));
+    $('#cleanKeep')?.addEventListener('input', () => {
+        const el = $('#cleanKeep');
+        const val = $('#cleanKeepVal');
+        if (val && el) val.textContent = el.value;
+        localStorage.setItem('tabora.scanKeep', el.value);
+        if (cleanRanked.length) applyKeepSelection();
+    });
+    $('#cleanResults')?.addEventListener('change', (e) => {
+        if (e.target?.type === 'checkbox') {
+            e.target.closest('.scan-row')?.classList.toggle('picked', e.target.checked);
+            updateCleanStats();
+        }
+    });
+    initCleanKeep();
 
     // Tabs
     $$('.tab').forEach((tab) => tab.addEventListener('click', () => {

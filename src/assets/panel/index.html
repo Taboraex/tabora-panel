@@ -348,21 +348,62 @@
   <!-- ──────────────────────────────── Scanner ────────────────────────────── -->
   <section class="panel" data-panel="scanner">
 
-    <div class="card">
-      <div class="card-head">
-        <h2 data-i18n="scan.clean.title">Clean IP scan</h2>
+    <div class="card scan-hero" id="scanHero">
+      <div class="scan-orbit" aria-hidden="true">
+        <span class="scan-ring"></span>
+        <span class="scan-ring"></span>
+        <span class="scan-ring"></span>
+        <span class="scan-sweep"></span>
+        <span class="scan-core"></span>
+      </div>
+      <div class="scan-hero-copy">
+        <p class="scan-kicker" data-i18n="scan.clean.kicker">CLEAN IP</p>
+        <h2 data-i18n="scan.clean.title">Find low-ping Worker fronts</h2>
+        <p class="hint" data-i18n="scan.clean.hint">
+          Multi-wave scan from your own network: previous winners, verified fronts,
+          a baked catalogue, nearby /24s, then a wider sample. Ranking favours
+          steady low ping — lossy IPs are never kept. Each pinned IPv4 becomes
+          exactly one config.
+        </p>
+      </div>
+      <div class="scan-hero-controls">
+        <div class="scan-depths" role="radiogroup" aria-label="Scan depth">
+          <button type="button" class="scan-depth" data-depth="quick" data-i18n="scan.clean.depth.quick">Quick</button>
+          <button type="button" class="scan-depth active" data-depth="smart" data-i18n="scan.clean.depth.smart">Smart</button>
+          <button type="button" class="scan-depth" data-depth="deep" data-i18n="scan.clean.depth.deep">Deep</button>
+        </div>
+        <label class="scan-keep">
+          <span data-i18n="scan.clean.keep">Keep</span>
+          <input type="range" id="cleanKeep" min="1" max="20" value="5">
+          <b id="cleanKeepVal">5</b>
+        </label>
         <div class="btn-row">
           <button class="btn primary" id="scanClean" data-i18n="scan.clean.run">Scan from my network</button>
-          <button class="btn" id="applyClean" data-i18n="scan.clean.apply" disabled>Use fastest</button>
+          <button class="btn ghost" id="stopClean" data-i18n="scan.clean.stop" hidden>Stop</button>
+          <button class="btn" id="applyClean" data-i18n="scan.clean.apply" disabled>Pin selected</button>
         </div>
       </div>
-      <p class="hint" data-i18n="scan.clean.hint">
-        This is how you get a real fixed IP. The scan runs in your browser against
-        Worker-front Cloudflare addresses from your own network. Apply the fastest
-        IPv4s and each one becomes exactly one config — no country labels.
-      </p>
-      <div id="cleanProgress" class="hint"></div>
-      <div id="cleanResults" class="log-list"><p class="empty">—</p></div>
+      <div class="scan-waves" id="cleanWaves"></div>
+      <div class="scan-progress-wrap" id="cleanProgressWrap" hidden>
+        <div class="scan-progress-bar"><i id="cleanBar"></i></div>
+        <p id="cleanProgress" class="hint"></p>
+      </div>
+      <div class="scan-stats" id="cleanStats" hidden>
+        <div><span data-i18n="scan.clean.healthy">Healthy</span><b id="cleanStatHealthy">0</b></div>
+        <div><span data-i18n="scan.clean.selected">Selected</span><b id="cleanStatSelected">0</b></div>
+        <div><span data-i18n="scan.clean.best">Best</span><b id="cleanStatBest">—</b></div>
+        <div><span data-i18n="scan.clean.spread">/24s</span><b id="cleanStatSpread">0</b></div>
+      </div>
+      <div id="cleanResults" class="scan-list"><p class="empty">—</p></div>
+    </div>
+
+    <div class="card" id="cleanPinnedCard" hidden>
+      <div class="card-head">
+        <h2 data-i18n="scan.clean.pinned">Pinned clean IPs</h2>
+        <button class="btn tiny danger" id="clearClean" data-i18n="scan.clean.clear">Clear</button>
+      </div>
+      <p class="hint" data-i18n="scan.clean.pinnedHint">Each of these is the address of one config. They stay fixed until you scan again.</p>
+      <div id="cleanPinned" class="scan-pills"></div>
     </div>
 
     <div class="card">

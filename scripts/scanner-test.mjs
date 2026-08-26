@@ -85,6 +85,37 @@ check('sampled IPs stay off colo interconnects',
         ip.startsWith('104.22.') || ip.startsWith('104.23.') || ip.startsWith('172.64.')));
 check('sampled IPs include at least one verified seed',
     (c.sample ?? []).some((ip) => ip === '104.21.83.62' || ip === '104.16.10.10'));
+check('candidates return a multi-wave plan', Array.isArray(c.waves) && c.waves.length >= 2,
+    `${c.waves?.length ?? 0} waves`);
+check('every wave address is a Worker-front IPv4',
+    (c.waves ?? []).every((w) => (w.addresses ?? []).every((ip) => /^(\d{1,3}\.){3}\d{1,3}$/.test(ip))));
+check('probesPerIp is set', (c.probesPerIp ?? 0) >= 3);
+
+const expanded = await api('/api/scan/expand?around=104.21.83.62,104.16.10.10&count=12');
+const ex = expanded.body?.body ?? {};
+check('expand returns neighbour IPs', Array.isArray(ex.addresses) && ex.addresses.length > 0,
+    `${ex.addresses?.length ?? 0} neighbours`);
+check('neighbours stay off colo interconnects',
+    !(ex.addresses ?? []).some((ip) => ip.startsWith('104.22.') || ip.startsWith('104.23.')));
+
+const ranked = await api('/api/scan/rank', {
+    method: 'POST',
+    body: JSON.stringify({
+        keep: 8,
+        measurements: [
+            { address: '104.16.10.10', samples: [40, 42, 41, 43, 40] },
+            { address: '104.17.147.22', samples: [90, 92, 88, 91, 89] },
+            { address: '104.18.26.90', samples: [30, -1, 32, -1, 31] },
+            { address: '104.23.181.10', samples: [10, 11, 12, 10, 11] },
+        ],
+    }),
+});
+const rk = ranked.body?.body ?? {};
+check('rank returns healthy rows', (rk.healthy ?? 0) >= 2, `${rk.healthy} healthy`);
+check('rank drops colo interconnects',
+    !(rk.ranked ?? []).some((r) => String(r.address).startsWith('104.23.')));
+check('rank drops lossy IPs',
+    !(rk.ranked ?? []).some((r) => r.address === '104.18.26.90'));
 
 /* ── apply changes what configs are built from ── */
 const applied = await api('/api/scan', {

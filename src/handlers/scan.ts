@@ -5,11 +5,17 @@ import { ok, badRequest, methodNotAllowed, safeError } from '@common/http';
 import {
     CANDIDATE_DOMAINS,
     RELAY_CANDIDATES,
-    WORKER_FRONT_SEEDS,
-    WORKER_FRONT_RANGES,
-    sampleFromRanges,
     isWorkerFrontIp,
 } from '@scanner/candidates';
+import {
+    CLEAN_IPS,
+    expandAround,
+    flattenPlan,
+    parseDepth,
+    planScan,
+    WAVE_LABELS,
+} from '@scanner/strategy';
+import { rankClean, type CleanMeasurement } from '@scanner/rank';
 import { scan, pickBest, type ProbeMode, type ProbeResult } from '@scanner/scanner';
 import { logActivity } from './logs';
 
@@ -26,7 +32,7 @@ const LIMITS = {
     count: { min: 1, max: 64, fallback: 20 },
     concurrency: { min: 1, max: 12, fallback: 8 },
     timeoutMs: { min: 500, max: 8000, fallback: 3000 },
-    keep: { min: 1, max: 30, fallback: 10 },
+    keep: { min: 1, max: 24, fallback: 8 },
 };
 
 const clamp = (value: unknown, { min, max, fallback }: { min: number; max: number; fallback: number }): number => {
@@ -154,32 +160,92 @@ export async function handleScan(
 }
 
 /**
- * GET api/scan/candidates — hand the browser a list of edges to probe itself.
+ * GET api/scan/candidates — multi-wave plan the browser walks itself.
  *
- * The browser sits on the operator's real network, so its timings reflect what
- * their users will actually experience. It fetches each candidate's
- * /cdn-cgi/trace and reports back via POST api/scan/apply.
+ * Depth: quick | smart | deep. Previous Worker-front pins become the memory
+ * wave so a rescan starts from what already worked on this network.
  */
-export function handleScanCandidates(): Response {
-    // Worker-front ranges only. CLOUDFLARE_RANGES includes 104.22/104.23/172.64
-    // colo interconnects that never front a Worker.
-    const seen = new Set<string>();
-    const sample: string[] = [];
-    for (const ip of [...WORKER_FRONT_SEEDS, ...sampleFromRanges(24, WORKER_FRONT_RANGES)]) {
-        if (seen.has(ip) || !isWorkerFrontIp(ip)) continue;
-        seen.add(ip);
-        sample.push(ip);
-    }
+export function handleScanCandidates(request: Request, settings: Settings): Response {
+    const url = new URL(request.url);
+    const depth = parseDepth(url.searchParams.get('depth'));
+    const previous = (settings.cleanIPs ?? []).filter((a) => isWorkerFrontIp(String(a)));
+    const waves = planScan({ previous, depth });
+    const sample = flattenPlan(waves);
     return ok({
         domains: CANDIDATE_DOMAINS,
         sample,
-        // /cdn-cgi/trace is served by every edge and names the colo that answered.
+        waves,
+        depth,
+        probesPerIp: depth === 'quick' ? 3 : 5,
+        earlyStop: depth !== 'deep',
+        keepMax: LIMITS.keep.max,
+        catalogSize: CLEAN_IPS.length,
         probePath: '/cdn-cgi/trace',
     });
 }
 
 /**
+ * GET api/scan/expand?around=ip1,ip2&count=16 — /24 neighbours of winners.
+ */
+export function handleScanExpand(request: Request): Response {
+    const url = new URL(request.url);
+    const around = (url.searchParams.get('around') ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(isWorkerFrontIp);
+    const count = clamp(url.searchParams.get('count'), { min: 4, max: 32, fallback: 16 });
+    const addresses = expandAround(around, 6, count);
+    return ok({
+        id: 'neighbors' as const,
+        ...WAVE_LABELS.neighbors,
+        addresses,
+    });
+}
+
+/**
+ * POST api/scan/rank — turn browser samples into a healthy, diverse shortlist.
+ *
+ * Lossy addresses are dropped, never padded into `keep`. Distinct /24s win
+ * over a second host in the same prefix.
+ */
+export async function handleScanRank(request: Request): Promise<Response> {
+    if (request.method !== 'POST') return methodNotAllowed();
+
+    let body: { measurements?: unknown; keep?: unknown };
+    try {
+        body = (await request.json()) as { measurements?: unknown; keep?: unknown };
+    } catch {
+        return badRequest('Invalid JSON body');
+    }
+
+    const raw = Array.isArray(body.measurements) ? body.measurements : [];
+    if (!raw.length) return badRequest('No measurements supplied');
+
+    const measurements: CleanMeasurement[] = [];
+    for (const entry of raw.slice(0, 160)) {
+        const rec = entry as { address?: unknown; samples?: unknown };
+        const address = String(rec.address ?? '').trim();
+        if (!isWorkerFrontIp(address)) continue;
+        const samples = Array.isArray(rec.samples)
+            ? rec.samples.slice(0, 12).map((v) => (Number.isFinite(Number(v)) ? Number(v) : -1))
+            : [];
+        if (!samples.length) continue;
+        measurements.push({ address, samples });
+    }
+
+    if (!measurements.length) return badRequest('No valid measurements supplied');
+
+    const keep = clamp(body.keep, LIMITS.keep);
+    const ranked = rankClean(measurements, keep);
+    return ok({ ranked, best: ranked[0] ?? null, healthy: ranked.length });
+}
+
+/**
  * POST api/scan/apply — store the clean IPs the browser found to be healthy.
+ *
+ * `{ clear: true }` drops the pin list so configs fall back to the worker
+ * hostname. Otherwise `addresses` is filtered to Worker-front IPv4s (and
+ * hostnames) and capped at `keep` max.
  */
 export async function handleScanApply(
     request: Request,
@@ -188,11 +254,17 @@ export async function handleScanApply(
 ): Promise<Response> {
     if (request.method !== 'POST') return methodNotAllowed();
 
-    let body: { addresses?: unknown };
+    let body: { addresses?: unknown; clear?: unknown };
     try {
-        body = (await request.json()) as { addresses?: unknown };
+        body = (await request.json()) as { addresses?: unknown; clear?: unknown };
     } catch {
         return badRequest('Invalid JSON body');
+    }
+
+    if (body.clear === true) {
+        await saveSettings(store, settings, { cleanIPs: [] });
+        await logActivity(store, 'scan-cleared', '');
+        return ok({ applied: true, cleanIPs: [], cleared: true });
     }
 
     const supplied = Array.isArray(body.addresses) ? body.addresses : [];

@@ -40,6 +40,7 @@ jobs:
           node scripts/gaming-test.mjs
           node scripts/pool-test.mjs
           node scripts/cores-test.mjs
+          node scripts/scan-test.mjs
 
       - name: Build worker
         run: npm run build

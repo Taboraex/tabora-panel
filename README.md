@@ -47,6 +47,9 @@ with no server to maintain.
   [The subscription page](#the-subscription-page).
 - **Decoy page** — any request outside the secret path mirrors a real website,
   so casual probes never see that a panel exists.
+- **Clean IP scanner** — multi-wave scan from your own network that finds many
+  low-ping Worker-front IPv4s, ranks them on stability, and lets you choose
+  how many to pin. Each pinned IP becomes exactly one config.
 - **Gaming profiles** — pin one fixed IP, port and protocol so the route never
   changes between sessions. Candidate edges are measured repeatedly from your
   own browser and ranked on *stability*, not raw speed. See
@@ -175,10 +178,13 @@ a fresh install carries traffic immediately.
 The **Scanner** tab tests and replaces them:
 
 - **Clean IP scan** is how you get a real fixed IP. It runs in your browser
-  against Cloudflare addresses that actually front a Worker (not colo
-  interconnects, not “Turkey `/22`” anycast theatre). Apply the fastest IPv4s
-  and each one becomes exactly one config on port 443 — no country labels, no
-  hostname that re-resolves.
+  as a multi-wave sweep of Cloudflare addresses that actually front a Worker
+  (not colo interconnects, not “Turkey `/22`” anycast theatre): previous
+  winners, verified seeds, a baked catalogue, nearby `/24`s, then a wider
+  sample. Ranking favours steady low ping over a single fast probe, and a
+  keep slider lets you choose how many of the healthy IPs to pin. Each one
+  becomes exactly one config on port 443 — no country labels, no hostname
+  that re-resolves.
 - **Relay health** probes each relay from the Worker and reports latency.
   Relays sit outside Cloudflare's network, so the Worker can measure them.
 

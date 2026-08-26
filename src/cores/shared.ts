@@ -1,7 +1,7 @@
 import { Settings, User } from '#types/settings';
 import { P } from '@config/obfuscation';
 import { getContext } from '@config/settings';
-import { formatBytes, formatDate, parseList } from '@common/utils';
+import { formatBytes, formatDate, isIPv4, parseList } from '@common/utils';
 import { HTTPS_PORTS } from '@config/constants';
 
 /** Everything a config builder needs, resolved once per subscription request. */
@@ -47,7 +47,15 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
     }
 
     const locked = Boolean(poolIps.length && pool.lockToPool && !user?.cleanIPs?.length);
-    const addresses = (locked ? frontEnds : [hostname, ...frontEnds]).filter(
+    // Pool IPs first so they survive the maxConfigs cap. Hostname-first is why
+    // locked-off Turkey pins never showed up in Hiddify — 30 slots filled with
+    // hostname × ports × protocols before a single pool address was emitted.
+    const ordered = locked
+        ? frontEnds
+        : poolIps.length && !user?.cleanIPs?.length
+            ? [...frontEnds, hostname]
+            : [hostname, ...frontEnds];
+    const addresses = ordered.filter(
         (value, index, self) => value && self.indexOf(value) === index,
     );
 
@@ -69,6 +77,9 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
 }
 
 export const isTlsPort = (port: number): boolean => HTTPS_PORTS.includes(port);
+
+/** Clients verifying the cert against the IP (not the SNI) need this. */
+export const frontNeedsInsecure = (address: string): boolean => isIPv4(address);
 
 /** WebSocket path. `ed=2560` enables early data on clients that support it. */
 export function wsPath(protocol: string, earlyData = true): string {

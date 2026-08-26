@@ -3,6 +3,7 @@ import {
     BuildContext,
     enumerateEndpoints,
     isTlsPort,
+    frontNeedsInsecure,
     renderRemark,
     selectSniHost,
 } from './shared';
@@ -34,7 +35,7 @@ function buildProxy(
         port,
         udp: true,
         network: 'ws',
-        'skip-cert-verify': false,
+        'skip-cert-verify': frontNeedsInsecure(address),
         'ws-opts': {
             path: protocol === P.TR ? '/tr' : '/vl',
             headers: { Host: host },

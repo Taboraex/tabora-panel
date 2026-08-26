@@ -1,15 +1,19 @@
-import { CLOUDFLARE_RANGES, sampleFromRanges } from './candidates';
+import {
+    WORKER_FRONT_RANGES, WORKER_FRONT_SEEDS, sampleFromRanges, isWorkerFrontIp,
+} from './candidates';
 
 /**
  * Country catalogue for the Proxy IP Pool.
  *
- * Cloudflare anycast means the same prefix can answer from more than one
- * colo. These ranges are the ones geolocation databases and looking-glasses
- * consistently attribute to a given country / PoP — so when the operator
- * says "only test Turkey", we only probe IPs that actually belong to
- * Istanbul (and a handful of other TR prefixes), not a random /13.
+ * Cloudflare anycast is one network. A "Turkey IP" in a geolocation database
+ * is often a colo interconnect that does not front Workers at all — those
+ * were the 104.23 / 172.70 addresses that scanned "fine" from the browser
+ * (TCP opened) and then produced configs that never pinged.
  *
- * AUTO unions every country range with the published anycast set.
+ * Every country therefore samples the same *working* HTTP anycast blocks.
+ * From the operator's network the fastest ones *are* the route to that
+ * region (Istanbul from Iran, FRA from Europe). The country code is the
+ * label stamped on the config.
  */
 
 export interface PoolCountry {
@@ -25,6 +29,8 @@ export interface PoolCountry {
     ranges: string[];
 }
 
+const FRONT = [...WORKER_FRONT_RANGES];
+
 export const POOL_COUNTRIES: PoolCountry[] = [
     {
         code: 'AUTO',
@@ -34,249 +40,95 @@ export const POOL_COUNTRIES: PoolCountry[] = [
         colo: '*',
         region: 'auto',
         featured: true,
-        ranges: [],
+        ranges: FRONT,
     },
     {
-        code: 'TR',
-        name: 'Turkey',
-        nameFa: 'ترکیه',
-        flag: '🇹🇷',
-        colo: 'IST',
-        region: 'me',
-        featured: true,
-        ranges: [
-            '104.23.180.0/22',
-            '104.23.184.0/21',
-            '172.70.112.0/22',
-            '172.69.182.0/24',
-            '172.69.199.0/24',
-            '91.206.71.0/24',
-        ],
+        code: 'TR', name: 'Turkey', nameFa: 'ترکیه', flag: '🇹🇷',
+        colo: 'IST', region: 'me', featured: true, ranges: FRONT,
     },
     {
-        code: 'DE',
-        name: 'Germany',
-        nameFa: 'آلمان',
-        flag: '🇩🇪',
-        colo: 'FRA',
-        region: 'eu',
-        featured: true,
-        ranges: [
-            '172.71.160.0/23',
-            '89.106.90.0/24',
-            '162.158.48.0/21',
-            '162.158.56.0/21',
-            '141.101.80.0/22',
-        ],
+        code: 'DE', name: 'Germany', nameFa: 'آلمان', flag: '🇩🇪',
+        colo: 'FRA', region: 'eu', featured: true, ranges: FRONT,
     },
     {
-        code: 'NL',
-        name: 'Netherlands',
-        nameFa: 'هلند',
-        flag: '🇳🇱',
-        colo: 'AMS',
-        region: 'eu',
-        featured: true,
-        ranges: [
-            '141.101.76.0/23',
-            '172.71.94.0/23',
-            '8.19.8.0/24',
-            '8.21.8.0/24',
-            '89.249.200.0/24',
-            '162.158.88.0/21',
-        ],
+        code: 'NL', name: 'Netherlands', nameFa: 'هلند', flag: '🇳🇱',
+        colo: 'AMS', region: 'eu', featured: true, ranges: FRONT,
     },
     {
-        code: 'AE',
-        name: 'United Arab Emirates',
-        nameFa: 'امارات',
-        flag: '🇦🇪',
-        colo: 'DXB',
-        region: 'me',
-        featured: true,
-        ranges: [
-            '5.252.81.0/24',
-            '162.158.36.0/22',
-            '162.158.40.0/22',
-        ],
+        code: 'AE', name: 'United Arab Emirates', nameFa: 'امارات', flag: '🇦🇪',
+        colo: 'DXB', region: 'me', featured: true, ranges: FRONT,
     },
     {
-        code: 'GB',
-        name: 'United Kingdom',
-        nameFa: 'انگلستان',
-        flag: '🇬🇧',
-        colo: 'LHR',
-        region: 'eu',
-        featured: true,
-        ranges: [
-            '172.70.88.0/22',
-            '162.158.32.0/21',
-            '141.101.64.0/22',
-        ],
+        code: 'GB', name: 'United Kingdom', nameFa: 'انگلستان', flag: '🇬🇧',
+        colo: 'LHR', region: 'eu', featured: true, ranges: FRONT,
     },
     {
-        code: 'FR',
-        name: 'France',
-        nameFa: 'فرانسه',
-        flag: '🇫🇷',
-        colo: 'CDG',
-        region: 'eu',
-        featured: true,
-        ranges: [
-            '141.101.66.0/23',
-            '172.70.108.0/22',
-            '162.158.24.0/21',
-        ],
+        code: 'FR', name: 'France', nameFa: 'فرانسه', flag: '🇫🇷',
+        colo: 'CDG', region: 'eu', featured: true, ranges: FRONT,
     },
     {
-        code: 'US',
-        name: 'United States',
-        nameFa: 'آمریکا',
-        flag: '🇺🇸',
-        colo: 'SJC',
-        region: 'americas',
-        featured: true,
-        ranges: [
-            '104.16.0.0/16',
-            '104.17.0.0/16',
-            '162.159.128.0/17',
-            '172.64.0.0/16',
-        ],
+        code: 'US', name: 'United States', nameFa: 'آمریکا', flag: '🇺🇸',
+        colo: 'SJC', region: 'americas', featured: true, ranges: FRONT,
     },
     {
-        code: 'SE',
-        name: 'Sweden',
-        nameFa: 'سوئد',
-        flag: '🇸🇪',
-        colo: 'ARN',
-        region: 'eu',
-        ranges: ['162.158.104.0/21', '141.101.84.0/22'],
+        code: 'SE', name: 'Sweden', nameFa: 'سوئد', flag: '🇸🇪',
+        colo: 'ARN', region: 'eu', ranges: FRONT,
     },
     {
-        code: 'FI',
-        name: 'Finland',
-        nameFa: 'فنلاند',
-        flag: '🇫🇮',
-        colo: 'HEL',
-        region: 'eu',
-        ranges: ['162.158.112.0/21'],
+        code: 'FI', name: 'Finland', nameFa: 'فنلاند', flag: '🇫🇮',
+        colo: 'HEL', region: 'eu', ranges: FRONT,
     },
     {
-        code: 'PL',
-        name: 'Poland',
-        nameFa: 'لهستان',
-        flag: '🇵🇱',
-        colo: 'WAW',
-        region: 'eu',
-        ranges: ['162.158.120.0/21', '172.68.96.0/22'],
+        code: 'PL', name: 'Poland', nameFa: 'لهستان', flag: '🇵🇱',
+        colo: 'WAW', region: 'eu', ranges: FRONT,
     },
     {
-        code: 'IT',
-        name: 'Italy',
-        nameFa: 'ایتالیا',
-        flag: '🇮🇹',
-        colo: 'MXP',
-        region: 'eu',
-        ranges: ['162.158.128.0/21', '172.69.220.0/22'],
+        code: 'IT', name: 'Italy', nameFa: 'ایتالیا', flag: '🇮🇹',
+        colo: 'MXP', region: 'eu', ranges: FRONT,
     },
     {
-        code: 'ES',
-        name: 'Spain',
-        nameFa: 'اسپانیا',
-        flag: '🇪🇸',
-        colo: 'MAD',
-        region: 'eu',
-        ranges: ['104.22.8.0/21', '162.158.144.0/21'],
+        code: 'ES', name: 'Spain', nameFa: 'اسپانیا', flag: '🇪🇸',
+        colo: 'MAD', region: 'eu', ranges: FRONT,
     },
     {
-        code: 'AT',
-        name: 'Austria',
-        nameFa: 'اتریش',
-        flag: '🇦🇹',
-        colo: 'VIE',
-        region: 'eu',
-        ranges: ['162.158.136.0/21'],
+        code: 'AT', name: 'Austria', nameFa: 'اتریش', flag: '🇦🇹',
+        colo: 'VIE', region: 'eu', ranges: FRONT,
     },
     {
-        code: 'CH',
-        name: 'Switzerland',
-        nameFa: 'سوئیس',
-        flag: '🇨🇭',
-        colo: 'ZRH',
-        region: 'eu',
-        ranges: ['162.158.152.0/21'],
+        code: 'CH', name: 'Switzerland', nameFa: 'سوئیس', flag: '🇨🇭',
+        colo: 'ZRH', region: 'eu', ranges: FRONT,
     },
     {
-        code: 'JP',
-        name: 'Japan',
-        nameFa: 'ژاپن',
-        flag: '🇯🇵',
-        colo: 'NRT',
-        region: 'asia',
-        ranges: ['162.158.192.0/21', '172.69.0.0/20'],
+        code: 'JP', name: 'Japan', nameFa: 'ژاپن', flag: '🇯🇵',
+        colo: 'NRT', region: 'asia', ranges: FRONT,
     },
     {
-        code: 'SG',
-        name: 'Singapore',
-        nameFa: 'سنگاپور',
-        flag: '🇸🇬',
-        colo: 'SIN',
-        region: 'asia',
-        ranges: ['162.158.200.0/21', '203.168.192.0/20'],
+        code: 'SG', name: 'Singapore', nameFa: 'سنگاپور', flag: '🇸🇬',
+        colo: 'SIN', region: 'asia', ranges: FRONT,
     },
     {
-        code: 'HK',
-        name: 'Hong Kong',
-        nameFa: 'هنگ‌کنگ',
-        flag: '🇭🇰',
-        colo: 'HKG',
-        region: 'asia',
-        ranges: ['162.158.208.0/21', '172.70.200.0/20'],
+        code: 'HK', name: 'Hong Kong', nameFa: 'هنگ‌کنگ', flag: '🇭🇰',
+        colo: 'HKG', region: 'asia', ranges: FRONT,
     },
     {
-        code: 'KR',
-        name: 'South Korea',
-        nameFa: 'کره جنوبی',
-        flag: '🇰🇷',
-        colo: 'ICN',
-        region: 'asia',
-        ranges: ['141.101.82.0/23', '162.158.216.0/21'],
+        code: 'KR', name: 'South Korea', nameFa: 'کره جنوبی', flag: '🇰🇷',
+        colo: 'ICN', region: 'asia', ranges: FRONT,
     },
     {
-        code: 'IN',
-        name: 'India',
-        nameFa: 'هند',
-        flag: '🇮🇳',
-        colo: 'BOM',
-        region: 'asia',
-        ranges: ['162.158.168.0/21', '172.68.80.0/22'],
+        code: 'IN', name: 'India', nameFa: 'هند', flag: '🇮🇳',
+        colo: 'BOM', region: 'asia', ranges: FRONT,
     },
     {
-        code: 'CA',
-        name: 'Canada',
-        nameFa: 'کانادا',
-        flag: '🇨🇦',
-        colo: 'YYZ',
-        region: 'americas',
-        ranges: ['162.158.80.0/21', '172.69.32.0/20'],
+        code: 'CA', name: 'Canada', nameFa: 'کانادا', flag: '🇨🇦',
+        colo: 'YYZ', region: 'americas', ranges: FRONT,
     },
     {
-        code: 'AU',
-        name: 'Australia',
-        nameFa: 'استرالیا',
-        flag: '🇦🇺',
-        colo: 'SYD',
-        region: 'asia',
-        ranges: ['162.158.176.0/21', '172.69.64.0/20'],
+        code: 'AU', name: 'Australia', nameFa: 'استرالیا', flag: '🇦🇺',
+        colo: 'SYD', region: 'asia', ranges: FRONT,
     },
     {
-        code: 'BR',
-        name: 'Brazil',
-        nameFa: 'برزیل',
-        flag: '🇧🇷',
-        colo: 'GRU',
-        region: 'americas',
-        ranges: ['162.158.184.0/21', '172.69.96.0/20'],
+        code: 'BR', name: 'Brazil', nameFa: 'برزیل', flag: '🇧🇷',
+        colo: 'GRU', region: 'americas', ranges: FRONT,
     },
 ];
 
@@ -288,19 +140,9 @@ export function findCountry(code: string): PoolCountry | undefined {
     return POOL_COUNTRY_MAP[String(code || '').trim().toUpperCase()];
 }
 
-/** Every geo-tagged prefix plus the published anycast set — used by AUTO. */
-export function allPoolRanges(): string[] {
-    const set = new Set<string>(CLOUDFLARE_RANGES);
-    for (const country of POOL_COUNTRIES) {
-        for (const range of country.ranges) set.add(range);
-    }
-    return [...set];
-}
-
 export function rangesFor(code: string): string[] {
     const country = findCountry(code);
-    if (!country || country.code === 'AUTO') return allPoolRanges();
-    return country.ranges.length ? country.ranges : allPoolRanges();
+    return country?.ranges.length ? country.ranges : [...WORKER_FRONT_RANGES];
 }
 
 /**
@@ -313,13 +155,14 @@ export function publicCountries(): Array<Omit<PoolCountry, 'ranges'>> {
 
 const IPV4 = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d)$/;
 
-export const isPoolAddress = (value: string): boolean => IPV4.test(value);
+export const isPoolAddress = (value: string): boolean => IPV4.test(value) && isWorkerFrontIp(value);
 
 /**
  * Build the candidate list for one scan round.
  *
- * Previous winners for the same country are prepended so a good IP is not
- * thrown away the next time the operator rescans.
+ * Seeds that are known to front a Worker go first, then a fresh sample
+ * from the working anycast blocks, then any previous winners that still
+ * qualify. Dead colo IPs from the first pool never re-enter the list.
  */
 export function candidatesFor(
     code: string,
@@ -331,8 +174,8 @@ export function candidatesFor(
     const fresh = sampleFromRanges(want, rangesFor(code));
     const out: string[] = [];
     const seen = new Set<string>();
-    for (const ip of [...kept, ...fresh]) {
-        if (seen.has(ip)) continue;
+    for (const ip of [...WORKER_FRONT_SEEDS, ...kept, ...fresh]) {
+        if (!isPoolAddress(ip) || seen.has(ip)) continue;
         seen.add(ip);
         out.push(ip);
         if (out.length >= want) break;

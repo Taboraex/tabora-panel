@@ -358,9 +358,10 @@
         <span class="pool-live" id="poolLive" hidden>SCAN</span>
       </div>
       <p class="hint" data-i18n="pool.hint">
-        Pick a country. Tabora probes only Cloudflare IPs that belong to that country,
-        measures them from your own network, and locks the fastest ones into every config
-        as a fixed address — no DNS shuffle, no random edge.
+        Pick a country as a label. Tabora probes Cloudflare anycast IPs that actually
+        front a Worker — not colo interconnects — from your own network, and pins the
+        fastest ones as a fixed address. Clients often geo-flag those IPs as 🇺🇸; the
+        country name in the remark is the one you picked.
       </p>
 
       <div class="pool-toolbar">

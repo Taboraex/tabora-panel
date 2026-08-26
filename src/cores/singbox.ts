@@ -3,6 +3,7 @@ import {
     BuildContext,
     enumerateEndpoints,
     isTlsPort,
+    frontNeedsInsecure,
     renderRemark,
     selectSniHost,
 } from './shared';
@@ -49,7 +50,7 @@ function buildOutbound(
         outbound.tls = {
             enabled: true,
             server_name: sni,
-            insecure: false,
+            insecure: frontNeedsInsecure(address),
             alpn: ['http/1.1'],
             utls: { enabled: true, fingerprint: settings.fingerprint },
             ...(settings.enableECH && settings.echServerName

@@ -1,6 +1,6 @@
 import { GamingProfile, Settings } from '#types/settings';
 import { P } from '@config/obfuscation';
-import { BuildContext, isTlsPort, selectSniHost, wsPath } from '@cores/shared';
+import { BuildContext, frontNeedsInsecure, isTlsPort, selectSniHost, wsPath } from '@cores/shared';
 import { base64Encode } from '@common/utils';
 
 /**
@@ -45,6 +45,7 @@ export function buildGamingUri(ctx: BuildContext, profile: GamingProfile): strin
         params.set('sni', sni);
         params.set('fp', settings.fingerprint);
         params.set('alpn', 'http/1.1');
+        if (frontNeedsInsecure(profile.address)) params.set('allowInsecure', '1');
     }
 
     url.hash = encodeURIComponent(remarkFor(profile));
@@ -74,7 +75,7 @@ function clashProxy(ctx: BuildContext, profile: GamingProfile): Record<string, u
         port: profile.port,
         udp: true,
         network: 'ws',
-        'skip-cert-verify': false,
+        'skip-cert-verify': frontNeedsInsecure(profile.address),
         // Multiplexing batches streams onto one connection, which adds
         // head-of-line blocking: one stalled stream delays the others. That is
         // invisible while browsing and shows up as a spike in a match.
@@ -263,7 +264,7 @@ export function buildGamingSingbox(ctx: BuildContext, profiles: GamingProfile[])
             out.tls = {
                 enabled: true,
                 server_name: sni,
-                insecure: false,
+                insecure: frontNeedsInsecure(profile.address),
                 alpn: ['http/1.1'],
                 utls: { enabled: true, fingerprint: settings.fingerprint },
             };

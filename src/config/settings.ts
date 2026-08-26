@@ -1,11 +1,48 @@
 import { Settings, RequestContext } from '#types/settings';
-import { DEFAULT_SETTINGS } from './defaults';
+import { DEFAULT_SETTINGS, LEGACY_NAME_TEMPLATE } from './defaults';
 import { Store } from '@storage/db';
 import { cached, cacheInvalidate, CacheKeys, cacheSet } from '@storage/cache';
 import { CACHE_TTL_SETTINGS, DEFAULT_PROXY_IPS, HTTP_PORTS, HTTPS_PORTS } from './constants';
 import { deriveUUID, isValidUUID } from '@common/utils';
+import { isWorkerFrontIp } from '@scanner/candidates';
 
 const SETTINGS_KEY = 'settings';
+
+/**
+ * Drop colo-interconnect IPs pinned by v0.7.0. Those never front a Worker, so
+ * every generated config was dead and Hiddify hid them as unreachable.
+ * Returns true when the object was mutated and should be persisted.
+ */
+function healIpPool(settings: Settings): boolean {
+    let changed = false;
+    const pool = settings.ipPool;
+
+    if (!pool || !Array.isArray(pool.entries)) {
+        settings.ipPool = { ...DEFAULT_SETTINGS.ipPool };
+        return true;
+    }
+
+    const kept = pool.entries.filter((entry) => isWorkerFrontIp(entry.address));
+    if (kept.length !== pool.entries.length) {
+        const dropped = new Set(
+            pool.entries.filter((entry) => !isWorkerFrontIp(entry.address)).map((entry) => entry.address),
+        );
+        settings.ipPool = kept.length
+            ? { ...pool, entries: kept, enabled: true }
+            : { ...DEFAULT_SETTINGS.ipPool };
+        if (dropped.size) {
+            settings.cleanIPs = (settings.cleanIPs ?? []).filter((ip) => !dropped.has(ip));
+        }
+        changed = true;
+    }
+
+    if (settings.nameTemplate === LEGACY_NAME_TEMPLATE) {
+        settings.nameTemplate = DEFAULT_SETTINGS.nameTemplate;
+        changed = true;
+    }
+
+    return changed;
+}
 
 /** Per-request context. Rebuilt on every fetch, never cached across requests. */
 let ctx: RequestContext;
@@ -62,6 +99,7 @@ export async function loadSettings(store: Store, env: Env): Promise<Settings> {
             settings.proxyIPs = [...DEFAULT_PROXY_IPS];
             migrated = true;
         }
+        if (healIpPool(settings)) migrated = true;
 
         // env wins for deployment-level knobs
         if (env.SECURE_PATH) settings.securePath = env.SECURE_PATH;
@@ -119,6 +157,7 @@ export async function saveSettings(
     patch: Partial<Settings>,
 ): Promise<Settings> {
     const merged: Settings = { ...current, ...patch, panelVersion: VERSION };
+    healIpPool(merged);
     await store.putJSON(SETTINGS_KEY, merged);
     cacheSet(CacheKeys.settings, merged, CACHE_TTL_SETTINGS);
     return merged;

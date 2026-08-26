@@ -106,6 +106,21 @@ check('Turkey candidates are well-formed IPv4',
 check('unknown country is rejected',
     (await api('/api/scan/pool/candidates?country=ZZ')).status === 400);
 
+const rejectedPool = await api('/api/scan/pool/apply', {
+    method: 'POST',
+    body: JSON.stringify({
+        country: 'TR',
+        keep: 2,
+        lockToPool: true,
+        measurements: [
+            { address: '104.23.181.10', samples: [10, 12, 11] },
+            { address: '172.70.112.10', samples: [8, 9, 7] },
+        ],
+    }),
+});
+check('colo interconnect IPs are rejected', rejectedPool.status === 400,
+    `status ${rejectedPool.status}`);
+
 const appliedPool = await api('/api/scan/pool/apply', {
     method: 'POST',
     body: JSON.stringify({
@@ -113,25 +128,31 @@ const appliedPool = await api('/api/scan/pool/apply', {
         keep: 2,
         lockToPool: true,
         measurements: [
-            { address: '104.23.181.10', samples: [42, 45, 40] },
-            { address: '104.23.182.20', samples: [90, 88, 95] },
-            { address: '104.23.183.30', samples: [-1, -1, -1] },
+            { address: '104.21.83.62', samples: [42, 45, 40] },
+            { address: '104.16.10.10', samples: [90, 88, 95] },
+            { address: '104.23.181.10', samples: [5, 5, 5] },
         ],
     }),
 });
 const ap = appliedPool.body?.body ?? {};
-check('pool apply pins the fastest IP first', ap.best?.address === '104.23.181.10',
+check('pool apply pins the fastest Worker-front IP first', ap.best?.address === '104.21.83.62',
     ap.best?.address ?? 'none');
 check('pool apply keeps the requested number of healthy IPs',
     Array.isArray(ap.entries) && ap.entries.length === 2,
     `${ap.entries?.length ?? 0}`);
+check('pool apply drops colo interconnects even if they look fast',
+    !(ap.entries ?? []).some((e) => e.address.startsWith('104.23.')));
 check('pool apply marks the pool enabled', ap.pool?.enabled === true && ap.pool?.country === 'TR');
 
 const lockedSub = await fetch(`${root}/sub?format=plain`);
 const lockedText = await lockedSub.text();
-check('locked pool IP appears in generated configs', lockedText.includes('104.23.181.10'));
+check('locked pool IP appears in generated configs', lockedText.includes('104.21.83.62'));
 check('locked pool uses the pinned IP as the server address',
-    /@104\.23\.181\.10:/.test(lockedText));
+    /@104\.21\.83\.62:/.test(lockedText));
+check('locked pool URI allows insecure on IP fronts',
+    /allowInsecure=1/.test(lockedText));
+check('locked pool remark names the country',
+    /TR/.test(lockedText));
 
 await api('/api/scan/pool/clear', { method: 'POST' });
 const cleared = await api('/api/scan/pool');

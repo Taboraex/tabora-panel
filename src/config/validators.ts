@@ -176,6 +176,7 @@ const VALIDATORS: Validator[] = [
     validateMaxConfigs,
     validateNameTemplate,
     validateEch,
+    validateIpPool,
     validateRules,
 ];
 

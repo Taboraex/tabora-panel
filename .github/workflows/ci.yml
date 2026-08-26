@@ -35,6 +35,11 @@ jobs:
       - name: Type-check
         run: npm run check
 
+      - name: Unit tests
+        run: |
+          node scripts/gaming-test.mjs
+          node scripts/pool-test.mjs
+
       - name: Build worker
         run: npm run build
 

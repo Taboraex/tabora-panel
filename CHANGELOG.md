@@ -5,6 +5,32 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] — 2026-08-26
+
+### Fixed
+
+- **Country-pool configs never pinged or connected.** The 0.7.0 catalogue used
+  geolocated AS13335 prefixes (Turkey `104.23.181.0/22`, `172.70.112.0/22`,
+  …). Those are colo interconnects: TCP may open, but they do not front a
+  Worker, so every generated config was dead and Hiddify hid them. The pool
+  now samples only prefixes that actually serve `*.workers.dev`
+  (`104.16/14`, `104.20/15`, `104.24/14`, `162.159/16`, `188.114.96/20`) plus
+  a seed list of verified fronts. Country is a **label** on the same anycast.
+- Existing panels auto-heal on load: non-front IPs are dropped from the pool
+  and from `cleanIPs`; an empty pool disables itself and falls back to the
+  worker hostname.
+- Pool IPs are enumerated **first**, so they are not squeezed out of the first
+  `maxConfigs` slots by hostname × ports × protocols.
+- URI / Clash / sing-box / gaming configs set `allowInsecure` /
+  `skip-cert-verify` / `insecure` when the server address is an IPv4, which
+  is what clients need when SNI is the worker hostname and the socket is an IP.
+
+### Changed
+
+- Default name template is now `{FLAG} {COUNTRY} {PREFIX}-{INDEX} · {ADDRESS}`
+  so Hiddify’s geo flag (often 🇺🇸 on anycast) does not hide which country
+  you pinned.
+
 ## [0.7.0] — 2026-08-26
 
 ### Added
@@ -182,7 +208,9 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.1
+[0.7.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.0
 [0.1.3]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.3
 [0.1.2]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.2
 [0.1.1]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.1.1

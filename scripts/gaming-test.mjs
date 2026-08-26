@@ -112,6 +112,7 @@ const ctx = {
 
 const clash = m.buildGamingClash(ctx, [profile]);
 check('clash pins the literal IP', clash.includes('server: 104.16.5.9'));
+check('clash skips cert verify for IP fronts', clash.includes('skip-cert-verify: true'));
 check('clash emits no url-test when locked', !clash.includes('type: url-test'),
     'a url-test group would let the client switch mid-match');
 check('clash disables multiplexing', clash.includes('smux'));
@@ -129,6 +130,7 @@ const sb = JSON.parse(m.buildGamingSingbox(ctx, [profile]));
 const outbounds = sb.outbounds.filter((o) => o.type === 'vless');
 check('sing-box emits exactly one proxy outbound', outbounds.length === 1, `got ${outbounds.length}`);
 check('sing-box pins the literal IP', outbounds[0].server === '104.16.5.9');
+check('sing-box marks IP fronts insecure', outbounds[0].tls.insecure === true);
 check('sing-box disables multiplex', outbounds[0].multiplex.enabled === false);
 check('sing-box has no urltest when locked',
     !sb.outbounds.some((o) => o.type === 'urltest'));
@@ -144,6 +146,7 @@ const uri = m.buildGamingUri(ctx, profile);
 check('uri targets the literal IP', uri.includes('104.16.5.9:443'));
 check('uri carries the worker host', uri.includes('host=panel.workers.dev'));
 check('uri is tls on 443', uri.includes('security=tls'));
+check('uri allows insecure on IP fronts', uri.includes('allowInsecure=1'));
 
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

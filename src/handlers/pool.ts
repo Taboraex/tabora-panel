@@ -1,6 +1,7 @@
 import { Settings } from '#types/settings';
 import { Store } from '@storage/db';
 import { saveSettings } from '@config/settings';
+import { DEFAULT_SETTINGS, LEGACY_NAME_TEMPLATE } from '@config/defaults';
 import { ok, badRequest, methodNotAllowed } from '@common/http';
 import {
     publicCountries, findCountry, candidatesFor, isPoolAddress,
@@ -132,10 +133,15 @@ export async function handlePoolApply(
 
     // Mirror the winners into cleanIPs so older code paths and backups
     // still see the same address list the subscription builder uses.
-    const updated = await saveSettings(store, settings, {
+    const patch: Partial<Settings> = {
         ipPool,
         cleanIPs: entries.map((e) => e.address),
-    });
+    };
+    if (!settings.nameTemplate || settings.nameTemplate === LEGACY_NAME_TEMPLATE) {
+        patch.nameTemplate = DEFAULT_SETTINGS.nameTemplate;
+    }
+
+    const updated = await saveSettings(store, settings, patch);
 
     const best = entries[0];
     await logActivity(

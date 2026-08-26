@@ -3,6 +3,7 @@ import {
     BuildContext,
     enumerateEndpoints,
     isTlsPort,
+    frontNeedsInsecure,
     renderRemark,
     selectSniHost,
     wsPath,
@@ -43,6 +44,7 @@ export function buildUri(
         params.set('sni', sni);
         params.set('fp', settings.fingerprint);
         params.set('alpn', 'http/1.1');
+        if (frontNeedsInsecure(address)) params.set('allowInsecure', '1');
         if (settings.enableECH && settings.echServerName) {
             params.set('ech', settings.echServerName);
         }

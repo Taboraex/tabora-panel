@@ -18,8 +18,8 @@ export interface BuildContext {
     poolCountry: string;
     poolFlag: string;
     /**
-     * Proxy IP Pool is active: emit exactly one config per pinned IPv4
-     * (one TLS port, one protocol). No cartesian product, no url-test.
+     * Operator pinned IPv4 fronts (clean-IP scan). Emit exactly one config
+     * per address (one TLS port, one protocol). No cartesian product, no url-test.
      */
     poolFixed: boolean;
 }
@@ -33,16 +33,13 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
 
     const ports = user?.ports?.length ? user.ports : settings.ports;
 
-    const pool = settings.ipPool;
-    const poolIps = pool?.enabled && pool.entries?.length
-        ? pool.entries.map((entry) => entry.address).filter(Boolean)
-        : [];
+    const frontEnds = (user?.cleanIPs?.length ? user.cleanIPs : settings.cleanIPs)
+        .filter(Boolean);
+    const ipv4Fronts = frontEnds.filter(isIPv4);
 
-    const poolCountry = pool?.enabled ? (pool.country || '') : '';
-
-    // Fixed-IP mode: 3 healthy IPs must produce 3 configs, not
-    // 3 × ports × protocols. One TLS port (443), one protocol (VLESS if on).
-    if (poolIps.length && !user?.cleanIPs?.length) {
+    // Real fixed IPs: the operator pinned IPv4 literals (from the clean-IP
+    // scanner). One address → one config. Country-pool anycast theatre is gone.
+    if (ipv4Fronts.length && ipv4Fronts.length === frontEnds.length) {
         const tlsPort = preferTlsPort(ports.length ? ports : [...HTTPS_PORTS]);
         const protocol = preferProtocol(protocols.length ? protocols : [P.VL]);
         return {
@@ -51,17 +48,16 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
             hostname,
             protocols: [protocol],
             ports: [tlsPort],
-            addresses: poolIps,
+            addresses: ipv4Fronts,
             uuid: user?.uuid || settings.uuid,
             trojanPassword: settings.trojanPassword,
-            maxConfigs: poolIps.length,
-            poolCountry,
-            poolFlag: flagFor(poolCountry),
+            maxConfigs: ipv4Fronts.length,
+            poolCountry: '',
+            poolFlag: '',
             poolFixed: true,
         };
     }
 
-    const frontEnds = user?.cleanIPs?.length ? user.cleanIPs : settings.cleanIPs;
     const addresses = [hostname, ...frontEnds].filter(
         (value, index, self) => value && self.indexOf(value) === index,
     );
@@ -76,8 +72,8 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
         uuid: user?.uuid || settings.uuid,
         trojanPassword: settings.trojanPassword,
         maxConfigs: user?.maxConfigs || settings.maxConfigs || 30,
-        poolCountry,
-        poolFlag: flagFor(poolCountry),
+        poolCountry: '',
+        poolFlag: '',
         poolFixed: false,
     };
 }

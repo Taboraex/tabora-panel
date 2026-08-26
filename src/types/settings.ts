@@ -53,11 +53,8 @@ export interface Settings {
     gaming: GamingSettings;
 
     /**
-     * Proxy IP Pool — fixed Cloudflare IPv4s chosen by country.
-     *
-     * When enabled, generated configs use these literals as the address
-     * field so every subscriber lands on the same, measured edge instead
-     * of a hostname that re-resolves.
+     * Legacy country-pool object. Kept so backups from 0.7–0.8 still parse.
+     * Load always heals it to disabled/empty; configs pin IPv4s via cleanIPs.
      */
     ipPool: IpPoolSettings;
 

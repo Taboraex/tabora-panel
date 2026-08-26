@@ -174,23 +174,15 @@ a fresh install carries traffic immediately.
 
 The **Scanner** tab tests and replaces them:
 
-- **Proxy IP Pool** is the one that produces fixed-IP configs. You pick a
-  country (Turkey, Germany, Netherlands, UAE, or “Best for me”) as a **label**.
-  Tabora samples Cloudflare anycast IPs that actually front a Worker — not
-  colo interconnects that merely geolocate to that country — the browser
-  measures them from your network, and the fastest IPs are pinned as the
-  address field of every generated config. Lock-to-pool mode drops the worker
-  hostname entirely so the client never re-resolves. Clients often geo-flag
-  those IPs as 🇺🇸; the country name in the remark is the one you picked.
+- **Clean IP scan** is how you get a real fixed IP. It runs in your browser
+  against Cloudflare addresses that actually front a Worker (not colo
+  interconnects, not “Turkey `/22`” anycast theatre). Apply the fastest IPv4s
+  and each one becomes exactly one config on port 443 — no country labels, no
+  hostname that re-resolves.
 - **Relay health** probes each relay from the Worker and reports latency.
   Relays sit outside Cloudflare's network, so the Worker can measure them.
-- **Clean IP scan** runs in your browser instead. A Worker cannot reach
-  Cloudflare edges at all, and its timings would describe the datacentre
-  rather than your connection — so the browser measures the path that actually
-  matters to you.
 
-The pool applies automatically after a scan. Relay and clean-IP results can
-still be applied by hand.
+Relay and clean-IP results are applied by hand from the scan results.
 
 Everything else — ports, clean IPs, DNS, routing rules, naming templates — is
 edited in the dashboard and stored in D1.

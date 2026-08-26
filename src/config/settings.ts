@@ -15,24 +15,37 @@ const SETTINGS_KEY = 'settings';
  */
 function healIpPool(settings: Settings): boolean {
     let changed = false;
-    const pool = settings.ipPool;
 
-    if (!pool || !Array.isArray(pool.entries)) {
+    // Country-pool UI is gone. Drop leftover pins so they cannot keep
+    // generating configs that pretended a /22 was "Turkey". Worker-front
+    // IPs that were already pinned migrate into cleanIPs so they stay
+    // available as real fixed fronts.
+    const leftover = (settings.ipPool?.entries ?? [])
+        .map((entry) => entry.address)
+        .filter((ip) => isWorkerFrontIp(ip));
+    if (leftover.length) {
+        const current = settings.cleanIPs ?? [];
+        const haveIpv4 = current.some((ip) => /^\d{1,3}(?:\.\d{1,3}){3}$/.test(ip));
+        if (!haveIpv4) {
+            settings.cleanIPs = leftover;
+            changed = true;
+        }
+    }
+    if (settings.ipPool?.enabled || (settings.ipPool?.entries?.length ?? 0) > 0) {
         settings.ipPool = { ...DEFAULT_SETTINGS.ipPool };
-        return true;
+        changed = true;
+    } else if (!settings.ipPool || !Array.isArray(settings.ipPool.entries)) {
+        settings.ipPool = { ...DEFAULT_SETTINGS.ipPool };
+        changed = true;
     }
 
-    const kept = pool.entries.filter((entry) => isWorkerFrontIp(entry.address));
-    if (kept.length !== pool.entries.length) {
-        const dropped = new Set(
-            pool.entries.filter((entry) => !isWorkerFrontIp(entry.address)).map((entry) => entry.address),
-        );
-        settings.ipPool = kept.length
-            ? { ...pool, entries: kept, enabled: true }
-            : { ...DEFAULT_SETTINGS.ipPool };
-        if (dropped.size) {
-            settings.cleanIPs = (settings.cleanIPs ?? []).filter((ip) => !dropped.has(ip));
-        }
+    const before = settings.cleanIPs ?? [];
+    const cleaned = before.filter((ip) => {
+        if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(ip)) return true;
+        return isWorkerFrontIp(ip);
+    });
+    if (cleaned.length !== before.length) {
+        settings.cleanIPs = cleaned;
         changed = true;
     }
 

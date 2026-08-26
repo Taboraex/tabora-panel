@@ -5,6 +5,26 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] — 2026-08-26
+
+### Removed
+
+- **Country Proxy IP Pool is gone.** The flag grid, radar hero, `/api/scan/pool*`
+  routes and the country catalogue (`countries.ts` / `catalog.ts` / `strategy.ts`)
+  are deleted. Cloudflare anycast is not geography — a “Turkey” `/22` was a
+  label on the same front, and often a dead colo interconnect.
+
+### Changed
+
+- **Real fixed IPs come from the Clean IP scan.** The browser probes Worker-front
+  ranges and seeds only (`104.16/14`, `104.20/15`, `104.24/14`, `162.159/16`,
+  `188.114.96/20` plus verified seeds — never `CLOUDFLARE_RANGES`). Apply the
+  fastest IPv4s and each one becomes exactly one config (port 443, one protocol,
+  no Clash/sing-box url-test).
+- Existing 0.7–0.8 country pins are healed to a disabled empty pool on load.
+  Leftover colo IPs are dropped from `cleanIPs`. Worker-front IPv4s already in
+  `cleanIPs` keep working as fixed fronts.
+
 ## [0.8.0] — 2026-08-26
 
 ### Added

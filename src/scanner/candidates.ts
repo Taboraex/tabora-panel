@@ -148,7 +148,7 @@ const toIp = (n: number): string =>
  * Draw `count` random addresses spread across the published ranges.
  * Network and broadcast addresses are skipped.
  */
-export function sampleCloudflareIPs(count: number, ranges = CLOUDFLARE_RANGES): string[] {
+export function sampleCloudflareIPs(count: number, ranges = WORKER_FRONT_RANGES): string[] {
     return sampleFromRanges(count, ranges);
 }
 

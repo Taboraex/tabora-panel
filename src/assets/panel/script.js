@@ -43,38 +43,12 @@ const I18N = {
         'scan.clean.title': 'Clean IP scan',
         'scan.clean.run': 'Scan from my network',
         'scan.clean.apply': 'Use fastest',
-        'scan.clean.hint': 'Runs in your browser, so results reflect your own connection. Cloudflare blocks the worker from testing its own edges, which is why this runs here.',
+        'scan.clean.hint': 'This is how you get a real fixed IP. The scan runs in your browser against Worker-front Cloudflare addresses from your own network. Apply the fastest IPv4s and each one becomes exactly one config \u2014 no country labels.',
         'scan.running': 'Testing…',
         'scan.progress': 'Tested {done} of {total}',
         'scan.done': '{n} working address(es) found',
         'scan.applied': 'Applied — your links now use these',
         'scan.unreachable': 'unreachable',
-        'pool.kicker': 'Proxy IP Pool',
-        'pool.title': 'Fixed Cloudflare IPs by country',
-        'pool.hint': 'Pick a country as a label. The scanner walks Cloudflare clean IPs that actually front a Worker — previous winners, a baked catalogue, neighbours of whatever answered, then a wider sample — and stops once it has enough healthy addresses. Each pinned IP becomes exactly one config.',
-        'pool.keep': 'Keep best',
-        'pool.depth': 'Scan',
-        'pool.depth.quick': 'Quick',
-        'pool.depth.smart': 'Smart',
-        'pool.depth.deep': 'Deep',
-        'pool.early': 'Enough healthy IPs — stopping extra waves',
-        'pool.lock': 'Fixed IPs only — one config per IP',
-        'pool.scan': 'Scan & pick the best',
-        'pool.stop': 'Stop',
-        'pool.clear': 'Clear',
-        'pool.active.title': 'Active pool',
-        'pool.pick': 'Pick a country first',
-        'pool.measuring': 'Probing {done} of {total}',
-        'pool.none': 'No IP from that country answered. Try another country, or Best for me.',
-        'pool.applied': '{flag} {name} · {ip} · {ms} ms — configs now use this route',
-        'pool.cleared': 'Pool cleared — configs use the default addresses again',
-        'pool.use': 'Use',
-        'pool.best': 'BEST',
-        'pool.pinned': 'Pinned {n} fixed IP(s)',
-        'pool.locked': 'One config per IP · port 443 · one protocol',
-        'pool.unlocked': 'One config per IP · port 443 · one protocol',
-        'pool.featured': 'Popular',
-        'pool.auto': 'Best for me',
         'stat.users': 'Total users', 'stat.active': 'Active', 'stat.paused': 'Paused',
         'stat.traffic': 'Total traffic', 'stat.today': 'Today', 'stat.expired': 'Expired',
         'ov.system': 'System', 'ov.host': 'Hostname', 'ov.colo': 'Edge node',
@@ -156,38 +130,12 @@ const I18N = {
         'scan.clean.title': 'اسکن آی‌پی تمیز',
         'scan.clean.run': 'اسکن از شبکه من',
         'scan.clean.apply': 'استفاده از سریع‌ترین',
-        'scan.clean.hint': 'این اسکن در مرورگر شما اجرا می‌شود تا نتیجه با اینترنت خودتان بخواند. کلادفلر اجازه نمی‌دهد ورکر لبه‌های خودش را تست کند، برای همین اینجا اجرا می‌شود.',
+        'scan.clean.hint': 'این راه آی‌پی ثابت واقعی است. اسکن در مرورگر شما روی آی‌پی‌هایی اجرا می‌شود که واقعاً جلوی ورکر می‌ایستند. سریع‌ترین آی‌پی‌ها را اعمال کنید؛ هر کدام دقیقاً یک کانفیگ می‌شود — بدون برچسب کشور.',
         'scan.running': 'در حال تست…',
         'scan.progress': '{done} از {total} تست شد',
         'scan.done': '{n} آدرس سالم پیدا شد',
         'scan.applied': 'اعمال شد — لینک‌های شما از این آدرس‌ها استفاده می‌کنند',
         'scan.unreachable': 'در دسترس نیست',
-        'pool.kicker': 'استخر Proxy IP',
-        'pool.title': 'آی‌پی ثابت کلادفلر بر اساس کشور',
-        'pool.hint': 'کشور را به‌عنوان برچسب انتخاب کنید. اسکنر آی‌پی‌های تمیز کلادفلر را که واقعاً جلوی ورکر می‌ایستند موج‌به‌موج تست می‌کند — برنده‌های قبلی، کاتالوگ، همسایه‌های /۲۴، بعد کشف محدوده — و وقتی به‌اندازه کافی سالم پیدا کرد می‌ایستد. هر آی‌پی سالم دقیقاً یک کانفیگ می‌شود.',
-        'pool.keep': 'نگه‌داشتن بهترین‌ها',
-        'pool.depth': 'اسکن',
-        'pool.depth.quick': 'سریع',
-        'pool.depth.smart': 'هوشمند',
-        'pool.depth.deep': 'عمیق',
-        'pool.early': 'آی‌پی سالم به‌اندازه کافی — موج‌های اضافه متوقف شد',
-        'pool.lock': 'فقط آی‌پی ثابت — هر آی‌پی یک کانفیگ',
-        'pool.scan': 'اسکن و انتخاب بهترین',
-        'pool.stop': 'توقف',
-        'pool.clear': 'پاک کردن',
-        'pool.active.title': 'استخر فعال',
-        'pool.pick': 'اول یک کشور انتخاب کنید',
-        'pool.measuring': 'تست {done} از {total}',
-        'pool.none': 'هیچ آی‌پی از آن کشور جواب نداد. کشور دیگری یا «بهترین برای من» را امتحان کنید.',
-        'pool.applied': '{flag} {name} · {ip} · {ms} میلی‌ثانیه — کانفیگ‌ها حالا از این مسیر استفاده می‌کنند',
-        'pool.cleared': 'استخر پاک شد — کانفیگ‌ها دوباره از آدرس‌های پیش‌فرض استفاده می‌کنند',
-        'pool.use': 'استفاده',
-        'pool.best': 'بهترین',
-        'pool.pinned': '{n} آی‌پی ثابت قفل شد',
-        'pool.locked': 'هر آی‌پی یک کانفیگ · پورت ۴۴۳ · یک پروتکل',
-        'pool.unlocked': 'هر آی‌پی یک کانفیگ · پورت ۴۴۳ · یک پروتکل',
-        'pool.featured': 'پیشنهادی',
-        'pool.auto': 'بهترین برای من',
         'stat.users': 'کل کاربران', 'stat.active': 'فعال', 'stat.paused': 'متوقف',
         'stat.traffic': 'ترافیک کل', 'stat.today': 'امروز', 'stat.expired': 'منقضی',
         'ov.system': 'سیستم', 'ov.host': 'نام میزبان', 'ov.colo': 'نود لبه',
@@ -278,8 +226,6 @@ function applyLang() {
  */
 function redrawDynamic() {
     try { renderGamingProfiles(); } catch { /* not loaded yet */ }
-    try { renderCountryGrid(); } catch { /* not loaded yet */ }
-    try { renderPoolActive(); } catch { /* not loaded yet */ }
     if (usersCache.length) renderUsers();
     if (meta.subscriptionBase) renderSubscriptions();
     // Logs are fetched and rendered together, so refetch only if that tab is
@@ -799,12 +745,6 @@ async function loadAll() {
         console.error('Could not render gaming profiles:', err);
     }
 
-    try {
-        await loadPoolMeta();
-    } catch (err) {
-        console.error('Could not load IP pool:', err);
-    }
-
     // Decorative and independently guarded, like the block above.
     loadChart().catch((err) => console.error('Could not render chart:', err));
 
@@ -1209,12 +1149,13 @@ async function scanCleanIPs() {
     cleanBest = [];
 
     try {
-        const { domains = [] } = await request('/scan/candidates');
+        const { domains = [], sample = [] } = await request('/scan/candidates');
         const results = [];
         let done = 0;
 
-        // Small concurrency: browsers cap connections per host anyway.
-        const queue = [...domains];
+        // Worker-front IPv4s first: those become real fixed-IP configs.
+        const queue = [...new Set([...sample, ...domains])];
+        const total = queue.length;
         const workers = Array.from({ length: 4 }, async () => {
             for (;;) {
                 const host = queue.shift();
@@ -1223,7 +1164,7 @@ async function scanCleanIPs() {
                 done++;
                 prog.textContent = t('scan.progress')
                     .replace('{done}', String(done))
-                    .replace('{total}', String(domains.length));
+                    .replace('{total}', String(total));
                 renderProbeRows(box, [...results].sort(sortProbes));
             }
         });
@@ -1283,397 +1224,13 @@ async function applyRelays() {
 }
 
 async function applyCleanIPs() {
+    const ipv4 = cleanBest.filter((a) => /^(?:\d{1,3}\.){3}\d{1,3}$/.test(a));
+    const picked = (ipv4.length ? ipv4 : cleanBest).slice(0, 5);
     await request('/scan/apply', {
         method: 'POST',
-        body: JSON.stringify({ addresses: cleanBest.slice(0, 10) }),
+        body: JSON.stringify({ addresses: picked }),
     });
     notify(t('scan.applied'));
-    await loadAll();
-}
-
-/* ══════════════════════════════ proxy ip pool ═══════════════════════════ */
-
-let poolCountries = [];
-let poolSelected = '';
-let poolAbort = false;
-let poolRanked = [];
-
-const countryLabel = (c) => {
-    if (!c) return '';
-    if (c.code === 'AUTO') return t('pool.auto');
-    return lang === 'fa' ? (c.nameFa || c.name) : c.name;
-};
-
-async function loadPoolMeta() {
-    const data = await request('/scan/pool');
-    poolCountries = data.countries ?? [];
-    if (!poolSelected && data.pool?.country) poolSelected = data.pool.country;
-    if ($('#poolKeep') && data.pool?.keep) $('#poolKeep').value = String(data.pool.keep);
-    if ($('#poolLock')) $('#poolLock').checked = data.pool?.lockToPool !== false;
-    renderCountryGrid();
-    renderPoolActive();
-}
-
-function renderCountryGrid() {
-    const box = $('#countryGrid');
-    if (!box) return;
-    if (!poolCountries.length) {
-        box.innerHTML = '';
-        return;
-    }
-
-    box.innerHTML = poolCountries.map((c) => {
-        const selected = c.code === poolSelected ? ' selected' : '';
-        const featured = c.featured ? ' featured' : '';
-        const star = c.featured && c.code !== 'AUTO'
-            ? `<span class="country-star" title="${escapeHtml(t('pool.featured'))}">★</span>`
-            : '';
-        const colo = c.code === 'AUTO' ? 'AUTO' : (c.colo || '');
-        return `<button type="button" class="country-card${selected}${featured}" data-country="${escapeHtml(c.code)}">
-            ${star}
-            <span class="country-flag">${c.flag}</span>
-            <span class="country-name">${escapeHtml(countryLabel(c))}</span>
-            <span class="country-colo">${escapeHtml(colo)}</span>
-        </button>`;
-    }).join('');
-
-    const scanBtn = $('#poolScan');
-    if (scanBtn) scanBtn.disabled = !poolSelected;
-}
-
-function selectPoolCountry(code) {
-    poolSelected = code;
-    renderCountryGrid();
-}
-
-function renderPoolActive() {
-    const card = $('#poolActiveCard');
-    const box = $('#poolActive');
-    if (!card || !box) return;
-
-    const pool = settings.ipPool;
-    const entries = pool?.enabled ? (pool.entries ?? []) : [];
-    if (!entries.length) {
-        card.hidden = true;
-        box.innerHTML = '';
-        return;
-    }
-
-    card.hidden = false;
-    const country = poolCountries.find((c) => c.code === pool.country);
-    const flag = country?.flag || '🌐';
-    const name = countryLabel(country) || pool.country;
-    const when = pool.scannedAt ? new Date(pool.scannedAt).toLocaleString() : '';
-    const lockNote = pool.lockToPool ? t('pool.locked') : t('pool.unlocked');
-
-    box.innerHTML = `
-      <div class="pool-active-head">
-        <span class="pool-active-flag">${flag}</span>
-        <div>
-          <div class="pool-active-title">${escapeHtml(name)}</div>
-          <div class="pool-active-sub">${escapeHtml(lockNote)}${when ? ` · ${escapeHtml(when)}` : ''}</div>
-        </div>
-      </div>
-      <div class="pool-pills">
-        ${entries.map((e, i) => `
-          <span class="pool-pill">
-            <b>#${i + 1}</b>
-            ${escapeHtml(e.address)}
-            <span>${e.latency} ms</span>
-          </span>`).join('')}
-      </div>`;
-}
-
-function renderPoolResults(rows) {
-    const box = $('#poolResults');
-    if (!box) return;
-    const usable = rows.filter((r) => r.ok);
-    if (!usable.length) {
-        box.innerHTML = `<p class="empty">${escapeHtml(t('pool.none'))}</p>`;
-        return;
-    }
-
-    const peak = Math.max(...usable.map((r) => r.medianMs), 1);
-    box.innerHTML = usable.map((r, i) => {
-        const pct = Math.max(8, Math.round((r.medianMs / peak) * 100));
-        const speed = r.medianMs < 80 ? '' : r.medianMs < 160 ? ' mid' : ' slow';
-        const best = i === 0 ? ' best' : '';
-        return `<div class="pool-row${best}">
-          <span class="pool-rank">${i === 0 ? '★' : i + 1}</span>
-          <span class="game-grade ${GRADE_CLASS[r.grade] ?? ''}">${escapeHtml(r.grade)}</span>
-          <span class="pool-ip">${escapeHtml(r.address)}<small>${escapeHtml(r.colo && r.colo !== '*' ? r.colo : '')}</small></span>
-          <span class="pool-lat">
-            <b><bdi>${r.medianMs} ms</bdi></b>
-            <span class="pool-lat-bar${speed}"><i style="width:${pct}%"></i></span>
-          </span>
-          <button class="btn tiny${i === 0 ? ' primary' : ''}" data-pool-use="${escapeHtml(r.address)}"
-                  data-median="${r.medianMs}" data-grade="${escapeHtml(r.grade)}">
-            ${escapeHtml(i === 0 ? t('pool.best') : t('pool.use'))}
-          </button>
-        </div>`;
-    }).join('');
-}
-
-async function runPoolScan() {
-    if (!poolSelected) {
-        notify(t('pool.pick'), 'warn');
-        return;
-    }
-
-    const btn = $('#poolScan');
-    const stopBtn = $('#poolStop');
-    const hero = $('#poolHero');
-    const live = $('#poolLive');
-    const prog = $('#poolProgress');
-    const bar = $('#poolBar');
-    const progText = $('#poolProgText');
-    const progIp = $('#poolProgIp');
-    const box = $('#poolResults');
-
-    poolAbort = false;
-    poolRanked = [];
-    btn.disabled = true;
-    stopBtn.hidden = false;
-    hero.classList.add('scanning');
-    live.hidden = false;
-    prog.hidden = false;
-    box.innerHTML = '';
-    bar.style.width = '0%';
-
-    const waveLabelOf = (wave) => (lang === 'fa' ? (wave.labelFa || wave.label) : (wave.label || wave.id));
-
-    const paintWaves = (waves, activeId, skipped) => {
-        const el = $('#poolWaves');
-        if (!el) return;
-        if (!waves.length) { el.hidden = true; el.innerHTML = ''; return; }
-        el.hidden = false;
-        const skip = skipped || [];
-        const activeAt = waves.findIndex((w) => w.id === activeId);
-        el.innerHTML = waves.map((w, i) => {
-            let state = '';
-            if (skip.includes(w.id)) state = ' skip';
-            else if (w.id === activeId) state = ' active';
-            else if (activeAt > i) state = ' done';
-            return `<span class="pool-wave${state}">${escapeHtml(waveLabelOf(w))}</span>`;
-        }).join('');
-    };
-
-    const localHealthy = (measurements) => {
-        const rows = [];
-        for (const m of measurements) {
-            const samples = m.samples || [];
-            const good = samples.filter((s) => s >= 0);
-            const loss = samples.length ? 1 - good.length / samples.length : 1;
-            const sorted = [...good].sort((a, b) => a - b);
-            const med = sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : -1;
-            if (good.length >= 3 && loss <= 0.25 && med > 0) {
-                rows.push({ address: m.address, medianMs: med, lossRate: loss, ok: true });
-            }
-        }
-        rows.sort((a, b) => a.medianMs - b.medianMs);
-        const used = new Set();
-        const diverse = [];
-        for (const row of rows) {
-            const net = row.address.split('.').slice(0, 3).join('.');
-            if (used.has(net)) continue;
-            used.add(net);
-            diverse.push(row);
-        }
-        return { rows, diverse };
-    };
-
-    const liveGrade = (ms, loss) => {
-        if (loss > 0.2) return 'D';
-        if (ms < 80) return 'S';
-        if (ms < 140) return 'A';
-        if (ms < 200) return 'B';
-        if (ms < 280) return 'C';
-        return 'D';
-    };
-
-    const paintLive = (measurements) => {
-        const { rows } = localHealthy(measurements);
-        renderPoolResults(rows.map((r) => ({
-            ...r,
-            colo: '',
-            grade: liveGrade(r.medianMs, r.lossRate),
-        })));
-    };
-
-    const probeAddresses = async (addresses, probesPerIp, total, doneStart, onTick) => {
-        const measurements = [];
-        const queue = [...addresses];
-        let done = 0;
-        const conc = Math.min(addresses.length <= 8 ? 3 : 4, queue.length || 1);
-        const workers = Array.from({ length: conc }, async () => {
-            for (;;) {
-                if (poolAbort) return;
-                const ip = queue.shift();
-                if (!ip) return;
-                const samples = [];
-                for (let i = 0; i < probesPerIp; i++) {
-                    if (poolAbort) break;
-                    samples.push(await probeEndpoint(ip, 443, 3500));
-                }
-                measurements.push({ address: ip, samples });
-                done++;
-                onTick(doneStart + done, total, ip);
-            }
-        });
-        await Promise.all(workers);
-        return measurements;
-    };
-
-    try {
-        const keep = Number($('#poolKeep').value) || 3;
-        const depth = $('#poolDepth')?.value || 'smart';
-        const payload = await request(
-            `/scan/pool/candidates?country=${encodeURIComponent(poolSelected)}&depth=${encodeURIComponent(depth)}`,
-        );
-        const probesPerIp = payload.probesPerIp || 5;
-        const earlyStop = payload.earlyStop !== false && depth !== 'deep';
-        let planned = Array.isArray(payload.waves) && payload.waves.length
-            ? payload.waves.map((w) => ({ ...w, addresses: [...(w.addresses || [])] }))
-            : [{ id: 'catalog', label: 'Clean IPs', labelFa: 'آی‌پی تمیز', addresses: payload.addresses || [] }];
-        planned = planned.filter((w) => w.addresses.length);
-        if (!planned.length) {
-            box.innerHTML = `<p class="empty">${escapeHtml(t('pool.none'))}</p>`;
-            return;
-        }
-
-        const measurements = [];
-        const skipped = [];
-        const countIps = () => planned.reduce((n, w) => n + w.addresses.length, 0);
-        const tick = (d, tot, ip) => {
-            bar.style.width = `${Math.round((d / Math.max(tot, 1)) * 100)}%`;
-            progText.textContent = t('pool.measuring')
-                .replace('{done}', String(d))
-                .replace('{total}', String(tot));
-            progIp.textContent = ip;
-        };
-
-        paintWaves(planned, planned[0].id, skipped);
-
-        for (let i = 0; i < planned.length; i++) {
-            if (poolAbort) break;
-            const wave = planned[i];
-            if (earlyStop && i > 0 && localHealthy(measurements).diverse.length >= keep) {
-                for (let j = i; j < planned.length; j++) skipped.push(planned[j].id);
-                paintWaves(planned, '', skipped);
-                notify(t('pool.early'), 'ok', 4200);
-                break;
-            }
-            paintWaves(planned, wave.id, skipped);
-            const batch = await probeAddresses(
-                wave.addresses, probesPerIp, countIps(), measurements.length, tick,
-            );
-            measurements.push(...batch);
-            paintLive(measurements);
-
-            if (wave.id === 'catalog' && depth !== 'quick' && !planned.some((w) => w.id === 'neighbors')) {
-                const top = localHealthy(measurements).diverse.slice(0, 3).map((r) => r.address);
-                const needMore = depth === 'deep' || localHealthy(measurements).diverse.length < keep;
-                if (top.length && needMore) {
-                    try {
-                        const exp = await request(
-                            `/scan/pool/expand?around=${encodeURIComponent(top.join(','))}&count=16`,
-                        );
-                        const seen = new Set(measurements.map((m) => m.address));
-                        const addrs = (exp.addresses || []).filter((ip) => !seen.has(ip));
-                        if (addrs.length) {
-                            const nwave = {
-                                id: 'neighbors',
-                                label: (exp.wave && exp.wave.label) || 'Nearby /24',
-                                labelFa: (exp.wave && exp.wave.labelFa) || 'همسایه‌های /۲۴',
-                                addresses: addrs,
-                            };
-                            const exploreAt = planned.findIndex((w) => w.id === 'explore');
-                            if (exploreAt >= 0) planned.splice(exploreAt, 0, nwave);
-                            else planned.push(nwave);
-                            paintWaves(planned, nwave.id, skipped);
-                        }
-                    } catch { /* expand is optional */ }
-                }
-            }
-        }
-
-        if (!measurements.length) {
-            box.innerHTML = `<p class="empty">${escapeHtml(t('pool.none'))}</p>`;
-            return;
-        }
-
-        const result = await request('/scan/pool/apply', {
-            method: 'POST',
-            body: JSON.stringify({
-                country: poolSelected,
-                keep,
-                lockToPool: $('#poolLock').checked,
-                measurements,
-            }),
-        });
-
-        poolRanked = result.ranked ?? [];
-        renderPoolResults(poolRanked);
-        settings.ipPool = result.pool;
-        if (result.entries) settings.cleanIPs = result.entries.map((e) => e.address);
-        fillSettingsForm();
-        renderPoolActive();
-
-        const best = result.best;
-        if (best) {
-            const country = payload.country;
-            notify(t('pool.applied')
-                .replace('{flag}', country?.flag || result.country?.flag || '')
-                .replace('{name}', countryLabel(country || result.country) || poolSelected)
-                .replace('{ip}', best.address)
-                .replace('{ms}', String(best.latency)));
-        } else {
-            notify(t('pool.none'), 'warn', 6000);
-        }
-    } catch (err) {
-        box.innerHTML = `<p class="empty">${escapeHtml(err.message)}</p>`;
-    } finally {
-        btn.disabled = !poolSelected;
-        stopBtn.hidden = true;
-        hero.classList.remove('scanning');
-        live.hidden = true;
-        prog.hidden = true;
-        progIp.textContent = '';
-        progText.textContent = '';
-    }
-}
-
-async function applySinglePoolIp(address) {
-    const row = poolRanked.find((r) => r.address === address && r.ok);
-    if (!row) return;
-    const result = await request('/scan/pool/apply', {
-        method: 'POST',
-        body: JSON.stringify({
-            country: poolSelected || settings.ipPool?.country || 'AUTO',
-            keep: 1,
-            lockToPool: $('#poolLock').checked,
-            measurements: [{
-                address: row.address,
-                samples: [row.medianMs, row.medianMs, row.medianMs],
-            }],
-        }),
-    });
-    settings.ipPool = result.pool;
-    fillSettingsForm();
-    renderPoolActive();
-    notify(t('pool.applied')
-        .replace('{flag}', result.country?.flag || '')
-        .replace('{name}', countryLabel(result.country) || '')
-        .replace('{ip}', address)
-        .replace('{ms}', String(row.medianMs)));
-}
-
-async function clearPool() {
-    await request('/scan/pool/clear', { method: 'POST' });
-    settings.ipPool = { enabled: false, country: '', lockToPool: true, keep: 3, entries: [], scannedAt: 0 };
-    renderPoolActive();
-    $('#poolResults').innerHTML = '';
-    notify(t('pool.cleared'));
     await loadAll();
 }
 
@@ -1704,13 +1261,6 @@ function bindEvents() {
     $('#applyRelays')?.addEventListener('click', () => applyRelays().catch((e) => notify(e.message, 'error')));
     $('#scanClean')?.addEventListener('click', scanCleanIPs);
     $('#applyClean')?.addEventListener('click', () => applyCleanIPs().catch((e) => notify(e.message, 'error')));
-    $('#poolScan')?.addEventListener('click', () => runPoolScan().catch((e) => notify(e.message, 'error')));
-    $('#poolStop')?.addEventListener('click', () => { poolAbort = true; });
-    $('#poolClear')?.addEventListener('click', () => clearPool().catch((e) => notify(e.message, 'error')));
-    $('#countryGrid')?.addEventListener('click', (event) => {
-        const card = event.target.closest('[data-country]');
-        if (card) selectPoolCountry(card.dataset.country);
-    });
 
     // Tabs
     $$('.tab').forEach((tab) => tab.addEventListener('click', () => {
@@ -1742,15 +1292,6 @@ function bindEvents() {
 
     // Delegated: copy / QR / user row actions
     document.addEventListener('click', async (event) => {
-        const poolUse = event.target.closest('[data-pool-use]');
-        if (poolUse) {
-            poolUse.disabled = true;
-            applySinglePoolIp(poolUse.dataset.poolUse)
-                .catch((err) => notify(err.message, 'error'))
-                .finally(() => { poolUse.disabled = false; });
-            return;
-        }
-
         const pinEl = event.target.closest('[data-pin],[data-unpin]');
         if (pinEl) {
             pinEl.disabled = true;

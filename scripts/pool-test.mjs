@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Unit tests for Worker-front IP filtering, clean-IP catalogue and scan waves.
+ * Unit tests for Worker-front IP filtering and IPv4-cleanIP fixed configs.
  */
 import { build } from 'esbuild';
 import { writeFileSync, mkdtempSync } from 'fs';
@@ -16,13 +16,16 @@ const check = (name, cond, detail = '') => {
 
 const dir = mkdtempSync(join(tmpdir(), 'tabora-pool-'));
 const entry = join(dir, 'entry.ts');
-const src = join(process.cwd(), 'src', 'scanner');
+const scanner = join(process.cwd(), 'src', 'scanner');
+const cores = join(process.cwd(), 'src', 'cores');
+const config = join(process.cwd(), 'src', 'config');
 writeFileSync(entry, `
-export { isWorkerFrontIp, WORKER_FRONT_SEEDS, sampleFromRanges, WORKER_FRONT_RANGES } from ${JSON.stringify(join(src, 'candidates'))};
-export { candidatesFor, isPoolAddress, findCountry, POOL_COUNTRIES } from ${JSON.stringify(join(src, 'countries'))};
-export { rankPool, pickPoolWinners, isPoolHealthy } from ${JSON.stringify(join(src, 'pool'))};
-export { CLEAN_IPS, CLEAN_HOSTS } from ${JSON.stringify(join(src, 'catalog'))};
-export { planScan, pickCleanIps, neighborsOf, expandAround, pickDiverse, flattenPlan } from ${JSON.stringify(join(src, 'strategy'))};
+export {
+    isWorkerFrontIp, isPoolAddress, WORKER_FRONT_SEEDS, WORKER_FRONT_RANGES,
+    CLOUDFLARE_RANGES, sampleFromRanges, sampleCloudflareIPs,
+} from ${JSON.stringify(join(scanner, 'candidates'))};
+export { resolveBuildContext } from ${JSON.stringify(join(cores, 'shared'))};
+export { initContext } from ${JSON.stringify(join(config, 'settings'))};
 `);
 
 const out = join(dir, 'bundle.mjs');
@@ -50,87 +53,62 @@ check('rejects 104.22.10.10', m.isWorkerFrontIp('104.22.10.10') === false);
 check('isPoolAddress rejects colo interconnect', m.isPoolAddress('104.23.181.10') === false);
 check('isPoolAddress accepts a front', m.isPoolAddress('104.16.10.10'));
 
-console.log('\nCountry catalogue');
-check('Turkey still exists as a label', m.findCountry('TR')?.code === 'TR');
-check('every country samples the same front ranges',
-    m.POOL_COUNTRIES.every((c) => JSON.stringify(c.ranges) === JSON.stringify(m.WORKER_FRONT_RANGES)));
-check('no country still carries 104.22/104.23',
-    !m.POOL_COUNTRIES.some((c) => (c.ranges ?? []).some((r) => r.includes('104.22') || r.includes('104.23'))));
-
-console.log('\nClean IP catalogue');
-check('catalogue is non-trivial', m.CLEAN_IPS.length >= 80, `got ${m.CLEAN_IPS.length}`);
-check('every catalogue IP is a Worker front', m.CLEAN_IPS.every((ip) => m.isWorkerFrontIp(ip)));
-check('catalogue never includes colo interconnects',
-    !m.CLEAN_IPS.some((ip) => ip.startsWith('104.22.') || ip.startsWith('104.23.') || ip.startsWith('172.70.')));
-check('catalogue includes verified seeds',
-    m.WORKER_FRONT_SEEDS.every((ip) => m.CLEAN_IPS.includes(ip)));
-const picked = m.pickCleanIps(24);
-const sixteens = new Set(picked.map((ip) => ip.split('.').slice(0, 2).join('.')));
-check('picked clean IPs spread across several /16s', sixteens.size >= 4, [...sixteens].join(','));
-
-console.log('\nWaves');
-const quick = m.planScan({ previous: [], depth: 'quick', ranges: m.WORKER_FRONT_RANGES });
-const smart = m.planScan({ previous: ['104.17.147.22'], depth: 'smart', ranges: m.WORKER_FRONT_RANGES });
-check('quick scan has a catalog wave', quick.some((w) => w.id === 'catalog' && w.addresses.length > 0));
-check('quick scan skips explore', !quick.some((w) => w.id === 'explore'));
-check('smart scan starts with previous winners', smart[0]?.id === 'memory' && smart[0].addresses[0] === '104.17.147.22');
-check('smart scan includes explore', smart.some((w) => w.id === 'explore'));
-check('waves never emit 104.23',
-    !m.flattenPlan(smart).some((ip) => ip.startsWith('104.23.')));
-
-const near = m.neighborsOf('104.17.147.22', 6);
-check('neighbours stay in the same /24', near.every((ip) => ip.startsWith('104.17.147.')));
-check('neighbours are Worker fronts', near.every((ip) => m.isPoolAddress(ip)));
-check('neighbours do not repeat the origin', !near.includes('104.17.147.22'));
-const expanded = m.expandAround(['104.17.147.22', '104.16.10.10'], 4, 10);
-check('expandAround stays under the cap', expanded.length <= 10);
-check('expandAround does not re-list winners',
-    !expanded.includes('104.17.147.22') && !expanded.includes('104.16.10.10'));
-
-console.log('\nCandidates');
-const tr = m.candidatesFor('TR', 16);
-check('Turkey scan returns IPs', tr.length > 0, `got ${tr.length}`);
-check('Turkey scan never emits 104.23', !tr.some((ip) => ip.startsWith('104.23.')));
-check('Turkey scan leads with a known seed', m.WORKER_FRONT_SEEDS.includes(tr[0]));
-check('even a small count still includes every verified seed',
-    m.WORKER_FRONT_SEEDS.every((ip) => m.candidatesFor('TR', 8).includes(ip)));
+console.log('\nCandidate sampling');
+check('sampleCloudflareIPs default stays in Worker-front ranges',
+    m.sampleCloudflareIPs(40).every((ip) => m.isWorkerFrontIp(ip)));
+check('sample never emits 104.22 / 104.23 / 172.64',
+    !m.sampleCloudflareIPs(80).some((ip) =>
+        ip.startsWith('104.22.') || ip.startsWith('104.23.') || ip.startsWith('172.64.')));
 check('sample host octets stay in 16–240',
     m.sampleFromRanges(40, m.WORKER_FRONT_RANGES).every((ip) => {
         const host = Number(ip.split('.')[3]);
         return host >= 16 && host <= 240;
     }));
+check('CLOUDFLARE_RANGES still lists the official /13s (reference only)',
+    m.CLOUDFLARE_RANGES.some((r) => r.startsWith('104.16.0.0/13'))
+    && m.CLOUDFLARE_RANGES.some((r) => r.startsWith('172.64.0.0/13')));
 
-console.log('\nRanking');
-const ranked = m.rankPool([
-    { address: '104.21.83.62', samples: [40, 41, 42] },
-    { address: '104.16.10.10', samples: [90, 88, 95] },
-    { address: '104.16.50.50', samples: [5, 5, 5] },
-    { address: '104.23.181.10', samples: [1, 1, 1] },
-    { address: '104.18.26.90', samples: [5, -1, -1] },
-], 'TR', 2);
-check('keep=2 pins two IPs', ranked.length === 2, `got ${ranked.length}`);
-check('colo interconnects never rank', !ranked.some((r) => r.address.startsWith('104.23.')));
-check('lossy seed is not pinned just because it had one fast sample',
-    !ranked.some((r) => r.address === '104.18.26.90'));
-check('verified seeds win over a faster random sample when enough seeds are healthy',
-    ranked.every((r) => m.WORKER_FRONT_SEEDS.includes(r.address)));
-check('fastest healthy seed is first', ranked[0]?.address === '104.21.83.62', ranked[0]?.address);
+console.log('\nIPv4 cleanIPs → one config per IP');
+m.initContext(new Request('https://panel.workers.dev/secret/sub'));
+const baseSettings = {
+    cleanIPs: ['104.17.147.22', '104.16.10.10', '104.21.83.62'],
+    ports: [443, 8443, 2053],
+    protocols: 'vless,trojan',
+    uuid: '11111111-2222-3333-4444-555555555555',
+    trojanPassword: 'secretpass',
+    maxConfigs: 30,
+};
+const fixed = m.resolveBuildContext(baseSettings, null);
+check('all-IPv4 cleanIPs enable poolFixed', fixed.poolFixed === true);
+check('N IPv4s → N addresses', fixed.addresses.length === 3);
+check('maxConfigs equals the IP count', fixed.maxConfigs === 3);
+check('fixed mode uses a single TLS port', fixed.ports.length === 1 && fixed.ports[0] === 443);
+check('fixed mode uses a single protocol', fixed.protocols.length === 1 && fixed.protocols[0] === 'vless');
+check('hostname is not injected into the address list', !fixed.addresses.includes('panel.workers.dev'));
 
-const lossyOnly = m.rankPool([
-    { address: '104.16.50.50', samples: [5, -1, -1] },
-    { address: '104.21.83.62', samples: [40, 41, 42] },
-], 'TR', 3);
-check('lossy random IPs do not fill keep',
-    lossyOnly.length === 1 && lossyOnly[0].address === '104.21.83.62',
-    lossyOnly.map((r) => r.address).join(','));
+const mixed = m.resolveBuildContext({
+    ...baseSettings,
+    cleanIPs: ['104.17.147.22', 'icook.hk'],
+}, null);
+check('mixed IPv4 + domain stays cartesian (not poolFixed)', mixed.poolFixed === false);
+check('mixed list still includes the hostname fallback', mixed.addresses.includes('panel.workers.dev'));
 
-const diverse = m.pickDiverse([
-    { address: '104.16.10.10' },
-    { address: '104.16.10.22' },
-    { address: '104.17.147.22' },
-], 2);
-check('diversity prefers a second /24 over a second host in the same /24',
-    diverse[0].address === '104.16.10.10' && diverse[1].address === '104.17.147.22');
+const domains = m.resolveBuildContext({
+    ...baseSettings,
+    cleanIPs: ['icook.hk', 'japan.com'],
+}, null);
+check('domain-only cleanIPs stay cartesian', domains.poolFixed === false);
+
+const empty = m.resolveBuildContext({ ...baseSettings, cleanIPs: [] }, null);
+check('empty cleanIPs falls back to the worker hostname',
+    empty.poolFixed === false && empty.addresses.includes('panel.workers.dev'));
+
+const userOverride = m.resolveBuildContext(
+    { ...baseSettings, cleanIPs: ['icook.hk'] },
+    { cleanIPs: ['104.16.10.10', '104.21.83.62'], uuid: baseSettings.uuid },
+);
+check('per-user IPv4 cleanIPs also lock to poolFixed',
+    userOverride.poolFixed === true && userOverride.addresses.length === 2);
 
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

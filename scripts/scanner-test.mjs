@@ -66,6 +66,11 @@ const edge = await api('/api/scan', {
 check('worker refuses to scan Cloudflare edges', edge.status === 400,
     `status ${edge.status}`);
 
+/* ── country-pool routes are gone ── */
+check('country pool meta is gone', (await api('/api/scan/pool')).status === 404);
+check('country pool candidates are gone',
+    (await api('/api/scan/pool/candidates?country=TR')).status === 404);
+
 /* ── browser candidate list ── */
 const cand = await api('/api/scan/candidates');
 const c = cand.body?.body ?? {};
@@ -75,6 +80,11 @@ check('candidates endpoint returns sampled IPs', Array.isArray(c.sample) && c.sa
     `${c.sample?.length ?? 0} IPs`);
 check('sampled IPs are well-formed',
     (c.sample ?? []).every((ip) => /^(\d{1,3}\.){3}\d{1,3}$/.test(ip)));
+check('sampled IPs stay off colo interconnects',
+    !(c.sample ?? []).some((ip) =>
+        ip.startsWith('104.22.') || ip.startsWith('104.23.') || ip.startsWith('172.64.')));
+check('sampled IPs include at least one verified seed',
+    (c.sample ?? []).some((ip) => ip === '104.21.83.62' || ip === '104.16.10.10'));
 
 /* ── apply changes what configs are built from ── */
 const applied = await api('/api/scan', {
@@ -84,87 +94,37 @@ const applied = await api('/api/scan', {
 check('apply reports success', applied.body?.body?.applied === true);
 
 const settings = await api('/api/settings');
-const proxyIPs = settings.body?.body?.settings?.proxyIPs ?? [];
-check('applied relays are persisted to settings', proxyIPs.length > 0 && proxyIPs.length <= 2,
-    JSON.stringify(proxyIPs));
+const proxyIPs = settings.body?.body?.settings?.proxyIPs ?? {};
+const proxyList = settings.body?.body?.settings?.proxyIPs ?? [];
+check('applied relays are persisted to settings', proxyList.length > 0 && proxyList.length <= 2,
+    JSON.stringify(proxyList));
 
-/* ── proxy IP pool catalogue ── */
-const poolMeta = await api('/api/scan/pool');
-const pm = poolMeta.body?.body ?? {};
-check('pool meta lists countries', Array.isArray(pm.countries) && pm.countries.length >= 8,
-    `${pm.countries?.length ?? 0} countries`);
-check('pool meta includes Turkey', (pm.countries ?? []).some((c) => c.code === 'TR'));
-check('pool countries do not leak CIDR ranges',
-    (pm.countries ?? []).every((c) => c.ranges === undefined));
-
-const trCand = await api('/api/scan/pool/candidates?country=TR&count=16');
-const tc = trCand.body?.body ?? {};
-check('Turkey candidates return IPv4s', Array.isArray(tc.addresses) && tc.addresses.length > 0,
-    `${tc.addresses?.length ?? 0} IPs`);
-check('Turkey candidates are well-formed IPv4',
-    (tc.addresses ?? []).every((ip) => /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)));
-check('unknown country is rejected',
-    (await api('/api/scan/pool/candidates?country=ZZ')).status === 400);
-
-const rejectedPool = await api('/api/scan/pool/apply', {
+/* ── IPv4 clean IPs become one config each ── */
+const coloApply = await api('/api/scan/apply', {
     method: 'POST',
-    body: JSON.stringify({
-        country: 'TR',
-        keep: 2,
-        lockToPool: true,
-        measurements: [
-            { address: '104.23.181.10', samples: [10, 12, 11] },
-            { address: '172.70.112.10', samples: [8, 9, 7] },
-        ],
-    }),
+    body: JSON.stringify({ addresses: ['104.23.181.10', '172.70.112.10'] }),
 });
-check('colo interconnect IPs are rejected', rejectedPool.status === 400,
-    `status ${rejectedPool.status}`);
+check('colo interconnect IPs are rejected by clean-IP apply', coloApply.status === 400,
+    `status ${coloApply.status}`);
 
-const appliedPool = await api('/api/scan/pool/apply', {
+const appliedFronts = await api('/api/scan/apply', {
     method: 'POST',
-    body: JSON.stringify({
-        country: 'TR',
-        keep: 2,
-        lockToPool: true,
-        measurements: [
-            { address: '104.21.83.62', samples: [42, 45, 40] },
-            { address: '104.16.10.10', samples: [90, 88, 95] },
-            { address: '104.23.181.10', samples: [5, 5, 5] },
-        ],
-    }),
+    body: JSON.stringify({ addresses: ['104.21.83.62', '104.16.10.10'] }),
 });
-const ap = appliedPool.body?.body ?? {};
-check('pool apply pins the fastest Worker-front IP first', ap.best?.address === '104.21.83.62',
-    ap.best?.address ?? 'none');
-check('pool apply keeps the requested number of healthy IPs',
-    Array.isArray(ap.entries) && ap.entries.length === 2,
-    `${ap.entries?.length ?? 0}`);
-check('pool apply drops colo interconnects even if they look fast',
-    !(ap.entries ?? []).some((e) => e.address.startsWith('104.23.')));
-check('pool apply marks the pool enabled', ap.pool?.enabled === true && ap.pool?.country === 'TR');
+check('Worker-front IPv4s are accepted', appliedFronts.body?.body?.applied === true);
 
 const lockedSub = await fetch(`${root}/sub?format=plain`);
 const lockedText = await lockedSub.text();
-check('locked pool IP appears in generated configs', lockedText.includes('104.21.83.62'));
-check('locked pool uses the pinned IP as the server address',
-    /@104\.21\.83\.62:/.test(lockedText));
-check('locked pool URI allows insecure on IP fronts',
-    /allowInsecure=1/.test(lockedText));
-check('locked pool remark names the country',
-    /TR/.test(lockedText));
+check('fixed IPv4 appears in generated configs', lockedText.includes('104.21.83.62'));
+check('fixed IPv4 is the server address', /@104\.21\.83\.62:/.test(lockedText));
+check('fixed IPv4 URI allows insecure', /allowInsecure=1/.test(lockedText));
 const uriLines = lockedText.split('\n').filter((l) => l.includes('://'));
-check('locked pool emits one config per pinned IP (not ports×protocols)',
+check('IPv4 cleanIPs emit one config per IP (not ports×protocols)',
     uriLines.length === 2, `got ${uriLines.length}`);
-check('locked pool stays on port 443',
+check('fixed configs stay on port 443',
     uriLines.every((l) => /:443[/?]/.test(l)));
 
-await api('/api/scan/pool/clear', { method: 'POST' });
-const cleared = await api('/api/scan/pool');
-check('pool clear empties the pinned list',
-    (cleared.body?.body?.pool?.entries ?? ['x']).length === 0);
-
-/* ── clean IPs reach the generated configs ── */
+/* ── domain clean IPs still reach generated configs ── */
 const marker = 'scanner-test.example';
 await api('/api/scan/apply', { method: 'POST', body: JSON.stringify({ addresses: [marker] }) });
 const sub = await fetch(`${root}/sub`, { headers: { cookie } });
@@ -172,7 +132,7 @@ const subText = await sub.text();
 const decoded = /^[A-Za-z0-9+/=\s]+$/.test(subText.trim())
     ? Buffer.from(subText, 'base64').toString()
     : subText;
-check('scanned clean IP appears in generated configs', decoded.includes(marker));
+check('scanned clean domain appears in generated configs', decoded.includes(marker));
 
 console.log(failed ? `\n  ${failed} failed\n` : `\n  all scanner checks passed\n`);
 process.exit(failed ? 1 : 0);

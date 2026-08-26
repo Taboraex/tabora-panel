@@ -2,7 +2,14 @@ import { Settings } from '#types/settings';
 import { Store } from '@storage/db';
 import { saveSettings } from '@config/settings';
 import { ok, badRequest, methodNotAllowed, safeError } from '@common/http';
-import { CANDIDATE_DOMAINS, RELAY_CANDIDATES, sampleCloudflareIPs } from '@scanner/candidates';
+import {
+    CANDIDATE_DOMAINS,
+    RELAY_CANDIDATES,
+    WORKER_FRONT_SEEDS,
+    WORKER_FRONT_RANGES,
+    sampleFromRanges,
+    isWorkerFrontIp,
+} from '@scanner/candidates';
 import { scan, pickBest, type ProbeMode, type ProbeResult } from '@scanner/scanner';
 import { logActivity } from './logs';
 
@@ -154,9 +161,18 @@ export async function handleScan(
  * /cdn-cgi/trace and reports back via POST api/scan/apply.
  */
 export function handleScanCandidates(): Response {
+    // Worker-front ranges only. CLOUDFLARE_RANGES includes 104.22/104.23/172.64
+    // colo interconnects that never front a Worker.
+    const seen = new Set<string>();
+    const sample: string[] = [];
+    for (const ip of [...WORKER_FRONT_SEEDS, ...sampleFromRanges(24, WORKER_FRONT_RANGES)]) {
+        if (seen.has(ip) || !isWorkerFrontIp(ip)) continue;
+        seen.add(ip);
+        sample.push(ip);
+    }
     return ok({
         domains: CANDIDATE_DOMAINS,
-        sample: sampleCloudflareIPs(24),
+        sample,
         // /cdn-cgi/trace is served by every edge and names the colo that answered.
         probePath: '/cdn-cgi/trace',
     });
@@ -183,6 +199,7 @@ export async function handleScanApply(
     const cleanIPs = supplied
         .map((a) => String(a).trim())
         .filter(isProbeTarget)
+        .filter((a) => !/^(?:\d{1,3}\.){3}\d{1,3}$/.test(a) || isWorkerFrontIp(a))
         .slice(0, LIMITS.keep.max);
 
     if (!cleanIPs.length) return badRequest('No valid addresses supplied');

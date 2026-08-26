@@ -187,21 +187,29 @@ export function buildClashConfig(ctx: BuildContext): string {
             nameserver: [settings.remoteDNS],
         },
         proxies,
-        'proxy-groups': [
-            {
-                name: '✅ Selector',
-                type: 'select',
-                proxies: ['♻️ Auto', ...names],
-            },
-            {
-                name: '♻️ Auto',
-                type: 'url-test',
-                url: 'https://www.gstatic.com/generate_204',
-                interval: 300,
-                tolerance: 50,
-                proxies: names,
-            },
-        ],
+        'proxy-groups': ctx.poolFixed
+            ? [
+                {
+                    name: '✅ Selector',
+                    type: 'select',
+                    proxies: names,
+                },
+            ]
+            : [
+                {
+                    name: '✅ Selector',
+                    type: 'select',
+                    proxies: ['♻️ Auto', ...names],
+                },
+                {
+                    name: '♻️ Auto',
+                    type: 'url-test',
+                    url: 'https://www.gstatic.com/generate_204',
+                    interval: 300,
+                    tolerance: 50,
+                    proxies: names,
+                },
+            ],
         rules,
     };
 

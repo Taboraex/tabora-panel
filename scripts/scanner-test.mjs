@@ -153,6 +153,11 @@ check('locked pool URI allows insecure on IP fronts',
     /allowInsecure=1/.test(lockedText));
 check('locked pool remark names the country',
     /TR/.test(lockedText));
+const uriLines = lockedText.split('\n').filter((l) => l.includes('://'));
+check('locked pool emits one config per pinned IP (not ports×protocols)',
+    uriLines.length === 2, `got ${uriLines.length}`);
+check('locked pool stays on port 443',
+    uriLines.every((l) => /:443[/?]/.test(l)));
 
 await api('/api/scan/pool/clear', { method: 'POST' });
 const cleared = await api('/api/scan/pool');

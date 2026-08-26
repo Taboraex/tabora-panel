@@ -161,20 +161,29 @@ export function buildSingboxConfig(ctx: BuildContext): string {
             },
         ],
         outbounds: [
-            {
-                type: 'selector',
-                tag: '✅ Selector',
-                outbounds: ['♻️ Auto', ...tags],
-                default: '♻️ Auto',
-            },
-            {
-                type: 'urltest',
-                tag: '♻️ Auto',
-                outbounds: tags,
-                url: 'https://www.gstatic.com/generate_204',
-                interval: '5m',
-                tolerance: 50,
-            },
+            ...(ctx.poolFixed
+                ? [{
+                    type: 'selector',
+                    tag: '✅ Selector',
+                    outbounds: tags,
+                    default: tags[0],
+                }]
+                : [
+                    {
+                        type: 'selector',
+                        tag: '✅ Selector',
+                        outbounds: ['♻️ Auto', ...tags],
+                        default: '♻️ Auto',
+                    },
+                    {
+                        type: 'urltest',
+                        tag: '♻️ Auto',
+                        outbounds: tags,
+                        url: 'https://www.gstatic.com/generate_204',
+                        interval: '5m',
+                        tolerance: 50,
+                    },
+                ]),
             ...outbounds,
             { type: 'direct', tag: 'direct' },
         ],

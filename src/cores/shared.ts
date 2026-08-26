@@ -17,6 +17,11 @@ export interface BuildContext {
     maxConfigs: number;
     poolCountry: string;
     poolFlag: string;
+    /**
+     * Proxy IP Pool is active: emit exactly one config per pinned IPv4
+     * (one TLS port, one protocol). No cartesian product, no url-test.
+     */
+    poolFixed: boolean;
 }
 
 export function resolveBuildContext(settings: Settings, user: User | null): BuildContext {
@@ -33,33 +38,33 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
         ? pool.entries.map((entry) => entry.address).filter(Boolean)
         : [];
 
-    // A per-user override still wins. Otherwise a locked pool is the whole
-    // address list — that is the point of "fixed IP configs".
-    let frontEnds: string[];
-    if (user?.cleanIPs?.length) {
-        frontEnds = user.cleanIPs;
-    } else if (poolIps.length && pool.lockToPool) {
-        frontEnds = poolIps;
-    } else if (poolIps.length) {
-        frontEnds = [...poolIps, ...settings.cleanIPs];
-    } else {
-        frontEnds = settings.cleanIPs;
+    const poolCountry = pool?.enabled ? (pool.country || '') : '';
+
+    // Fixed-IP mode: 3 healthy IPs must produce 3 configs, not
+    // 3 × ports × protocols. One TLS port (443), one protocol (VLESS if on).
+    if (poolIps.length && !user?.cleanIPs?.length) {
+        const tlsPort = preferTlsPort(ports.length ? ports : [...HTTPS_PORTS]);
+        const protocol = preferProtocol(protocols.length ? protocols : [P.VL]);
+        return {
+            settings,
+            user,
+            hostname,
+            protocols: [protocol],
+            ports: [tlsPort],
+            addresses: poolIps,
+            uuid: user?.uuid || settings.uuid,
+            trojanPassword: settings.trojanPassword,
+            maxConfigs: poolIps.length,
+            poolCountry,
+            poolFlag: flagFor(poolCountry),
+            poolFixed: true,
+        };
     }
 
-    const locked = Boolean(poolIps.length && pool.lockToPool && !user?.cleanIPs?.length);
-    // Pool IPs first so they survive the maxConfigs cap. Hostname-first is why
-    // locked-off Turkey pins never showed up in Hiddify — 30 slots filled with
-    // hostname × ports × protocols before a single pool address was emitted.
-    const ordered = locked
-        ? frontEnds
-        : poolIps.length && !user?.cleanIPs?.length
-            ? [...frontEnds, hostname]
-            : [hostname, ...frontEnds];
-    const addresses = ordered.filter(
+    const frontEnds = user?.cleanIPs?.length ? user.cleanIPs : settings.cleanIPs;
+    const addresses = [hostname, ...frontEnds].filter(
         (value, index, self) => value && self.indexOf(value) === index,
     );
-
-    const poolCountry = pool?.enabled ? (pool.country || '') : '';
 
     return {
         settings,
@@ -73,7 +78,20 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
         maxConfigs: user?.maxConfigs || settings.maxConfigs || 30,
         poolCountry,
         poolFlag: flagFor(poolCountry),
+        poolFixed: false,
     };
+}
+
+export function preferTlsPort(ports: number[]): number {
+    if (ports.includes(443)) return 443;
+    const tls = ports.find((port) => HTTPS_PORTS.includes(port));
+    return tls ?? 443;
+}
+
+export function preferProtocol(protocols: string[]): string {
+    if (protocols.includes(P.VL)) return P.VL;
+    if (protocols.includes(P.TR)) return P.TR;
+    return P.VL;
 }
 
 export const isTlsPort = (port: number): boolean => HTTPS_PORTS.includes(port);

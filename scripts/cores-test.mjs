@@ -19,7 +19,7 @@ const dir = mkdtempSync(join(tmpdir(), 'tabora-cores-'));
 const entry = join(dir, 'entry.ts');
 const src = join(process.cwd(), 'src', 'cores');
 writeFileSync(entry, `
-export { uniqueLabel, renderRemark } from ${JSON.stringify(join(src, 'shared'))};
+export { uniqueLabel, renderRemark, preferTlsPort, preferProtocol } from ${JSON.stringify(join(src, 'shared'))};
 export { buildSingboxConfig } from ${JSON.stringify(join(src, 'singbox'))};
 export { buildClashConfig } from ${JSON.stringify(join(src, 'clash'))};
 export { buildUriList } from ${JSON.stringify(join(src, 'uri'))};
@@ -71,6 +71,7 @@ const ctx = {
     uuid: '11111111-2222-3333-4444-555555555555',
     trojanPassword: 'secretpass', maxConfigs: 30,
     poolCountry: 'AUTO', poolFlag: '⚡',
+    poolFixed: false,
 };
 
 const sb = JSON.parse(m.buildSingboxConfig(ctx));
@@ -98,6 +99,52 @@ const sb2 = JSON.parse(m.buildSingboxConfig(uniqueCtx));
 const tags2 = sb2.outbounds.filter((o) => o.server).map((o) => o.tag);
 check('VL and TR both present in remarks', tags2.some((t) => t.includes('VL')) && tags2.some((t) => t.includes('TR')));
 check('still unique with protocol in the template', new Set(tags2).size === tags2.length);
+
+console.log('\nfixed pool: N IPs → N configs');
+check('preferTlsPort picks 443 when present', m.preferTlsPort([8443, 443, 2053]) === 443);
+check('preferTlsPort falls back to first TLS', m.preferTlsPort([8443, 2053]) === 8443);
+check('preferProtocol prefers VLESS', m.preferProtocol(['trojan', 'vless']) === 'vless');
+
+const poolCtx = {
+    ...ctx,
+    poolFixed: true,
+    protocols: ['vless'],
+    ports: [443],
+    addresses: ['104.17.147.22', '104.16.10.10', '104.21.83.62'],
+    maxConfigs: 3,
+    poolCountry: 'TR',
+    poolFlag: '🇹🇷',
+};
+
+const sbPool = JSON.parse(m.buildSingboxConfig(poolCtx));
+const poolProxies = sbPool.outbounds.filter((o) => o.server);
+check('sing-box emits exactly 3 proxy outbounds for 3 IPs', poolProxies.length === 3, `got ${poolProxies.length}`);
+check('each pool IP appears once',
+    ['104.17.147.22', '104.16.10.10', '104.21.83.62'].every((ip) => poolProxies.filter((o) => o.server === ip).length === 1));
+check('pool configs skip urltest so the client cannot hop IPs',
+    !sbPool.outbounds.some((o) => o.type === 'urltest'));
+check('selector default is the first pinned IP tag',
+    sbPool.outbounds.find((o) => o.type === 'selector')?.default === poolProxies[0].tag);
+
+const clashPool = m.buildClashConfig(poolCtx);
+const clashServers = [...clashPool.matchAll(/^\s+server: (\S+)/gm)].map((x) => x[1]);
+check('clash emits exactly 3 proxies for 3 IPs', clashServers.length === 3, `got ${clashServers.length}`);
+check('clash pool config has no url-test group', !/type: url-test/.test(clashPool));
+
+const uriPool = m.buildUriList(poolCtx);
+check('URI list is one line per IP', uriPool.length === 3, `got ${uriPool.length}`);
+check('URI list does not also emit Trojan for the same IPs',
+    uriPool.every((u) => u.startsWith('vless://')));
+
+const cartesian = {
+    ...poolCtx,
+    poolFixed: false,
+    protocols: ['vless', 'trojan'],
+    ports: [443, 8443],
+    maxConfigs: 30,
+};
+check('without poolFixed the cartesian product still runs',
+    m.buildUriList(cartesian).length === 12);
 
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

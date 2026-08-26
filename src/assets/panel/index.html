@@ -359,9 +359,9 @@
       </div>
       <p class="hint" data-i18n="pool.hint">
         Pick a country as a label. Tabora probes Cloudflare anycast IPs that actually
-        front a Worker — not colo interconnects — from your own network, and pins the
-        fastest ones as a fixed address. Clients often geo-flag those IPs as 🇺🇸; the
-        country name in the remark is the one you picked.
+        front a Worker from your network and pins the healthy ones. Each pinned IP
+        becomes exactly one config (port 443, one protocol). Clients often geo-flag
+        those IPs as 🇺🇸; the country name in the remark is the one you picked.
       </p>
 
       <div class="pool-toolbar">
@@ -375,7 +375,7 @@
         </label>
         <label class="field toggle">
           <input type="checkbox" id="poolLock" checked>
-          <span data-i18n="pool.lock">Lock configs to these IPs only</span>
+          <span data-i18n="pool.lock">Fixed IPs only — one config per IP</span>
         </label>
       </div>
 

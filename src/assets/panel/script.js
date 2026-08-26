@@ -51,9 +51,9 @@ const I18N = {
         'scan.unreachable': 'unreachable',
         'pool.kicker': 'Proxy IP Pool',
         'pool.title': 'Fixed Cloudflare IPs by country',
-        'pool.hint': 'Pick a country as a label. Tabora probes Cloudflare anycast IPs that actually front a Worker — not colo interconnects — from your own network, and pins the fastest ones as a fixed address. Clients often geo-flag those IPs as 🇺🇸; the country name in the remark is the one you picked.',
+        'pool.hint': 'Pick a country as a label. Tabora probes Cloudflare anycast IPs that actually front a Worker from your network and pins the healthy ones. Each pinned IP becomes exactly one config (port 443, one protocol) — three Turkey IPs produce three configs, not a cartesian explosion. Clients often geo-flag those IPs as 🇺🇸; the country name in the remark is the one you picked.',
         'pool.keep': 'Keep best',
-        'pool.lock': 'Lock configs to these IPs only',
+        'pool.lock': 'Fixed IPs only — one config per IP',
         'pool.scan': 'Scan & pick the best',
         'pool.stop': 'Stop',
         'pool.clear': 'Clear',
@@ -66,8 +66,8 @@ const I18N = {
         'pool.use': 'Use',
         'pool.best': 'BEST',
         'pool.pinned': 'Pinned {n} fixed IP(s)',
-        'pool.locked': 'Configs are locked to these IPs',
-        'pool.unlocked': 'These IPs lead the list; the worker hostname is still included',
+        'pool.locked': 'One config per IP · port 443 · one protocol',
+        'pool.unlocked': 'One config per IP · port 443 · one protocol',
         'pool.featured': 'Popular',
         'pool.auto': 'Best for me',
         'stat.users': 'Total users', 'stat.active': 'Active', 'stat.paused': 'Paused',
@@ -159,9 +159,9 @@ const I18N = {
         'scan.unreachable': 'در دسترس نیست',
         'pool.kicker': 'استخر Proxy IP',
         'pool.title': 'آی‌پی ثابت کلادفلر بر اساس کشور',
-        'pool.hint': 'کشور را به‌عنوان برچسب انتخاب کنید. تابورا آی‌پی‌های anycast کلادفلر را که واقعاً جلوی ورکر می‌ایستند — نه لینک‌های داخلی دیتاسنتر — از روی اینترنت خودتان تست می‌کند و سریع‌ترین‌ها را قفل می‌کند. کلاینت‌ها اغلب پرچم آمریکا نشان می‌دهند؛ نام کشور داخل عنوان کانفیگ همان انتخاب شماست.',
+        'pool.hint': 'کشور را به‌عنوان برچسب انتخاب کنید. تابورا آی‌پی‌های anycast کلادفلر را که واقعاً جلوی ورکر می‌ایستند از روی اینترنت شما تست می‌کند و سالم‌ها را قفل می‌کند. هر آی‌پی سالم دقیقاً یک کانفیگ می‌شود (پورت ۴۴۳، یک پروتکل) — سه آی‌پی ترکیه سه کانفیگ است، نه حاصل‌ضرب پورت و پروتکل. کلاینت‌ها اغلب پرچم آمریکا نشان می‌دهند؛ نام کشور داخل عنوان کانفیگ همان انتخاب شماست.',
         'pool.keep': 'نگه‌داشتن بهترین‌ها',
-        'pool.lock': 'قفل کانفیگ فقط روی همین آی‌پی‌ها',
+        'pool.lock': 'فقط آی‌پی ثابت — هر آی‌پی یک کانفیگ',
         'pool.scan': 'اسکن و انتخاب بهترین',
         'pool.stop': 'توقف',
         'pool.clear': 'پاک کردن',
@@ -174,8 +174,8 @@ const I18N = {
         'pool.use': 'استفاده',
         'pool.best': 'بهترین',
         'pool.pinned': '{n} آی‌پی ثابت قفل شد',
-        'pool.locked': 'کانفیگ‌ها فقط روی همین آی‌پی‌ها قفل شده‌اند',
-        'pool.unlocked': 'این آی‌پی‌ها اول لیست‌اند؛ نام ورکر هنوز هست',
+        'pool.locked': 'هر آی‌پی یک کانفیگ · پورت ۴۴۳ · یک پروتکل',
+        'pool.unlocked': 'هر آی‌پی یک کانفیگ · پورت ۴۴۳ · یک پروتکل',
         'pool.featured': 'پیشنهادی',
         'pool.auto': 'بهترین برای من',
         'stat.users': 'کل کاربران', 'stat.active': 'فعال', 'stat.paused': 'متوقف',
@@ -1432,7 +1432,7 @@ async function runPoolScan() {
 
     try {
         const keep = Number($('#poolKeep').value) || 3;
-        const { addresses = [], probesPerIp = 3, country } = await request(
+        const { addresses = [], probesPerIp = 5, country } = await request(
             `/scan/pool/candidates?country=${encodeURIComponent(poolSelected)}&count=32`,
         );
         const total = addresses.length;

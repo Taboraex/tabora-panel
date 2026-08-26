@@ -5,6 +5,21 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] — 2026-08-26
+
+### Fixed
+
+- **N country-pool IPs produced N × ports × protocols configs.** Three Turkey
+  IPs with the default ports and both VLESS and Trojan became dozens of
+  nodes, so nothing looked “fixed”. A live pool now emits **exactly one
+  config per pinned IPv4**: port 443 (or the first selected TLS port), one
+  protocol (VLESS if both are on), and no worker-hostname filler. Clash and
+  sing-box drop the url-test group so the client cannot hop between those IPs.
+- **Scanner could pin a lossy random address just to fill `keep`.** Ranking
+  now requires several successful probes, prefers the verified Worker-front
+  seed list, and never pads the pool with IPs that dropped packets. Every
+  scan still includes the full seed list even when “keep” is 1–3.
+
 ## [0.7.2] — 2026-08-26
 
 ### Fixed
@@ -219,7 +234,8 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.3
 [0.7.2]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.2
 [0.7.1]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.0

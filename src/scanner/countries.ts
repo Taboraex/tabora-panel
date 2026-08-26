@@ -169,9 +169,15 @@ export function candidatesFor(
     count: number,
     previous: string[] = [],
 ): string[] {
-    const want = Math.max(1, Math.min(48, Math.floor(count)));
+    // Never drop verified seeds to meet a small `count` — those are the
+    // IPs known to front a Worker. Extra samples fill the rest of the budget.
+    const want = Math.max(
+        WORKER_FRONT_SEEDS.length,
+        Math.min(48, Math.floor(count) || 32),
+    );
     const kept = previous.filter(isPoolAddress).slice(0, 8);
-    const fresh = sampleFromRanges(want, rangesFor(code));
+    const extra = Math.max(8, want - WORKER_FRONT_SEEDS.length);
+    const fresh = extra > 0 ? sampleFromRanges(extra, rangesFor(code)) : [];
     const out: string[] = [];
     const seen = new Set<string>();
     for (const ip of [...WORKER_FRONT_SEEDS, ...kept, ...fresh]) {

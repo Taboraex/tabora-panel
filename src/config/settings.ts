@@ -43,6 +43,16 @@ export async function loadSettings(store: Store, env: Env): Promise<Settings> {
         const stored = await store.getJSON<Partial<Settings>>(SETTINGS_KEY);
         const settings: Settings = { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
 
+        // Panels stored before 0.7.0 have no pool object. A null/partial
+        // value would crash the scanner tab, so rebuild it from defaults.
+        if (!settings.ipPool || !Array.isArray(settings.ipPool.entries)) {
+            settings.ipPool = {
+                ...DEFAULT_SETTINGS.ipPool,
+                ...(settings.ipPool ?? {}),
+                entries: settings.ipPool?.entries ?? [],
+            };
+        }
+
         // Panels created before relays shipped stored an empty list, and an
         // empty list means every Cloudflare-hosted destination silently fails.
         // Treat it as "never configured" and adopt the defaults; an operator

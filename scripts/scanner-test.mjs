@@ -88,6 +88,56 @@ const proxyIPs = settings.body?.body?.settings?.proxyIPs ?? [];
 check('applied relays are persisted to settings', proxyIPs.length > 0 && proxyIPs.length <= 2,
     JSON.stringify(proxyIPs));
 
+/* ── proxy IP pool catalogue ── */
+const poolMeta = await api('/api/scan/pool');
+const pm = poolMeta.body?.body ?? {};
+check('pool meta lists countries', Array.isArray(pm.countries) && pm.countries.length >= 8,
+    `${pm.countries?.length ?? 0} countries`);
+check('pool meta includes Turkey', (pm.countries ?? []).some((c) => c.code === 'TR'));
+check('pool countries do not leak CIDR ranges',
+    (pm.countries ?? []).every((c) => c.ranges === undefined));
+
+const trCand = await api('/api/scan/pool/candidates?country=TR&count=16');
+const tc = trCand.body?.body ?? {};
+check('Turkey candidates return IPv4s', Array.isArray(tc.addresses) && tc.addresses.length > 0,
+    `${tc.addresses?.length ?? 0} IPs`);
+check('Turkey candidates are well-formed IPv4',
+    (tc.addresses ?? []).every((ip) => /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)));
+check('unknown country is rejected',
+    (await api('/api/scan/pool/candidates?country=ZZ')).status === 400);
+
+const appliedPool = await api('/api/scan/pool/apply', {
+    method: 'POST',
+    body: JSON.stringify({
+        country: 'TR',
+        keep: 2,
+        lockToPool: true,
+        measurements: [
+            { address: '104.23.181.10', samples: [42, 45, 40] },
+            { address: '104.23.182.20', samples: [90, 88, 95] },
+            { address: '104.23.183.30', samples: [-1, -1, -1] },
+        ],
+    }),
+});
+const ap = appliedPool.body?.body ?? {};
+check('pool apply pins the fastest IP first', ap.best?.address === '104.23.181.10',
+    ap.best?.address ?? 'none');
+check('pool apply keeps the requested number of healthy IPs',
+    Array.isArray(ap.entries) && ap.entries.length === 2,
+    `${ap.entries?.length ?? 0}`);
+check('pool apply marks the pool enabled', ap.pool?.enabled === true && ap.pool?.country === 'TR');
+
+const lockedSub = await fetch(`${root}/sub?format=plain`);
+const lockedText = await lockedSub.text();
+check('locked pool IP appears in generated configs', lockedText.includes('104.23.181.10'));
+check('locked pool uses the pinned IP as the server address',
+    /@104\.23\.181\.10:/.test(lockedText));
+
+await api('/api/scan/pool/clear', { method: 'POST' });
+const cleared = await api('/api/scan/pool');
+check('pool clear empties the pinned list',
+    (cleared.body?.body?.pool?.entries ?? ['x']).length === 0);
+
 /* ── clean IPs reach the generated configs ── */
 const marker = 'scanner-test.example';
 await api('/api/scan/apply', { method: 'POST', body: JSON.stringify({ addresses: [marker] }) });

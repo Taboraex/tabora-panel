@@ -15,6 +15,8 @@ export interface BuildContext {
     uuid: string;
     trojanPassword: string;
     maxConfigs: number;
+    poolCountry: string;
+    poolFlag: string;
 }
 
 export function resolveBuildContext(settings: Settings, user: User | null): BuildContext {
@@ -25,12 +27,31 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
         .filter((p) => p === P.VL || p === P.TR);
 
     const ports = user?.ports?.length ? user.ports : settings.ports;
-    const cleanIPs = user?.cleanIPs?.length ? user.cleanIPs : settings.cleanIPs;
 
-    // The worker hostname always works; clean IPs/domains are extra front-ends.
-    const addresses = [hostname, ...cleanIPs].filter(
+    const pool = settings.ipPool;
+    const poolIps = pool?.enabled && pool.entries?.length
+        ? pool.entries.map((entry) => entry.address).filter(Boolean)
+        : [];
+
+    // A per-user override still wins. Otherwise a locked pool is the whole
+    // address list — that is the point of "fixed IP configs".
+    let frontEnds: string[];
+    if (user?.cleanIPs?.length) {
+        frontEnds = user.cleanIPs;
+    } else if (poolIps.length && pool.lockToPool) {
+        frontEnds = poolIps;
+    } else if (poolIps.length) {
+        frontEnds = [...poolIps, ...settings.cleanIPs];
+    } else {
+        frontEnds = settings.cleanIPs;
+    }
+
+    const locked = Boolean(poolIps.length && pool.lockToPool && !user?.cleanIPs?.length);
+    const addresses = (locked ? frontEnds : [hostname, ...frontEnds]).filter(
         (value, index, self) => value && self.indexOf(value) === index,
     );
+
+    const poolCountry = pool?.enabled ? (pool.country || '') : '';
 
     return {
         settings,
@@ -42,6 +63,8 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
         uuid: user?.uuid || settings.uuid,
         trojanPassword: settings.trojanPassword,
         maxConfigs: user?.maxConfigs || settings.maxConfigs || 30,
+        poolCountry,
+        poolFlag: flagFor(poolCountry),
     };
 }
 
@@ -70,6 +93,8 @@ const FLAGS: Record<string, string> = {
     US: '🇺🇸', DE: '🇩🇪', NL: '🇳🇱', FR: '🇫🇷', GB: '🇬🇧', UK: '🇬🇧',
     JP: '🇯🇵', SG: '🇸🇬', HK: '🇭🇰', TR: '🇹🇷', AE: '🇦🇪', IR: '🇮🇷',
     CA: '🇨🇦', AU: '🇦🇺', SE: '🇸🇪', FI: '🇫🇮', PL: '🇵🇱', RU: '🇷🇺',
+    IT: '🇮🇹', ES: '🇪🇸', AT: '🇦🇹', CH: '🇨🇭', KR: '🇰🇷', IN: '🇮🇳',
+    BR: '🇧🇷', AUTO: '⚡',
 };
 
 export const flagFor = (code: string): string => FLAGS[code?.toUpperCase()] ?? '🌐';

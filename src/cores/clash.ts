@@ -143,6 +143,8 @@ export function buildClashConfig(ctx: BuildContext): string {
                 protocol: protocol === P.TR ? 'TR' : 'VL',
                 port,
                 address,
+                flag: ctx.poolFlag,
+                country: ctx.poolCountry,
             });
             proxies.push(buildProxy(ctx, protocol, address, port, name));
         }

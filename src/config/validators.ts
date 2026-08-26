@@ -130,6 +130,22 @@ const validateEch: Validator = (form, errors) => {
     }
 };
 
+const validateIpPool: Validator = (form, errors) => {
+    if (!form.ipPool) return;
+    const pool = form.ipPool;
+    if (pool.country && !/^[A-Z]{2,4}$/.test(pool.country)) {
+        push(errors, 'ipPool', `Invalid country code: ${pool.country}`);
+    }
+    if (pool.keep !== undefined && (!Number.isInteger(pool.keep) || pool.keep < 1 || pool.keep > 8)) {
+        push(errors, 'ipPool', 'Keep must be between 1 and 8.');
+    }
+    for (const entry of pool.entries ?? []) {
+        if (!isIPv4(entry.address)) {
+            push(errors, 'ipPool', `Invalid pool IP: ${entry.address}`);
+        }
+    }
+};
+
 const validateRules: Validator = (form, errors) => {
     const check = (field: keyof Settings, list?: string[]) => {
         if (!list) return;

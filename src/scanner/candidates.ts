@@ -87,16 +87,30 @@ const toIp = (n: number): string =>
  * Network and broadcast addresses are skipped.
  */
 export function sampleCloudflareIPs(count: number, ranges = CLOUDFLARE_RANGES): string[] {
+    return sampleFromRanges(count, ranges);
+}
+
+/**
+ * Draw `count` addresses spread across the given CIDRs.
+ *
+ * Consecutive addresses in a /22 usually terminate on the same physical
+ * edge, so we stride rather than pick a cluster — otherwise a "36 IP scan"
+ * would measure one route 36 times.
+ */
+export function sampleFromRanges(count: number, ranges: string[]): string[] {
     const parsed = ranges.map(parseCidr).filter((r): r is { base: number; size: number } => !!r);
-    if (!parsed.length) return [];
+    if (!parsed.length || count <= 0) return [];
 
     const out = new Set<string>();
-    // Bounded attempts so a pathological input cannot spin.
-    const maxAttempts = count * 8;
+    const maxAttempts = count * 10;
 
     for (let i = 0; i < maxAttempts && out.size < count; i++) {
         const range = parsed[i % parsed.length];
-        const offset = 1 + Math.floor(Math.random() * Math.max(1, range.size - 2));
+        // Stride through the range so successive picks land on different /24s.
+        const stride = Math.max(1, Math.floor(range.size / Math.max(count, 2)));
+        const slot = Math.floor(i / parsed.length);
+        const jitter = Math.floor(Math.random() * Math.min(stride, 17));
+        const offset = 1 + ((slot * stride + jitter) % Math.max(1, range.size - 2));
         out.add(toIp((range.base + offset) >>> 0));
     }
 

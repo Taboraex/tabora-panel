@@ -5,6 +5,28 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-08-26
+
+### Added
+
+- **Proxy IP Pool** in the Scanner tab. Pick a country (Turkey, Germany,
+  Netherlands, UAE, … or “Best for me”), probe only Cloudflare IPs that
+  belong to that country from the operator’s own network, and automatically
+  pin the fastest ones as the address field of every generated config.
+- Country catalogue with geo-tagged Cloudflare prefixes (IST, FRA, AMS, DXB
+  and 18 more) so “scan Turkey” actually tests Istanbul ranges, not a random
+  /13.
+- Lock-to-pool mode: subscriptions emit only the pinned IPv4 literals — no
+  worker hostname, no DNS re-resolution — which is what “fixed IP configs”
+  means in practice.
+- Scanner UI rebuilt around the pool: flag grid, radar sweep while probing,
+  ranked latency bars, and a live “active pool” strip.
+
+### Changed
+
+- Config remarks now receive `{FLAG}` / `{COUNTRY}` from the active pool so
+  a Turkey pin shows up as 🇹🇷 in v2rayNG, Clash and Sing-box alike.
+
 ## [0.1.3] — 2026-08-25
 
 ### Fixed

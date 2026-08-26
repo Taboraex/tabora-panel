@@ -222,7 +222,7 @@
           <label class="field"><span data-i18n="set.max">Max configs</span><input type="number" name="maxConfigs" id="fMax" min="1" max="200"></label>
           <label class="field wide"><span data-i18n="set.template">Name template</span>
             <input name="nameTemplate" id="fTemplate">
-            <small class="hint">Tags: {FLAG} {PREFIX} {INDEX} {PROTOCOL} {PORT} {ADDRESS}</small>
+            <small class="hint">Tags: {FLAG} {COUNTRY} {PREFIX} {INDEX} {PROTOCOL} {PORT} {ADDRESS}</small>
           </label>
           <label class="field wide"><span data-i18n="set.ua">Browser bypass User-Agent</span>
             <input name="subUserAgent" id="fSubUa" placeholder="leave empty to disable">
@@ -347,6 +347,65 @@
 
   <!-- ──────────────────────────────── Scanner ────────────────────────────── -->
   <section class="panel" data-panel="scanner">
+
+    <div class="card pool-hero" id="poolHero">
+      <div class="pool-radar" aria-hidden="true"></div>
+      <div class="card-head">
+        <div>
+          <div class="pool-kicker" data-i18n="pool.kicker">Proxy IP Pool</div>
+          <h2 data-i18n="pool.title">Fixed Cloudflare IPs by country</h2>
+        </div>
+        <span class="pool-live" id="poolLive" hidden>SCAN</span>
+      </div>
+      <p class="hint" data-i18n="pool.hint">
+        Pick a country. Tabora probes only Cloudflare IPs that belong to that country,
+        measures them from your own network, and locks the fastest ones into every config
+        as a fixed address — no DNS shuffle, no random edge.
+      </p>
+
+      <div class="pool-toolbar">
+        <label class="field">
+          <span data-i18n="pool.keep">Keep best</span>
+          <select id="poolKeep">
+            <option value="1">1</option>
+            <option value="3" selected>3</option>
+            <option value="5">5</option>
+          </select>
+        </label>
+        <label class="field toggle">
+          <input type="checkbox" id="poolLock" checked>
+          <span data-i18n="pool.lock">Lock configs to these IPs only</span>
+        </label>
+      </div>
+
+      <div class="country-grid" id="countryGrid"></div>
+
+      <div class="pool-actions">
+        <button class="btn primary pool-scan-btn" id="poolScan" disabled>
+          <span class="pool-scan-ico" aria-hidden="true">◈</span>
+          <span data-i18n="pool.scan">Scan &amp; pick the best</span>
+        </button>
+        <button class="btn ghost" id="poolStop" hidden data-i18n="pool.stop">Stop</button>
+      </div>
+
+      <div class="pool-progress" id="poolProgress" hidden>
+        <div class="pool-progress-bar"><i id="poolBar"></i></div>
+        <div class="pool-progress-meta">
+          <span id="poolProgText"></span>
+          <span id="poolProgIp" class="mono"></span>
+        </div>
+      </div>
+
+      <div id="poolResults" class="pool-results"></div>
+    </div>
+
+    <div class="card pool-active" id="poolActiveCard" hidden>
+      <div class="card-head">
+        <h2 data-i18n="pool.active.title">Active pool</h2>
+        <button class="btn ghost danger" id="poolClear" data-i18n="pool.clear">Clear</button>
+      </div>
+      <div id="poolActive" class="pool-active-body"></div>
+    </div>
 
     <div class="card">
       <div class="card-head">

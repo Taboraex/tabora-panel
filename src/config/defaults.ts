@@ -59,6 +59,16 @@ export const DEFAULT_SETTINGS: Settings = {
         splitTunnel: false,
     },
 
+    // Proxy IP Pool — empty until the operator scans a country
+    ipPool: {
+        enabled: false,
+        country: '',
+        lockToPool: true,
+        keep: 3,
+        entries: [],
+        scannedAt: 0,
+    },
+
     // ops
     fallback: 'https://www.wikipedia.org',
     isPaused: false,

@@ -52,6 +52,15 @@ export interface Settings {
     // gaming
     gaming: GamingSettings;
 
+    /**
+     * Proxy IP Pool — fixed Cloudflare IPv4s chosen by country.
+     *
+     * When enabled, generated configs use these literals as the address
+     * field so every subscriber lands on the same, measured edge instead
+     * of a hostname that re-resolves.
+     */
+    ipPool: IpPoolSettings;
+
     // ops
     fallback: string;
     isPaused: boolean;
@@ -93,6 +102,30 @@ export interface GamingSettings {
     bypassRelay: boolean;
     /** Route only game traffic through the tunnel; everything else direct. */
     splitTunnel: boolean;
+}
+
+/** One measured Cloudflare edge pinned into the Proxy IP Pool. */
+export interface IpPoolEntry {
+    address: string;
+    latency: number;
+    jitter: number;
+    lossPct: number;
+    grade: string;
+    colo: string;
+    country: string;
+    scannedAt: number;
+}
+
+export interface IpPoolSettings {
+    enabled: boolean;
+    /** ISO country code, or AUTO. */
+    country: string;
+    /** When true, configs list only these IPs — no worker hostname fallback. */
+    lockToPool: boolean;
+    /** How many winners to keep after a scan. */
+    keep: number;
+    entries: IpPoolEntry[];
+    scannedAt: number;
 }
 
 export interface FakeConfig {

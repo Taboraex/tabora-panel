@@ -73,6 +73,8 @@ export function buildSingboxConfig(ctx: BuildContext): string {
                 protocol: protocol === P.TR ? 'TR' : 'VL',
                 port,
                 address,
+                flag: ctx.poolFlag,
+                country: ctx.poolCountry,
             });
             outbounds.push(buildOutbound(ctx, protocol, address, port, tag));
         }

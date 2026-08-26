@@ -12,6 +12,9 @@ import { handleUsers } from '@handlers/users';
 import { handleLogs } from '@handlers/logs';
 import { handleScan, handleScanCandidates, handleScanApply } from '@handlers/scan';
 import {
+    handlePoolMeta, handlePoolCandidates, handlePoolApply, handlePoolClear,
+} from '@handlers/pool';
+import {
     handleGamingCandidates,
     handleGamingRank,
     handleGamingPin,
@@ -115,6 +118,18 @@ export default {
 
                 case 'api/scan/apply':
                     return handleScanApply(request, settings, store);
+
+                case 'api/scan/pool':
+                    return handlePoolMeta(settings);
+
+                case 'api/scan/pool/candidates':
+                    return handlePoolCandidates(request, settings);
+
+                case 'api/scan/pool/apply':
+                    return handlePoolApply(request, settings, store);
+
+                case 'api/scan/pool/clear':
+                    return handlePoolClear(request, settings, store);
 
                 case 'api/gaming/candidates':
                     return handleGamingCandidates();

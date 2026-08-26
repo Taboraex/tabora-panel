@@ -98,6 +98,32 @@ function normalisePayload(raw: Record<string, unknown>, current: Settings): Part
         delete out.gaming;
     }
 
+    // Same shallow-merge trap as gaming: a settings PUT that omits the pool
+    // must not wipe the IPs the scanner just pinned.
+    if (raw.ipPool !== undefined && raw.ipPool !== null && typeof raw.ipPool === 'object') {
+        const p = raw.ipPool as Record<string, unknown>;
+        const incoming = Array.isArray(p.entries) ? p.entries : undefined;
+        const keepRaw = Number(p.keep);
+        const prev = current.ipPool ?? {
+            enabled: false, country: '', lockToPool: true, keep: 3, entries: [], scannedAt: 0,
+        };
+        out.ipPool = {
+            ...prev,
+            enabled: p.enabled !== undefined ? !!p.enabled : prev.enabled,
+            country: p.country !== undefined
+                ? String(p.country).trim().toUpperCase().slice(0, 8)
+                : prev.country,
+            lockToPool: p.lockToPool !== undefined ? !!p.lockToPool : prev.lockToPool,
+            keep: Number.isInteger(keepRaw) ? Math.min(8, Math.max(1, keepRaw)) : prev.keep,
+            entries: incoming
+                ? (incoming as Settings['ipPool']['entries'])
+                : prev.entries,
+            scannedAt: Number(p.scannedAt) || prev.scannedAt,
+        };
+    } else {
+        delete out.ipPool;
+    }
+
     // Never let the client rewrite derived/managed fields.
     delete out.panelVersion;
 

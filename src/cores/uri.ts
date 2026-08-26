@@ -70,6 +70,8 @@ export function buildUriList(ctx: BuildContext, infoLabels: string[] = []): stri
                 protocol: protocol === P.TR ? 'TR' : 'VL',
                 port,
                 address,
+                flag: ctx.poolFlag,
+                country: ctx.poolCountry,
             });
             lines.push(buildUri(ctx, protocol, address, port, remark));
         }

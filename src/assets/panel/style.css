@@ -825,6 +825,12 @@ input[type="number"] { font-variant-numeric: tabular-nums; }
   gap: .55rem;
   margin: .85rem 0 .7rem;
 }
+/* Same specificity as `[hidden]`; without this the grid rule wins and the
+   zeros show before a scan has even started. */
+.scan-stats[hidden],
+.scan-progress-wrap[hidden] {
+  display: none;
+}
 .scan-stats > div {
   display: flex;
   flex-direction: column;

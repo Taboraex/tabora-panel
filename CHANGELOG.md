@@ -5,6 +5,32 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] — 2026-08-27
+
+### Fixed
+
+- **Clean IP scan and Relay test both died with `Failed to fetch`.** The
+  dashboard started a scan by calling `/api/scan*`. Adblockers and some
+  Iranian filters cancel any URL that contains `scan`, so the browser never
+  left the page and both buttons looked broken. The clean-IP scan now plans,
+  expands and ranks entirely in the browser from Worker-front Cloudflare IPs
+  (verified seeds + community fronts + the baked catalogue). Pinning still
+  uses `/api/fronts/apply`, then `/api/scan/apply`, then a settings PUT.
+- **Relay test** talks to `/api/relays` first (the worker still probes the
+  hop that actually carries traffic) and falls back to a browser probe if
+  that request is blocked or the socket budget runs out.
+- Scanner stat tiles showed zeros before a scan because `.scan-stats
+  { display: grid }` outranked `[hidden]`.
+- The `/24` spread label flipped under RTL; it is now “Nets” / «ساب‌نت».
+
+### Changed
+
+- Catalogue includes 130+ community-reported Worker-front IPv4s (still
+  filtered with `isWorkerFrontIp` — no IRCF WARP ports, no colo
+  interconnects).
+- Worker scan has a 16 s wall-clock budget so one hung `connect()` cannot
+  kill the request.
+
 ## [0.13.0] — 2026-08-27
 
 ### Changed

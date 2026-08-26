@@ -26,6 +26,7 @@ export {
     CLEAN_IPS, parseDepth, planScan, flattenPlan, pickCleanIps,
     neighborsOf, expandAround, pickDiverse, clampKeep,
 } from ${JSON.stringify(join(scanner, 'strategy'))};
+export { COMMUNITY_FRONTS } from ${JSON.stringify(join(scanner, 'community'))};
 export { rankClean } from ${JSON.stringify(join(scanner, 'rank'))};
 `);
 
@@ -52,6 +53,11 @@ check('catalogue never includes colo interconnects',
         ip.startsWith('104.22.') || ip.startsWith('104.23.') || ip.startsWith('172.64.') || ip.startsWith('8.')));
 check('catalogue includes verified seeds',
     m.WORKER_FRONT_SEEDS.every((ip) => m.CLEAN_IPS.includes(ip) || m.isWorkerFrontIp(ip)));
+check('community fronts are Worker-front only',
+    m.COMMUNITY_FRONTS.length >= 100 && m.COMMUNITY_FRONTS.every((ip) => m.isWorkerFrontIp(ip)),
+    `${m.COMMUNITY_FRONTS.length}`);
+check('community fronts land in the catalogue',
+    m.COMMUNITY_FRONTS.every((ip) => m.CLEAN_IPS.includes(ip)));
 
 console.log('\nPlanner');
 check('unknown depth falls back to smart', m.parseDepth('banana') === 'smart');

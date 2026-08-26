@@ -37,6 +37,8 @@ export interface ScanTarget {
 export interface ScanOptions {
     targets: ScanTarget[];
     mode: ProbeMode;
+    /** Wall-clock budget for the whole batch. Leftover targets are marked skipped. */
+    budgetMs?: number;
     /** How many probes run at once. Kept small to stay inside CPU limits. */
     concurrency: number;
     /** Per-probe ceiling in milliseconds. */

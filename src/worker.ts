@@ -117,18 +117,23 @@ export default {
                     return handleImport(request, settings, store, users);
 
                 case 'api/scan':
+                case 'api/relays':
                     return handleScan(request, settings, store);
 
                 case 'api/scan/candidates':
+                case 'api/fronts':
                     return handleScanCandidates(request, settings);
 
                 case 'api/scan/expand':
+                case 'api/fronts/expand':
                     return handleScanExpand(request);
 
                 case 'api/scan/rank':
+                case 'api/fronts/rank':
                     return handleScanRank(request);
 
                 case 'api/scan/apply':
+                case 'api/fronts/apply':
                     return handleScanApply(request, settings, store);
 
                 case 'api/gaming/candidates':

@@ -4,6 +4,7 @@ import {
     isWorkerFrontIp,
     sampleFromRanges,
 } from './candidates';
+import { COMMUNITY_FRONTS } from './community';
 
 /**
  * Multi-wave plan for the clean-IP scanner.
@@ -36,7 +37,7 @@ const WAVE_META: Record<WaveId, { label: string; labelFa: string }> = {
     memory: { label: 'Previous winners', labelFa: 'برنده‌های قبلی' },
     seeds: { label: 'Verified fronts', labelFa: 'لبه‌های تاییدشده' },
     catalog: { label: 'Clean catalogue', labelFa: 'کاتالوگ تمیز' },
-    neighbors: { label: 'Nearby /24', labelFa: 'همسایه‌های /۲۴' },
+    neighbors: { label: 'Nearby subnet', labelFa: 'همسایه‌های ساب‌نت' },
     explore: { label: 'Wider sample', labelFa: 'نمونهٔ گسترده‌تر' },
 };
 
@@ -47,7 +48,7 @@ const THIRDS_162 = [36, 46, 64, 134, 192, 200];
 
 /** Baked Worker-front IPv4s. Generated, never fetched. */
 export const CLEAN_IPS: string[] = (() => {
-    const out = new Set<string>(WORKER_FRONT_SEEDS);
+    const out = new Set<string>([...WORKER_FRONT_SEEDS, ...COMMUNITY_FRONTS]);
     for (const second of SECONDS_104) {
         for (const third of THIRDS_104) {
             for (const host of HOSTS) out.add(`104.${second}.${third}.${host}`);

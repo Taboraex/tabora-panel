@@ -39,7 +39,10 @@ const I18N = {
         'scan.relay.title': 'Relay health',
         'scan.relay.run': 'Test relays',
         'scan.relay.apply': 'Use fastest',
-        'scan.relay.hint': 'Relays carry your traffic when a site sits behind Cloudflare. Tested from the worker.',
+        'scan.relay.hint': 'Relays carry your traffic when a site sits behind Cloudflare. Tested from the worker, with a browser fallback.',
+        'scan.netfail': 'Could not reach the panel API (blocked or offline). Continuing from this browser.',
+        'scan.relay.local': 'Worker probe blocked — testing relays from your network.',
+        'scan.relay.none': 'No relay answered. Try again, or paste a working ProxyIP in Settings.',
         'scan.clean.kicker': 'CLEAN IP',
         'scan.clean.title': 'Find low-ping Worker fronts',
         'scan.clean.run': 'Scan from my network',
@@ -59,7 +62,7 @@ const I18N = {
         'scan.clean.healthy': 'Healthy',
         'scan.clean.selected': 'Selected',
         'scan.clean.best': 'Best',
-        'scan.clean.spread': '/24s',
+        'scan.clean.spread': 'Nets',
         'scan.clean.pinned': 'Pinned clean IPs',
         'scan.clean.pinnedHint': 'Each of these is the address of one config. They stay fixed until you scan again.',
         'scan.clean.clear': 'Clear',
@@ -157,7 +160,10 @@ const I18N = {
         'scan.relay.title': 'سلامت رله‌ها',
         'scan.relay.run': 'تست رله‌ها',
         'scan.relay.apply': 'استفاده از سریع‌ترین',
-        'scan.relay.hint': 'وقتی سایتی پشت کلادفلر باشد، رله‌ها ترافیک شما را عبور می‌دهند. تست از سمت ورکر انجام می‌شود.',
+        'scan.relay.hint': 'وقتی سایتی پشت کلادفلر باشد، رله‌ها ترافیک شما را عبور می‌دهند. اول از ورکر، اگر مسدود شد از مرورگر.',
+        'scan.netfail': 'ارتباط با API پنل قطع شد (مسدود یا آفلاین). اسکن از همین مرورگر ادامه پیدا می‌کند.',
+        'scan.relay.local': 'تست از سمت ورکر مسدود شد — رله‌ها از شبکه شما تست می‌شوند.',
+        'scan.relay.none': 'هیچ رله‌ای جواب نداد. دوباره امتحان کنید یا در تنظیمات یک ProxyIP سالم بگذارید.',
         'scan.clean.kicker': 'آی‌پی تمیز',
         'scan.clean.title': 'پیدا کردن لبه‌های کم‌پینگ',
         'scan.clean.run': 'اسکن از شبکه من',
@@ -177,7 +183,7 @@ const I18N = {
         'scan.clean.healthy': 'سالم',
         'scan.clean.selected': 'انتخاب‌شده',
         'scan.clean.best': 'بهترین',
-        'scan.clean.spread': '/۲۴',
+        'scan.clean.spread': 'ساب‌نت',
         'scan.clean.pinned': 'آی‌پی‌های تمیز ثابت',
         'scan.clean.pinnedHint': 'هر کدام آدرس یک کانفیگ است. تا اسکن بعدی ثابت می‌مانند.',
         'scan.clean.clear': 'پاک کردن',
@@ -316,10 +322,21 @@ function notify(message, kind = 'ok', ttl = 3800) {
 }
 
 async function request(path, options = {}) {
-    const res = await fetch(api(path), {
-        headers: { 'Content-Type': 'application/json' },
-        ...options,
-    });
+    let res;
+    try {
+        res = await fetch(api(path), {
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store',
+            credentials: 'same-origin',
+            ...options,
+        });
+    } catch (err) {
+        const m = String(err && err.message ? err.message : err);
+        const net = /failed to fetch|networkerror|load failed|network request failed/i.test(m);
+        const wrapped = new Error(net ? t('scan.netfail') : m);
+        wrapped.network = net;
+        throw wrapped;
+    }
 
     if (res.status === 401) {
         window.location.href = `${BASE}/login`;
@@ -334,6 +351,20 @@ async function request(path, options = {}) {
         throw new Error(detail || data.message || `Request failed (${res.status})`);
     }
     return data.body;
+}
+
+/** Try several same-origin paths. Adblockers often cancel URLs that contain "scan". */
+async function requestAny(paths, options = {}) {
+    let last;
+    for (const path of paths) {
+        try {
+            return await request(path, options);
+        } catch (err) {
+            last = err;
+            if (String(err && err.message) === 'unauthorized') throw err;
+        }
+    }
+    throw last;
 }
 
 function formatBytes(bytes) {
@@ -1192,6 +1223,331 @@ let cleanKeepTouched = false;
 const IPV4_RE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
 const isV4 = (a) => IPV4_RE.test(a);
 
+const FRONT_RANGES = [
+    '104.16.0.0/14',
+    '104.20.0.0/15',
+    '104.24.0.0/14',
+    '162.159.0.0/16',
+    '188.114.96.0/20',
+];
+const FRONT_SEEDS = [
+    '104.16.10.10', '104.17.147.22', '104.18.26.90', '104.19.3.80',
+    '104.21.83.62', '104.24.0.10', '104.25.1.1', '162.159.36.1',
+    '162.159.46.1', '188.114.97.3', '188.114.98.224',
+    '172.67.100.100', '172.67.135.76', '172.67.200.200',
+];
+const DEFAULT_RELAYS = [
+    'proxyip.cmliussss.net:443',
+    'proxyip.fxxk.dedyn.io:443',
+    'proxyip.aliyun.fxxk.dedyn.io:443',
+    'proxyip.oracle.fxxk.dedyn.io:443',
+    'proxyip.digitalocean.fxxk.dedyn.io:443',
+    'proxyip.multi.fxxk.dedyn.io:443',
+];
+const COMMUNITY_FRONTS = (
+    '104.16.1.195,104.16.4.103,104.16.6.65,104.16.8.3,104.16.25.72,104.16.29.8,' +
+    '104.16.32.142,104.16.72.175,104.16.106.32,104.16.119.47,104.16.169.7,' +
+    '104.16.183.101,104.16.206.227,104.16.219.230,104.16.242.124,104.16.246.91,' +
+    '104.16.250.250,104.17.20.55,104.17.42.10,104.17.44.130,104.17.47.58,' +
+    '104.17.80.176,104.17.88.212,104.17.101.35,104.17.177.224,104.17.225.199,' +
+    '104.17.229.103,104.17.231.69,104.17.232.114,104.18.10.128,104.18.22.254,' +
+    '104.18.27.8,104.18.40.89,104.18.53.172,104.18.71.193,104.18.72.191,' +
+    '104.18.83.84,104.18.190.52,104.18.220.84,104.19.20.140,104.19.28.32,' +
+    '104.19.54.50,104.19.55.158,104.19.75.119,104.19.99.238,104.19.154.46,' +
+    '104.19.155.206,104.19.160.142,104.19.180.169,104.19.240.189,104.19.244.250,' +
+    '104.19.250.20,104.19.255.51,104.20.2.1,104.20.9.79,104.20.19.160,' +
+    '104.20.21.111,104.20.62.55,104.20.66.92,104.20.75.10,104.20.77.131,' +
+    '104.20.149.108,104.20.151.9,104.20.156.248,104.20.157.73,104.20.181.114,' +
+    '104.20.224.95,104.20.251.248,104.21.11.206,104.21.19.124,104.21.24.116,' +
+    '104.21.33.129,104.21.51.208,104.21.55.49,104.21.65.250,104.21.83.92,' +
+    '104.21.93.170,104.21.95.137,104.21.209.83,104.21.211.74,104.21.225.94,' +
+    '104.21.228.32,104.21.231.123,104.24.1.69,104.24.24.243,104.24.62.187,' +
+    '104.24.84.148,104.24.137.130,104.24.145.43,104.24.154.5,104.24.160.221,' +
+    '104.24.161.123,104.24.172.243,104.24.183.89,104.24.185.137,104.24.189.34,' +
+    '104.24.194.105,104.24.225.78,104.25.33.15,104.25.35.227,104.25.63.151,' +
+    '104.25.64.147,104.25.92.198,104.25.99.169,104.25.105.122,104.25.134.44,' +
+    '104.25.193.8,104.25.225.41,104.25.235.38,104.26.192.144,104.27.1.129,' +
+    '104.27.1.133,104.27.5.173,104.27.23.251,104.27.35.232,104.27.38.85,' +
+    '104.27.44.196,104.27.62.243,104.27.65.143,104.27.96.222,104.27.97.42,' +
+    '104.27.97.174,104.27.101.40,104.27.115.85,104.27.122.56,104.27.196.92,' +
+    '104.27.203.169,162.159.1.94,162.159.25.11,162.159.32.35,162.159.62.69,' +
+    '162.159.250.246,188.114.99.29'
+).split(',');
+const HOSTS = [10, 16, 22, 36, 62, 80, 100, 147, 200];
+const SECONDS_104 = [16, 17, 18, 19, 20, 21, 24, 25, 26, 27];
+const THIRDS_104 = [0, 10, 26, 50, 83, 100, 147, 200];
+const THIRDS_162 = [36, 46, 64, 134, 192, 200];
+
+function ipToInt(ip) {
+    const o = String(ip).split('.').map(Number);
+    if (o.length !== 4 || o.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
+    return ((o[0] << 24) | (o[1] << 16) | (o[2] << 8) | o[3]) >>> 0;
+}
+
+function parseCidr(cidr) {
+    const [ip, bitsRaw] = String(cidr).split('/');
+    const bits = Number(bitsRaw);
+    const n = ipToInt(ip);
+    if (n === null || !Number.isInteger(bits) || bits < 8 || bits > 32) return null;
+    return { base: n, size: 2 ** (32 - bits) };
+}
+
+function isWorkerFrontIpLocal(ip) {
+    if (FRONT_SEEDS.includes(ip)) return true;
+    const n = ipToInt(ip);
+    if (n === null) return false;
+    for (const cidr of FRONT_RANGES) {
+        const range = parseCidr(cidr);
+        if (!range) continue;
+        const mask = range.size >= 2 ** 32 ? 0 : (~(range.size - 1)) >>> 0;
+        if ((n & mask) === (range.base & mask)) return true;
+    }
+    return false;
+}
+
+const toIp = (n) => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.');
+
+function sampleFromRangesLocal(count, ranges) {
+    const parsed = ranges.map(parseCidr).filter(Boolean);
+    if (!parsed.length || count <= 0) return [];
+    const out = new Set();
+    const maxAttempts = count * 10;
+    for (let i = 0; i < maxAttempts && out.size < count; i++) {
+        const range = parsed[i % parsed.length];
+        const stride = Math.max(1, Math.floor(range.size / Math.max(count, 2)));
+        const slot = Math.floor(i / parsed.length);
+        const jitterN = Math.floor(Math.random() * Math.min(stride, 17));
+        const offset = 1 + ((slot * stride + jitterN) % Math.max(1, range.size - 2));
+        let n = (range.base + offset) >>> 0;
+        const host = n & 255;
+        if (host < 16 || host > 240) n = (n & ~255) | (16 + ((i * 13) % 224));
+        out.add(toIp(n));
+    }
+    return [...out];
+}
+
+const CLEAN_CATALOG = (() => {
+    const out = new Set([...FRONT_SEEDS, ...COMMUNITY_FRONTS]);
+    for (const second of SECONDS_104) {
+        for (const third of THIRDS_104) {
+            for (const host of HOSTS) out.add(`104.${second}.${third}.${host}`);
+        }
+    }
+    for (const third of THIRDS_162) {
+        for (const host of HOSTS) out.add(`162.159.${third}.${host}`);
+    }
+    for (let third = 96; third <= 110; third++) {
+        for (const host of HOSTS) out.add(`188.114.${third}.${host}`);
+    }
+    return [...out].filter(isWorkerFrontIpLocal);
+})();
+
+function pickCleanIpsLocal(count, seen) {
+    if (count <= 0) return [];
+    const buckets = new Map();
+    for (const ip of CLEAN_CATALOG) {
+        if (seen.has(ip)) continue;
+        const key = ip.split('.').slice(0, 2).join('.');
+        const bucket = buckets.get(key);
+        if (bucket) bucket.push(ip);
+        else buckets.set(key, [ip]);
+    }
+    const keys = [...buckets.keys()];
+    const out = [];
+    while (out.length < count) {
+        let added = false;
+        for (const key of keys) {
+            const bucket = buckets.get(key);
+            if (!bucket?.length) continue;
+            const pick = bucket.shift();
+            if (!pick || seen.has(pick)) continue;
+            seen.add(pick);
+            out.push(pick);
+            added = true;
+            if (out.length >= count) break;
+        }
+        if (!added) break;
+    }
+    return out;
+}
+
+function takeUniqueLocal(list, seen) {
+    const out = [];
+    for (const ip of list) {
+        if (seen.has(ip) || !isWorkerFrontIpLocal(ip)) continue;
+        seen.add(ip);
+        out.push(ip);
+    }
+    return out;
+}
+
+function neighborsOfLocal(origin, count) {
+    const parts = origin.split('.').map(Number);
+    if (parts.length !== 4) return [];
+    const [a, b, c] = parts;
+    const out = [];
+    for (let i = 0; out.length < count && i < 64; i++) {
+        const host = 16 + ((i * 17 + 23) % 224);
+        const ip = `${a}.${b}.${c}.${host}`;
+        if (ip === origin || !isWorkerFrontIpLocal(ip)) continue;
+        if (!out.includes(ip)) out.push(ip);
+    }
+    return out;
+}
+
+function expandAroundLocal(winners, per = 6, cap = 24) {
+    const seen = new Set(winners);
+    const out = [];
+    for (const ip of winners) {
+        for (const n of neighborsOfLocal(ip, per)) {
+            if (seen.has(n)) continue;
+            seen.add(n);
+            out.push(n);
+            if (out.length >= cap) return out;
+        }
+    }
+    return out;
+}
+
+function pickDiverseLocal(rows, keep) {
+    const out = [];
+    const taken = new Set();
+    const used16 = new Set();
+    const used24 = new Set();
+    const net16 = (ip) => ip.split('.').slice(0, 2).join('.');
+    const net24 = (ip) => ip.split('.').slice(0, 3).join('.');
+    const take = (pred) => {
+        for (const row of rows) {
+            if (out.length >= keep) return;
+            if (taken.has(row.address)) continue;
+            if (!pred(row)) continue;
+            taken.add(row.address);
+            used16.add(net16(row.address));
+            used24.add(net24(row.address));
+            out.push(row);
+        }
+    };
+    take((row) => !used16.has(net16(row.address)));
+    take((row) => !used24.has(net24(row.address)));
+    take(() => true);
+    return out;
+}
+
+function planScanLocal(previous, depth, keep) {
+    const seen = new Set();
+    const waves = [];
+    const WAVE = {
+        memory: { label: 'Previous winners', labelFa: 'برنده‌های قبلی' },
+        seeds: { label: 'Verified fronts', labelFa: 'لبه‌های تاییدشده' },
+        catalog: { label: 'Clean catalogue', labelFa: 'کاتالوگ تمیز' },
+        neighbors: { label: 'Nearby subnet', labelFa: 'همسایه‌های ساب‌نت' },
+        explore: { label: 'Wider sample', labelFa: 'نمونهٔ گسترده‌تر' },
+    };
+    const memory = takeUniqueLocal(
+        (previous || []).filter(isWorkerFrontIpLocal).slice(0, Math.max(12, keep)),
+        seen,
+    );
+    if (memory.length) waves.push({ id: 'memory', ...WAVE.memory, addresses: memory });
+    const seeds = takeUniqueLocal(FRONT_SEEDS, seen);
+    if (seeds.length) waves.push({ id: 'seeds', ...WAVE.seeds, addresses: seeds });
+    const catalogWant = depth === 'quick'
+        ? Math.max(24, keep * 3)
+        : depth === 'deep'
+            ? Math.max(72, keep * 6)
+            : Math.max(48, keep * 4);
+    const catalog = pickCleanIpsLocal(Math.min(180, catalogWant), seen);
+    if (catalog.length) waves.push({ id: 'catalog', ...WAVE.catalog, addresses: catalog });
+    if (depth !== 'quick') {
+        const exploreWant = depth === 'deep' ? Math.max(40, keep * 3) : Math.max(24, keep * 2);
+        const explore = takeUniqueLocal(sampleFromRangesLocal(Math.min(96, exploreWant), FRONT_RANGES), seen);
+        if (explore.length) waves.push({ id: 'explore', ...WAVE.explore, addresses: explore });
+    }
+    return waves;
+}
+
+function localPlanPayload(depth, keep, previous) {
+    const waves = planScanLocal(previous, depth, keep);
+    return {
+        waves,
+        sample: waves.flatMap((w) => w.addresses),
+        domains: [],
+        depth,
+        keep,
+        probesPerIp: depth === 'quick' ? 3 : depth === 'deep' ? 6 : 5,
+        scoutProbes: 2,
+        confirmProbes: depth === 'quick' ? 2 : depth === 'deep' ? 4 : 3,
+        concurrency: depth === 'deep' ? 5 : 6,
+        earlyStop: depth !== 'deep',
+        keepMax: 30,
+        catalogSize: CLEAN_CATALOG.length,
+        probePath: '/cdn-cgi/trace',
+    };
+}
+
+function medianLocal(values) {
+    if (!values.length) return -1;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+}
+
+function jitterLocal(values) {
+    if (values.length < 2) return 0;
+    const deltas = [];
+    for (let i = 1; i < values.length; i++) deltas.push(Math.abs(values[i] - values[i - 1]));
+    return Math.round(medianLocal(deltas));
+}
+
+function gradeOfLocal(score) {
+    if (score <= 80) return 'S';
+    if (score <= 140) return 'A';
+    if (score <= 220) return 'B';
+    if (score <= 350) return 'C';
+    return 'D';
+}
+
+function rankCleanLocal(measurements, keep) {
+    const rows = [];
+    for (const m of measurements) {
+        const ip = String(m.address ?? '').trim();
+        if (!isWorkerFrontIpLocal(ip)) continue;
+        const samples = Array.isArray(m.samples) ? m.samples.map(Number) : [];
+        const good = samples.filter((s) => s >= 0);
+        const lossRate = samples.length ? 1 - good.length / samples.length : 1;
+        if (!good.length) continue;
+        const med = medianLocal(good);
+        const jit = jitterLocal(good);
+        const score = med + 2 * jit + 500 * lossRate;
+        rows.push({
+            address: ip,
+            medianMs: med,
+            jitterMs: jit,
+            lossRate: Number(lossRate.toFixed(3)),
+            score: Math.round(score),
+            grade: gradeOfLocal(score),
+            ok: true,
+            samplesHint: samples.length,
+        });
+    }
+    const minSuccesses = rows.reduce((n, r) => Math.max(n, r.samplesHint), 0) >= 5 ? 3 : 2;
+    const healthy = rows
+        .filter((r) => {
+            if (!r.ok || r.medianMs <= 0 || r.lossRate > 0.34) return false;
+            const successes = Math.round((1 - r.lossRate) * r.samplesHint);
+            return successes >= minSuccesses;
+        })
+        .sort((a, b) => a.score - b.score);
+    return pickDiverseLocal(healthy, Math.max(1, keep)).map(({ samplesHint, ...row }) => row);
+}
+
+function parseRelayTarget(entry) {
+    const raw = String(entry || '').trim();
+    if (!raw) return null;
+    const m = raw.match(/^(.*):(\d+)$/);
+    return m ? { host: m[1], port: Number(m[2]), raw: `${m[1]}:${m[2]}` } : { host: raw, port: 443, raw };
+}
+
+
 const fmtMs = (ms) => `${ms} ms`;
 
 function renderProbeRows(container, rows, unit = 'ms') {
@@ -1209,7 +1565,41 @@ function renderProbeRows(container, rows, unit = 'ms') {
     }).join('');
 }
 
-/** Relay probing happens worker-side — relays are outside Cloudflare's network. */
+async function scanRelaysFromBrowser() {
+    const configured = Array.isArray(settings.proxyIPs) ? settings.proxyIPs : [];
+    const seen = new Set();
+    const targets = [];
+    for (const entry of [...configured, ...DEFAULT_RELAYS]) {
+        const parsed = parseRelayTarget(entry);
+        if (!parsed || seen.has(parsed.raw)) continue;
+        seen.add(parsed.raw);
+        targets.push(parsed);
+    }
+    const results = [];
+    const queue = [...targets];
+    const workers = Array.from({ length: Math.min(4, queue.length || 1) }, async () => {
+        for (;;) {
+            const target = queue.shift();
+            if (!target) return;
+            const ms = await probeEndpoint(target.host, target.port, 4500);
+            results.push({
+                address: target.host,
+                port: target.port,
+                ok: ms >= 0,
+                latency: ms,
+                error: ms >= 0 ? undefined : t('scan.unreachable'),
+            });
+        }
+    });
+    await Promise.all(workers);
+    results.sort((a, b) => {
+        if (a.ok !== b.ok) return a.ok ? -1 : 1;
+        return a.latency - b.latency;
+    });
+    return results;
+}
+
+/** Relays are probed from the worker first; the browser is the durable fallback. */
 async function scanRelays() {
     const btn = $('#scanRelays');
     const box = $('#relayResults');
@@ -1217,15 +1607,27 @@ async function scanRelays() {
     box.innerHTML = `<p class="empty">${t('scan.running')}</p>`;
 
     try {
-        const res = await request('/scan', {
-            method: 'POST',
-            body: JSON.stringify({ source: 'relay', mode: 'tcp', timeoutMs: 5000, concurrency: 6 }),
-        });
-        const results = res.results ?? [];
+        let results = [];
+        let usedLocal = false;
+        try {
+            const res = await requestAny(['/relays', '/scan'], {
+                method: 'POST',
+                body: JSON.stringify({ source: 'relay', mode: 'tcp', timeoutMs: 4000, concurrency: 6 }),
+            });
+            results = res.results ?? [];
+        } catch {
+            usedLocal = true;
+            notify(t('scan.relay.local'), 'warn', 5000);
+            results = await scanRelaysFromBrowser();
+        }
         renderProbeRows(box, results);
         relayBest = results.filter((r) => r.ok).map((r) => `${r.address}:${r.port}`);
         $('#applyRelays').disabled = relayBest.length === 0;
-        notify(t('scan.done').replace('{n}', String(relayBest.length)));
+        if (relayBest.length) {
+            notify(t('scan.done').replace('{n}', String(relayBest.length)));
+        } else {
+            notify(t('scan.relay.none'), 'warn', 6000);
+        }
     } catch (err) {
         box.innerHTML = `<p class="empty">${escapeHtml(err.message)}</p>`;
     } finally {
@@ -1374,8 +1776,9 @@ async function scanWave(wave, probes, measurements, seen, onTick, concurrency) {
  *
  * Scout (2 probes) → /24 neighbours of winners → wider sample if needed →
  * confirm the shortlist with extra probes. Smart mode skips explore once
- * it already has `keep` diverse healthy IPs. Ranking is done by the worker;
- * the keep slider only decides how many of those healthy IPs to pin.
+ * it already has `keep` diverse healthy IPs. Planning, expand and ranking
+ * all run in this browser so a blocked `/api/scan*` cannot abort the scan.
+ * The keep slider only decides how many healthy IPs to pin.
  * N pinned IPv4s become exactly N configs.
  */
 async function scanCleanIPs() {
@@ -1399,7 +1802,8 @@ async function scanCleanIPs() {
     setTicker('');
 
     try {
-        const plan = await request(`/scan/candidates?depth=${encodeURIComponent(depth)}&keep=${keep}`);
+        const previous = (settings.cleanIPs || []).filter((a) => isV4(a) && isWorkerFrontIpLocal(a));
+        const plan = localPlanPayload(depth, keep, previous);
         const waves = [...(plan.waves || [])];
         const scoutProbes = Number(plan.scoutProbes) || 2;
         const confirmProbes = Number(plan.confirmProbes) || (depth === 'quick' ? 2 : 3);
@@ -1440,10 +1844,12 @@ async function scanCleanIPs() {
                 const winners = localWinners(measurements, Math.min(8, Math.max(4, Math.ceil(keep / 2))));
                 if (winners.length) {
                     try {
-                        const expanded = await request(
-                            `/scan/expand?around=${encodeURIComponent(winners.join(','))}&count=${Math.min(48, Math.max(16, keep * 2))}`,
-                        );
-                        const addrs = (expanded.addresses || []).filter((ip) => !seen.has(ip));
+                        const expanded = {
+                            addresses: expandAroundLocal(winners, 6, Math.min(48, Math.max(16, keep * 2))),
+                            label: 'Nearby subnet',
+                            labelFa: 'همسایه‌های ساب‌نت',
+                        };
+                        const addrs = (expanded.addresses || []).filter((ip) => !seen.has(ip) && isWorkerFrontIpLocal(ip));
                         if (addrs.length) {
                             waves.splice(wi + 1, 0, {
                                 id: 'neighbors',
@@ -1498,12 +1904,7 @@ async function scanCleanIPs() {
             return;
         }
 
-        const ranked = await request('/scan/rank', {
-            method: 'POST',
-            body: JSON.stringify({ measurements, keep: 30 }),
-        });
-
-        cleanRanked = ranked.ranked || [];
+        cleanRanked = rankCleanLocal(measurements, 30);
         renderCleanResults();
 
         if (cleanRanked.length) {
@@ -1613,22 +2014,32 @@ async function applyRelays() {
     await loadAll();
 }
 
+async function persistCleanIPs(payload) {
+    try {
+        return await requestAny(['/fronts/apply', '/scan/apply'], {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+    } catch {
+        const cleanIPs = payload.clear ? [] : (payload.addresses || []);
+        await request('/settings', {
+            method: 'PUT',
+            body: JSON.stringify({ cleanIPs }),
+        });
+        return { applied: true, cleanIPs };
+    }
+}
+
 async function applyCleanIPs() {
     const picked = selectedCleanIps();
     if (!picked.length) return;
-    await request('/scan/apply', {
-        method: 'POST',
-        body: JSON.stringify({ addresses: picked }),
-    });
+    await persistCleanIPs({ addresses: picked });
     notify(t('scan.clean.appliedN').replaceAll('{n}', String(picked.length)));
     await loadAll();
 }
 
 async function clearCleanIPs() {
-    await request('/scan/apply', {
-        method: 'POST',
-        body: JSON.stringify({ clear: true }),
-    });
+    await persistCleanIPs({ clear: true });
     notify(t('scan.clean.cleared'));
     await loadAll();
 }

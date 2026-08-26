@@ -124,6 +124,7 @@ export async function handleScan(
             mode,
             concurrency: clamp(body.concurrency, LIMITS.concurrency),
             timeoutMs: clamp(body.timeoutMs, LIMITS.timeoutMs),
+            budgetMs: 16_000,
         });
     } catch (error) {
         return badRequest(`Scan failed: ${safeError(error)}`);

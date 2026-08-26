@@ -71,6 +71,19 @@ check('country pool meta is gone', (await api('/api/scan/pool')).status === 404)
 check('country pool candidates are gone',
     (await api('/api/scan/pool/candidates?country=TR')).status === 404);
 
+/* ── adblock-safe aliases ── */
+const fronts = await api('/api/fronts');
+check('fronts alias returns a wave plan',
+    Array.isArray(fronts.body?.body?.waves) && fronts.body.body.waves.length >= 2,
+    `${fronts.body?.body?.waves?.length ?? 0} waves`);
+const relayAlias = await api('/api/relays', {
+    method: 'POST',
+    body: JSON.stringify({ source: 'relay', mode: 'tcp', timeoutMs: 4000, concurrency: 6 }),
+});
+check('relays alias returns results',
+    Array.isArray(relayAlias.body?.body?.results) && relayAlias.body.body.results.length > 0,
+    `${relayAlias.body?.body?.results?.length ?? 0} probed`);
+
 /* ── browser candidate list ── */
 const cand = await api('/api/scan/candidates');
 const c = cand.body?.body ?? {};

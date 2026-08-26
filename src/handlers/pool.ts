@@ -4,19 +4,21 @@ import { saveSettings } from '@config/settings';
 import { DEFAULT_SETTINGS, LEGACY_NAME_TEMPLATES } from '@config/defaults';
 import { ok, badRequest, methodNotAllowed } from '@common/http';
 import {
-    publicCountries, findCountry, candidatesFor, isPoolAddress,
+    publicCountries, findCountry, isPoolAddress, rangesFor,
 } from '@scanner/countries';
 import {
     POOL_LIMITS, clampPool, rankPool, toPoolEntries, buildPoolSettings, DEFAULT_IP_POOL,
     type PoolMeasurement,
 } from '@scanner/pool';
+import { planScan, parseDepth, expandAround, WAVE_META, flattenPlan } from '@scanner/strategy';
 import { logActivity } from './logs';
 
 /**
  * Proxy IP Pool endpoints.
  *
  *   GET  api/scan/pool              — country catalogue + the pinned pool
- *   GET  api/scan/pool/candidates   — IPv4s for the browser to probe
+ *   GET  api/scan/pool/candidates   — multi-wave IPv4s for the browser to probe
+ *   GET  api/scan/pool/expand       — neighbours of live winners
  *   POST api/scan/pool/apply        — rank samples, pin the winners
  *   POST api/scan/pool/clear        — forget the pinned pool
  *
@@ -47,12 +49,17 @@ export function handlePoolCandidates(request: Request, settings: Settings): Resp
         return badRequest('Unknown country. Pick one from GET api/scan/pool.');
     }
 
-    const count = clampPool(url.searchParams.get('count'), POOL_LIMITS.count);
+    const depth = parseDepth(url.searchParams.get('depth'));
     const previous = settings.ipPool?.country === code
         ? (settings.ipPool.entries ?? []).map((e) => e.address)
         : [];
 
-    const addresses = candidatesFor(code, count, previous);
+    const waves = planScan({
+        previous,
+        depth,
+        ranges: rangesFor(code),
+    });
+    const addresses = flattenPlan(waves);
     if (!addresses.length) {
         return badRequest('No candidates available for that country.');
     }
@@ -66,9 +73,29 @@ export function handlePoolCandidates(request: Request, settings: Settings): Resp
             flag: country.flag,
             colo: country.colo,
         },
+        depth,
+        waves,
         addresses,
         probesPerIp: POOL_LIMITS.probes.fallback,
         probePath: '/cdn-cgi/trace',
+        earlyStop: depth !== 'deep',
+    });
+}
+
+export function handlePoolExpand(request: Request): Response {
+    const url = new URL(request.url);
+    const around = (url.searchParams.get('around') ?? '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(isPoolAddress)
+        .slice(0, 8);
+    if (!around.length) return badRequest('Pass around=ip,ip to expand a /24.');
+
+    const cap = clampPool(url.searchParams.get('count'), { min: 4, max: 32, fallback: 16 });
+    const addresses = expandAround(around, 8, cap);
+    return ok({
+        wave: { id: 'neighbors' as const, ...WAVE_META.neighbors, addresses },
+        addresses,
     });
 }
 

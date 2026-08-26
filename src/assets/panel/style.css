@@ -590,6 +590,36 @@ input[type="number"] { font-variant-numeric: tabular-nums; }
 }
 .pool-toolbar .field { min-width: 140px; }
 
+.pool-waves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin: .55rem 0 .15rem;
+}
+.pool-wave {
+  font-size: .7rem;
+  font-weight: 650;
+  letter-spacing: .02em;
+  padding: .22rem .6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface-2);
+}
+.pool-wave.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.pool-wave.done {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 45%, transparent);
+}
+.pool-wave.skip {
+  opacity: .45;
+  text-decoration: line-through;
+}
+
 .country-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));

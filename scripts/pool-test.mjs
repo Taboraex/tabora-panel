@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Unit tests for Worker-front IP filtering and country-pool sampling.
+ * Unit tests for Worker-front IP filtering, clean-IP catalogue and scan waves.
  */
 import { build } from 'esbuild';
 import { writeFileSync, mkdtempSync } from 'fs';
@@ -21,6 +21,8 @@ writeFileSync(entry, `
 export { isWorkerFrontIp, WORKER_FRONT_SEEDS, sampleFromRanges, WORKER_FRONT_RANGES } from ${JSON.stringify(join(src, 'candidates'))};
 export { candidatesFor, isPoolAddress, findCountry, POOL_COUNTRIES } from ${JSON.stringify(join(src, 'countries'))};
 export { rankPool, pickPoolWinners, isPoolHealthy } from ${JSON.stringify(join(src, 'pool'))};
+export { CLEAN_IPS, CLEAN_HOSTS } from ${JSON.stringify(join(src, 'catalog'))};
+export { planScan, pickCleanIps, neighborsOf, expandAround, pickDiverse, flattenPlan } from ${JSON.stringify(join(src, 'strategy'))};
 `);
 
 const out = join(dir, 'bundle.mjs');
@@ -54,6 +56,36 @@ check('every country samples the same front ranges',
     m.POOL_COUNTRIES.every((c) => JSON.stringify(c.ranges) === JSON.stringify(m.WORKER_FRONT_RANGES)));
 check('no country still carries 104.22/104.23',
     !m.POOL_COUNTRIES.some((c) => (c.ranges ?? []).some((r) => r.includes('104.22') || r.includes('104.23'))));
+
+console.log('\nClean IP catalogue');
+check('catalogue is non-trivial', m.CLEAN_IPS.length >= 80, `got ${m.CLEAN_IPS.length}`);
+check('every catalogue IP is a Worker front', m.CLEAN_IPS.every((ip) => m.isWorkerFrontIp(ip)));
+check('catalogue never includes colo interconnects',
+    !m.CLEAN_IPS.some((ip) => ip.startsWith('104.22.') || ip.startsWith('104.23.') || ip.startsWith('172.70.')));
+check('catalogue includes verified seeds',
+    m.WORKER_FRONT_SEEDS.every((ip) => m.CLEAN_IPS.includes(ip)));
+const picked = m.pickCleanIps(24);
+const sixteens = new Set(picked.map((ip) => ip.split('.').slice(0, 2).join('.')));
+check('picked clean IPs spread across several /16s', sixteens.size >= 4, [...sixteens].join(','));
+
+console.log('\nWaves');
+const quick = m.planScan({ previous: [], depth: 'quick', ranges: m.WORKER_FRONT_RANGES });
+const smart = m.planScan({ previous: ['104.17.147.22'], depth: 'smart', ranges: m.WORKER_FRONT_RANGES });
+check('quick scan has a catalog wave', quick.some((w) => w.id === 'catalog' && w.addresses.length > 0));
+check('quick scan skips explore', !quick.some((w) => w.id === 'explore'));
+check('smart scan starts with previous winners', smart[0]?.id === 'memory' && smart[0].addresses[0] === '104.17.147.22');
+check('smart scan includes explore', smart.some((w) => w.id === 'explore'));
+check('waves never emit 104.23',
+    !m.flattenPlan(smart).some((ip) => ip.startsWith('104.23.')));
+
+const near = m.neighborsOf('104.17.147.22', 6);
+check('neighbours stay in the same /24', near.every((ip) => ip.startsWith('104.17.147.')));
+check('neighbours are Worker fronts', near.every((ip) => m.isPoolAddress(ip)));
+check('neighbours do not repeat the origin', !near.includes('104.17.147.22'));
+const expanded = m.expandAround(['104.17.147.22', '104.16.10.10'], 4, 10);
+check('expandAround stays under the cap', expanded.length <= 10);
+check('expandAround does not re-list winners',
+    !expanded.includes('104.17.147.22') && !expanded.includes('104.16.10.10'));
 
 console.log('\nCandidates');
 const tr = m.candidatesFor('TR', 16);
@@ -91,6 +123,14 @@ const lossyOnly = m.rankPool([
 check('lossy random IPs do not fill keep',
     lossyOnly.length === 1 && lossyOnly[0].address === '104.21.83.62',
     lossyOnly.map((r) => r.address).join(','));
+
+const diverse = m.pickDiverse([
+    { address: '104.16.10.10' },
+    { address: '104.16.10.22' },
+    { address: '104.17.147.22' },
+], 2);
+check('diversity prefers a second /24 over a second host in the same /24',
+    diverse[0].address === '104.16.10.10' && diverse[1].address === '104.17.147.22');
 
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

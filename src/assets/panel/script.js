@@ -51,8 +51,13 @@ const I18N = {
         'scan.unreachable': 'unreachable',
         'pool.kicker': 'Proxy IP Pool',
         'pool.title': 'Fixed Cloudflare IPs by country',
-        'pool.hint': 'Pick a country as a label. Tabora probes Cloudflare anycast IPs that actually front a Worker from your network and pins the healthy ones. Each pinned IP becomes exactly one config (port 443, one protocol) — three Turkey IPs produce three configs, not a cartesian explosion. Clients often geo-flag those IPs as 🇺🇸; the country name in the remark is the one you picked.',
+        'pool.hint': 'Pick a country as a label. The scanner walks Cloudflare clean IPs that actually front a Worker — previous winners, a baked catalogue, neighbours of whatever answered, then a wider sample — and stops once it has enough healthy addresses. Each pinned IP becomes exactly one config.',
         'pool.keep': 'Keep best',
+        'pool.depth': 'Scan',
+        'pool.depth.quick': 'Quick',
+        'pool.depth.smart': 'Smart',
+        'pool.depth.deep': 'Deep',
+        'pool.early': 'Enough healthy IPs — stopping extra waves',
         'pool.lock': 'Fixed IPs only — one config per IP',
         'pool.scan': 'Scan & pick the best',
         'pool.stop': 'Stop',
@@ -159,8 +164,13 @@ const I18N = {
         'scan.unreachable': 'در دسترس نیست',
         'pool.kicker': 'استخر Proxy IP',
         'pool.title': 'آی‌پی ثابت کلادفلر بر اساس کشور',
-        'pool.hint': 'کشور را به‌عنوان برچسب انتخاب کنید. تابورا آی‌پی‌های anycast کلادفلر را که واقعاً جلوی ورکر می‌ایستند از روی اینترنت شما تست می‌کند و سالم‌ها را قفل می‌کند. هر آی‌پی سالم دقیقاً یک کانفیگ می‌شود (پورت ۴۴۳، یک پروتکل) — سه آی‌پی ترکیه سه کانفیگ است، نه حاصل‌ضرب پورت و پروتکل. کلاینت‌ها اغلب پرچم آمریکا نشان می‌دهند؛ نام کشور داخل عنوان کانفیگ همان انتخاب شماست.',
+        'pool.hint': 'کشور را به‌عنوان برچسب انتخاب کنید. اسکنر آی‌پی‌های تمیز کلادفلر را که واقعاً جلوی ورکر می‌ایستند موج‌به‌موج تست می‌کند — برنده‌های قبلی، کاتالوگ، همسایه‌های /۲۴، بعد کشف محدوده — و وقتی به‌اندازه کافی سالم پیدا کرد می‌ایستد. هر آی‌پی سالم دقیقاً یک کانفیگ می‌شود.',
         'pool.keep': 'نگه‌داشتن بهترین‌ها',
+        'pool.depth': 'اسکن',
+        'pool.depth.quick': 'سریع',
+        'pool.depth.smart': 'هوشمند',
+        'pool.depth.deep': 'عمیق',
+        'pool.early': 'آی‌پی سالم به‌اندازه کافی — موج‌های اضافه متوقف شد',
         'pool.lock': 'فقط آی‌پی ثابت — هر آی‌پی یک کانفیگ',
         'pool.scan': 'اسکن و انتخاب بهترین',
         'pool.stop': 'توقف',
@@ -1430,23 +1440,76 @@ async function runPoolScan() {
     box.innerHTML = '';
     bar.style.width = '0%';
 
-    try {
-        const keep = Number($('#poolKeep').value) || 3;
-        const { addresses = [], probesPerIp = 5, country } = await request(
-            `/scan/pool/candidates?country=${encodeURIComponent(poolSelected)}&count=32`,
-        );
-        const total = addresses.length;
-        const measurements = [];
-        let done = 0;
+    const waveLabelOf = (wave) => (lang === 'fa' ? (wave.labelFa || wave.label) : (wave.label || wave.id));
 
+    const paintWaves = (waves, activeId, skipped) => {
+        const el = $('#poolWaves');
+        if (!el) return;
+        if (!waves.length) { el.hidden = true; el.innerHTML = ''; return; }
+        el.hidden = false;
+        const skip = skipped || [];
+        const activeAt = waves.findIndex((w) => w.id === activeId);
+        el.innerHTML = waves.map((w, i) => {
+            let state = '';
+            if (skip.includes(w.id)) state = ' skip';
+            else if (w.id === activeId) state = ' active';
+            else if (activeAt > i) state = ' done';
+            return `<span class="pool-wave${state}">${escapeHtml(waveLabelOf(w))}</span>`;
+        }).join('');
+    };
+
+    const localHealthy = (measurements) => {
+        const rows = [];
+        for (const m of measurements) {
+            const samples = m.samples || [];
+            const good = samples.filter((s) => s >= 0);
+            const loss = samples.length ? 1 - good.length / samples.length : 1;
+            const sorted = [...good].sort((a, b) => a - b);
+            const med = sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : -1;
+            if (good.length >= 3 && loss <= 0.25 && med > 0) {
+                rows.push({ address: m.address, medianMs: med, lossRate: loss, ok: true });
+            }
+        }
+        rows.sort((a, b) => a.medianMs - b.medianMs);
+        const used = new Set();
+        const diverse = [];
+        for (const row of rows) {
+            const net = row.address.split('.').slice(0, 3).join('.');
+            if (used.has(net)) continue;
+            used.add(net);
+            diverse.push(row);
+        }
+        return { rows, diverse };
+    };
+
+    const liveGrade = (ms, loss) => {
+        if (loss > 0.2) return 'D';
+        if (ms < 80) return 'S';
+        if (ms < 140) return 'A';
+        if (ms < 200) return 'B';
+        if (ms < 280) return 'C';
+        return 'D';
+    };
+
+    const paintLive = (measurements) => {
+        const { rows } = localHealthy(measurements);
+        renderPoolResults(rows.map((r) => ({
+            ...r,
+            colo: '',
+            grade: liveGrade(r.medianMs, r.lossRate),
+        })));
+    };
+
+    const probeAddresses = async (addresses, probesPerIp, total, doneStart, onTick) => {
+        const measurements = [];
         const queue = [...addresses];
-        const workers = Array.from({ length: 4 }, async () => {
+        let done = 0;
+        const conc = Math.min(addresses.length <= 8 ? 3 : 4, queue.length || 1);
+        const workers = Array.from({ length: conc }, async () => {
             for (;;) {
                 if (poolAbort) return;
                 const ip = queue.shift();
                 if (!ip) return;
-                progIp.textContent = ip;
-
                 const samples = [];
                 for (let i = 0; i < probesPerIp; i++) {
                     if (poolAbort) break;
@@ -1454,14 +1517,85 @@ async function runPoolScan() {
                 }
                 measurements.push({ address: ip, samples });
                 done++;
-                const pct = Math.round((done / total) * 100);
-                bar.style.width = `${pct}%`;
-                progText.textContent = t('pool.measuring')
-                    .replace('{done}', String(done))
-                    .replace('{total}', String(total));
+                onTick(doneStart + done, total, ip);
             }
         });
         await Promise.all(workers);
+        return measurements;
+    };
+
+    try {
+        const keep = Number($('#poolKeep').value) || 3;
+        const depth = $('#poolDepth')?.value || 'smart';
+        const payload = await request(
+            `/scan/pool/candidates?country=${encodeURIComponent(poolSelected)}&depth=${encodeURIComponent(depth)}`,
+        );
+        const probesPerIp = payload.probesPerIp || 5;
+        const earlyStop = payload.earlyStop !== false && depth !== 'deep';
+        let planned = Array.isArray(payload.waves) && payload.waves.length
+            ? payload.waves.map((w) => ({ ...w, addresses: [...(w.addresses || [])] }))
+            : [{ id: 'catalog', label: 'Clean IPs', labelFa: 'آی‌پی تمیز', addresses: payload.addresses || [] }];
+        planned = planned.filter((w) => w.addresses.length);
+        if (!planned.length) {
+            box.innerHTML = `<p class="empty">${escapeHtml(t('pool.none'))}</p>`;
+            return;
+        }
+
+        const measurements = [];
+        const skipped = [];
+        const countIps = () => planned.reduce((n, w) => n + w.addresses.length, 0);
+        const tick = (d, tot, ip) => {
+            bar.style.width = `${Math.round((d / Math.max(tot, 1)) * 100)}%`;
+            progText.textContent = t('pool.measuring')
+                .replace('{done}', String(d))
+                .replace('{total}', String(tot));
+            progIp.textContent = ip;
+        };
+
+        paintWaves(planned, planned[0].id, skipped);
+
+        for (let i = 0; i < planned.length; i++) {
+            if (poolAbort) break;
+            const wave = planned[i];
+            if (earlyStop && i > 0 && localHealthy(measurements).diverse.length >= keep) {
+                for (let j = i; j < planned.length; j++) skipped.push(planned[j].id);
+                paintWaves(planned, '', skipped);
+                notify(t('pool.early'), 'ok', 4200);
+                break;
+            }
+            paintWaves(planned, wave.id, skipped);
+            const batch = await probeAddresses(
+                wave.addresses, probesPerIp, countIps(), measurements.length, tick,
+            );
+            measurements.push(...batch);
+            paintLive(measurements);
+
+            if (wave.id === 'catalog' && depth !== 'quick' && !planned.some((w) => w.id === 'neighbors')) {
+                const top = localHealthy(measurements).diverse.slice(0, 3).map((r) => r.address);
+                const needMore = depth === 'deep' || localHealthy(measurements).diverse.length < keep;
+                if (top.length && needMore) {
+                    try {
+                        const exp = await request(
+                            `/scan/pool/expand?around=${encodeURIComponent(top.join(','))}&count=16`,
+                        );
+                        const seen = new Set(measurements.map((m) => m.address));
+                        const addrs = (exp.addresses || []).filter((ip) => !seen.has(ip));
+                        if (addrs.length) {
+                            const nwave = {
+                                id: 'neighbors',
+                                label: (exp.wave && exp.wave.label) || 'Nearby /24',
+                                labelFa: (exp.wave && exp.wave.labelFa) || 'همسایه‌های /۲۴',
+                                addresses: addrs,
+                            };
+                            const exploreAt = planned.findIndex((w) => w.id === 'explore');
+                            if (exploreAt >= 0) planned.splice(exploreAt, 0, nwave);
+                            else planned.push(nwave);
+                            paintWaves(planned, nwave.id, skipped);
+                        }
+                    } catch { /* expand is optional */ }
+                }
+            }
+        }
 
         if (!measurements.length) {
             box.innerHTML = `<p class="empty">${escapeHtml(t('pool.none'))}</p>`;
@@ -1487,6 +1621,7 @@ async function runPoolScan() {
 
         const best = result.best;
         if (best) {
+            const country = payload.country;
             notify(t('pool.applied')
                 .replace('{flag}', country?.flag || result.country?.flag || '')
                 .replace('{name}', countryLabel(country || result.country) || poolSelected)

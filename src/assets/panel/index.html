@@ -358,10 +358,11 @@
         <span class="pool-live" id="poolLive" hidden>SCAN</span>
       </div>
       <p class="hint" data-i18n="pool.hint">
-        Pick a country as a label. Tabora probes Cloudflare anycast IPs that actually
-        front a Worker from your network and pins the healthy ones. Each pinned IP
-        becomes exactly one config (port 443, one protocol). Clients often geo-flag
-        those IPs as 🇺🇸; the country name in the remark is the one you picked.
+        Pick a country as a label. The scanner walks Cloudflare clean IPs that
+        actually front a Worker — previous winners, a baked clean-IP catalogue,
+        neighbours of whatever answered, then a wider sample — and stops once
+        it has enough healthy addresses. Each pinned IP becomes exactly one
+        config (port 443, one protocol).
       </p>
 
       <div class="pool-toolbar">
@@ -371,6 +372,14 @@
             <option value="1">1</option>
             <option value="3" selected>3</option>
             <option value="5">5</option>
+          </select>
+        </label>
+        <label class="field">
+          <span data-i18n="pool.depth">Scan</span>
+          <select id="poolDepth">
+            <option value="quick" data-i18n="pool.depth.quick">Quick</option>
+            <option value="smart" selected data-i18n="pool.depth.smart">Smart</option>
+            <option value="deep" data-i18n="pool.depth.deep">Deep</option>
           </select>
         </label>
         <label class="field toggle">
@@ -388,6 +397,8 @@
         </button>
         <button class="btn ghost" id="poolStop" hidden data-i18n="pool.stop">Stop</button>
       </div>
+
+      <div class="pool-waves" id="poolWaves" hidden></div>
 
       <div class="pool-progress" id="poolProgress" hidden>
         <div class="pool-progress-bar"><i id="poolBar"></i></div>

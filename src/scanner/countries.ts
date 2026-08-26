@@ -1,6 +1,7 @@
 import {
-    WORKER_FRONT_RANGES, WORKER_FRONT_SEEDS, sampleFromRanges, isWorkerFrontIp,
+    WORKER_FRONT_RANGES, isPoolAddress as isFrontAddress,
 } from './candidates';
+import { planScan, flattenPlan } from './strategy';
 
 /**
  * Country catalogue for the Proxy IP Pool.
@@ -153,38 +154,21 @@ export function publicCountries(): Array<Omit<PoolCountry, 'ranges'>> {
     return POOL_COUNTRIES.map(({ ranges: _ranges, ...rest }) => rest);
 }
 
-const IPV4 = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d)$/;
-
-export const isPoolAddress = (value: string): boolean => IPV4.test(value) && isWorkerFrontIp(value);
+export const isPoolAddress = isFrontAddress;
 
 /**
- * Build the candidate list for one scan round.
- *
- * Seeds that are known to front a Worker go first, then a fresh sample
- * from the working anycast blocks, then any previous winners that still
- * qualify. Dead colo IPs from the first pool never re-enter the list.
+ * Flattened multi-wave plan. Tests and older callers still get a single list;
+ * the panel prefers the `waves` payload from GET api/scan/pool/candidates.
  */
 export function candidatesFor(
     code: string,
     count: number,
     previous: string[] = [],
 ): string[] {
-    // Never drop verified seeds to meet a small `count` — those are the
-    // IPs known to front a Worker. Extra samples fill the rest of the budget.
-    const want = Math.max(
-        WORKER_FRONT_SEEDS.length,
-        Math.min(48, Math.floor(count) || 32),
-    );
-    const kept = previous.filter(isPoolAddress).slice(0, 8);
-    const extra = Math.max(8, want - WORKER_FRONT_SEEDS.length);
-    const fresh = extra > 0 ? sampleFromRanges(extra, rangesFor(code)) : [];
-    const out: string[] = [];
-    const seen = new Set<string>();
-    for (const ip of [...WORKER_FRONT_SEEDS, ...kept, ...fresh]) {
-        if (!isPoolAddress(ip) || seen.has(ip)) continue;
-        seen.add(ip);
-        out.push(ip);
-        if (out.length >= want) break;
-    }
-    return out;
+    const depth = (Math.floor(count) || 0) >= 40 ? 'deep' : 'smart';
+    return flattenPlan(planScan({
+        previous,
+        depth,
+        ranges: rangesFor(code),
+    }));
 }

@@ -109,6 +109,8 @@ export function ipToInt(ip: string): number | null {
     return ((octets[0] << 24) | (octets[1] << 16) | (octets[2] << 8) | octets[3]) >>> 0;
 }
 
+const IPV4 = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d)$/;
+
 /** True when this IPv4 is one we will actually put in a config. */
 export function isWorkerFrontIp(ip: string): boolean {
     if (WORKER_FRONT_SEEDS.includes(ip)) return true;
@@ -122,6 +124,8 @@ export function isWorkerFrontIp(ip: string): boolean {
     }
     return false;
 }
+
+export const isPoolAddress = (value: string): boolean => IPV4.test(value) && isWorkerFrontIp(value);
 
 /** Parse "a.b.c.d/nn" into its numeric base and host count. */
 export function parseCidr(cidr: string): { base: number; size: number } | null {

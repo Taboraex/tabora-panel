@@ -5,6 +5,24 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] — 2026-08-26
+
+### Added
+
+- **Intelligent clean-IP scanner.** The pool no longer throws random samples
+  at Cloudflare. It walks, in order: previous winners for this operator, a
+  baked catalogue of Cloudflare clean IPs that actually front a Worker,
+  neighbours in the same /24 as whatever answered, then a wider sample of
+  the front ranges. Smart mode stops as soon as it has enough healthy,
+  diverse IPs. Quick / Smart / Deep is a single control.
+- Catalogue is Worker-front only — IRCF/CFScanner dumps that mix colo
+  interconnects, WARP endpoints and unused `/22`s are not used as seeds.
+
+### Changed
+
+- Pinned IPs prefer distinct `/24`s so one throttled prefix cannot take
+  down every config.
+
 ## [0.7.3] — 2026-08-26
 
 ### Fixed
@@ -234,7 +252,8 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.8.0
 [0.7.3]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.3
 [0.7.2]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.2
 [0.7.1]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.7.1

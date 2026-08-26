@@ -12,7 +12,7 @@ import { handleUsers } from '@handlers/users';
 import { handleLogs } from '@handlers/logs';
 import { handleScan, handleScanCandidates, handleScanApply } from '@handlers/scan';
 import {
-    handlePoolMeta, handlePoolCandidates, handlePoolApply, handlePoolClear,
+    handlePoolMeta, handlePoolCandidates, handlePoolExpand, handlePoolApply, handlePoolClear,
 } from '@handlers/pool';
 import {
     handleGamingCandidates,
@@ -124,6 +124,9 @@ export default {
 
                 case 'api/scan/pool/candidates':
                     return handlePoolCandidates(request, settings);
+
+                case 'api/scan/pool/expand':
+                    return handlePoolExpand(request);
 
                 case 'api/scan/pool/apply':
                     return handlePoolApply(request, settings, store);

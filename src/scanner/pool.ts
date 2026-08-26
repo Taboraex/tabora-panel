@@ -2,10 +2,11 @@ import { IpPoolEntry, IpPoolSettings } from '#types/settings';
 import { summarise, rank, type EndpointStats } from '@gaming/scoring';
 import { findCountry, isPoolAddress } from './countries';
 import { WORKER_FRONT_SEEDS } from './candidates';
+import { pickDiverse } from './strategy';
 
 /** Soft ceilings so a malformed apply cannot bloat settings. */
 export const POOL_LIMITS = {
-    count: { min: 8, max: 48, fallback: 32 },
+    count: { min: 8, max: 96, fallback: 32 },
     keep: { min: 1, max: 8, fallback: 3 },
     probes: { min: 1, max: 8, fallback: 5 },
 };
@@ -87,9 +88,10 @@ export function pickPoolWinners(ranked: RankedPoolEntry[], keep: number): Ranked
     const healthy = ranked.filter(isPoolHealthy);
     const seeds = new Set(WORKER_FRONT_SEEDS);
     const seedHits = healthy.filter((row) => seeds.has(row.address));
-    if (seedHits.length >= cap) return seedHits.slice(0, cap);
+    const diverseSeeds = pickDiverse(seedHits, cap);
+    if (diverseSeeds.length >= cap) return diverseSeeds;
     const rest = healthy.filter((row) => !seeds.has(row.address));
-    return [...seedHits, ...rest].slice(0, cap);
+    return pickDiverse([...diverseSeeds, ...rest], cap);
 }
 
 export function toPoolEntries(ranked: RankedPoolEntry[], scannedAt = Date.now()): IpPoolEntry[] {

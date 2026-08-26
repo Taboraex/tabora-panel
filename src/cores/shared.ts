@@ -3,6 +3,7 @@ import { P } from '@config/obfuscation';
 import { getContext } from '@config/settings';
 import { formatBytes, formatDate, isIPv4, parseList } from '@common/utils';
 import { HTTPS_PORTS } from '@config/constants';
+import { isWorkerFrontIp } from '@scanner/candidates';
 
 /** Everything a config builder needs, resolved once per subscription request. */
 export interface BuildContext {
@@ -35,11 +36,13 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
 
     const frontEnds = (user?.cleanIPs?.length ? user.cleanIPs : settings.cleanIPs)
         .filter(Boolean);
-    const ipv4Fronts = frontEnds.filter(isIPv4);
+    // Any Worker-front IPv4 wins exclusively. Leftover catalogue domains
+    // (icook.hk, …) used to fail the "every entry is IPv4" gate and fall
+    // through to addresses × ports × protocols — 15 IPs became dozens of
+    // configs. One healthy front → one config, always.
+    const workerFronts = resolveFixedFronts(frontEnds);
 
-    // Real fixed IPs: the operator pinned IPv4 literals (from the clean-IP
-    // scanner). One address → one config. Country-pool anycast theatre is gone.
-    if (ipv4Fronts.length && ipv4Fronts.length === frontEnds.length) {
+    if (workerFronts.length) {
         const tlsPort = preferTlsPort(ports.length ? ports : [...HTTPS_PORTS]);
         const protocol = preferProtocol(protocols.length ? protocols : [P.VL]);
         return {
@@ -48,10 +51,10 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
             hostname,
             protocols: [protocol],
             ports: [tlsPort],
-            addresses: ipv4Fronts,
+            addresses: workerFronts,
             uuid: user?.uuid || settings.uuid,
             trojanPassword: settings.trojanPassword,
-            maxConfigs: ipv4Fronts.length,
+            maxConfigs: workerFronts.length,
             poolCountry: '',
             poolFlag: '',
             poolFixed: true,
@@ -76,6 +79,19 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
         poolFlag: '',
         poolFixed: false,
     };
+}
+
+/** Worker-front IPv4s that each become exactly one config. */
+export function resolveFixedFronts(frontEnds: Iterable<string> | null | undefined): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const raw of frontEnds ?? []) {
+        const ip = String(raw ?? '').trim();
+        if (!isIPv4(ip) || !isWorkerFrontIp(ip) || seen.has(ip)) continue;
+        seen.add(ip);
+        out.push(ip);
+    }
+    return out;
 }
 
 export function preferTlsPort(ports: number[]): number {

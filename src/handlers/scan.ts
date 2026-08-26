@@ -32,7 +32,7 @@ const LIMITS = {
     count: { min: 1, max: 64, fallback: 20 },
     concurrency: { min: 1, max: 12, fallback: 8 },
     timeoutMs: { min: 500, max: 8000, fallback: 3000 },
-    keep: { min: 1, max: 24, fallback: 8 },
+    keep: { min: 1, max: 30, fallback: 8 },
 };
 
 const clamp = (value: unknown, { min, max, fallback }: { min: number; max: number; fallback: number }): number => {
@@ -168,15 +168,20 @@ export async function handleScan(
 export function handleScanCandidates(request: Request, settings: Settings): Response {
     const url = new URL(request.url);
     const depth = parseDepth(url.searchParams.get('depth'));
+    const keep = clamp(url.searchParams.get('keep'), LIMITS.keep);
     const previous = (settings.cleanIPs ?? []).filter((a) => isWorkerFrontIp(String(a)));
-    const waves = planScan({ previous, depth });
+    const waves = planScan({ previous, depth, keep });
     const sample = flattenPlan(waves);
     return ok({
         domains: CANDIDATE_DOMAINS,
         sample,
         waves,
         depth,
-        probesPerIp: depth === 'quick' ? 3 : 5,
+        keep,
+        probesPerIp: depth === 'quick' ? 3 : depth === 'deep' ? 6 : 5,
+        scoutProbes: 2,
+        confirmProbes: depth === 'quick' ? 2 : depth === 'deep' ? 4 : 3,
+        concurrency: depth === 'deep' ? 5 : 6,
         earlyStop: depth !== 'deep',
         keepMax: LIMITS.keep.max,
         catalogSize: CLEAN_IPS.length,
@@ -193,7 +198,7 @@ export function handleScanExpand(request: Request): Response {
         .split(',')
         .map((s) => s.trim())
         .filter(isWorkerFrontIp);
-    const count = clamp(url.searchParams.get('count'), { min: 4, max: 32, fallback: 16 });
+    const count = clamp(url.searchParams.get('count'), { min: 4, max: 48, fallback: 16 });
     const addresses = expandAround(around, 6, count);
     return ok({
         id: 'neighbors' as const,
@@ -222,7 +227,7 @@ export async function handleScanRank(request: Request): Promise<Response> {
     if (!raw.length) return badRequest('No measurements supplied');
 
     const measurements: CleanMeasurement[] = [];
-    for (const entry of raw.slice(0, 160)) {
+    for (const entry of raw.slice(0, 280)) {
         const rec = entry as { address?: unknown; samples?: unknown };
         const address = String(rec.address ?? '').trim();
         if (!isWorkerFrontIp(address)) continue;
@@ -279,5 +284,6 @@ export async function handleScanApply(
     await saveSettings(store, settings, { cleanIPs });
     await logActivity(store, 'scan-applied', cleanIPs.join(', ').slice(0, 200));
 
-    return ok({ applied: true, cleanIPs });
+    const configCount = cleanIPs.filter((a) => isWorkerFrontIp(a)).length;
+    return ok({ applied: true, cleanIPs, configCount });
 }

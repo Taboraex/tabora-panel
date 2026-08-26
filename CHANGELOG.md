@@ -5,6 +5,31 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] — 2026-08-27
+
+### Changed
+
+- **N clean IPs = N configs.** Worker-front IPv4s in `cleanIPs` now lock
+  exclusively to one TLS port and one protocol even when leftover catalogue
+  domains (`icook.hk`, …) are still on the list. Those domains used to flip
+  the builder back to a cartesian product of addresses × ports × protocols.
+- Clean-IP scanner is a radar theatre: live probe blips, keep equation
+  (`15 IPs = 15 configs`), /16 + /24 chips, and a 1–30 keep slider.
+- Scan plan scales with keep (scout → neighbours → explore → confirm).
+  Distinct `/16`s are preferred before a second host in the same prefix.
+
+## [0.12.0] — 2026-08-27
+
+### Changed
+
+- **Command-deck visuals.** Login, dashboard, users and the subscription page
+  share the Tabora atmosphere: hex grid, aurora, conic card, orbit mark.
+- Login is bilingual (EN / FA) with a language toggle.
+- Overview opens on a welcome hero; stat cards and user rows got initials,
+  hover lift and accent rails.
+- Subscription page is more cinematic — orbit around the mark, glowing usage
+  bar, richer app tiles — without changing deep-link behaviour.
+
 ## [0.11.0] — 2026-08-26
 
 ### Added
@@ -303,7 +328,9 @@ First public release.
 - Assets inlined, minified, gzipped and base64-embedded
 - Output around 100 KB, well under the 1 MB Workers limit
 
-[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/Taboraex/tabora-panel/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.13.0
+[0.12.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.12.0
 [0.11.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.11.0
 [0.10.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.10.0
 [0.9.0]: https://github.com/Taboraex/tabora-panel/releases/tag/v0.9.0

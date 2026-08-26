@@ -7,6 +7,7 @@ dist/
 # wrangler
 .wrangler/
 wrangler.dev.toml
+wrangler.cedar.toml
 .dev.vars
 
 # local research / scratch notes

@@ -46,6 +46,12 @@ const I18N = {
         'scan.clean.stop': 'Stop',
         'scan.clean.apply': 'Pin selected',
         'scan.clean.keep': 'Keep',
+        'scan.clean.eq': '{n} IPs = {n} configs',
+        'scan.clean.configs': 'Configs',
+        'scan.clean.ticker': 'Probing {ip}',
+        'scan.clean.confirm': 'Confirming the shortlist',
+        'scan.clean.keepHint': 'Each kept IP is exactly one config — ports and protocols do not multiply.',
+        'scan.clean.appliedN': '{n} configs locked to {n} IPs',
         'scan.clean.depth.quick': 'Quick',
         'scan.clean.depth.smart': 'Smart',
         'scan.clean.depth.deep': 'Deep',
@@ -68,6 +74,8 @@ const I18N = {
         'scan.unreachable': 'unreachable',
         'stat.users': 'Total users', 'stat.active': 'Active', 'stat.paused': 'Paused',
         'stat.traffic': 'Total traffic', 'stat.today': 'Today', 'stat.expired': 'Expired',
+        'ov.kicker': 'COMMAND DECK', 'ov.greet': 'Welcome back',
+        'ov.greetSub': 'Pulse of users, traffic and the edge — right here.',
         'ov.system': 'System', 'ov.host': 'Hostname', 'ov.colo': 'Edge node',
         'ov.storage': 'Storage', 'ov.ip': 'Your IP', 'ov.quick': 'Quick actions',
         'tg.title': 'Telegram',
@@ -156,6 +164,12 @@ const I18N = {
         'scan.clean.stop': 'توقف',
         'scan.clean.apply': 'ثابت کردن انتخاب‌شده‌ها',
         'scan.clean.keep': 'تعداد',
+        'scan.clean.eq': '{n} آی‌پی = {n} کانفیگ',
+        'scan.clean.configs': 'کانفیگ',
+        'scan.clean.ticker': 'در حال سنجش {ip}',
+        'scan.clean.confirm': 'تایید فهرست برتر',
+        'scan.clean.keepHint': 'هر آی‌پی نگه داشته‌شده دقیقاً یک کانفیگ است — پورت و پروتکل ضرب نمی‌شوند.',
+        'scan.clean.appliedN': '{n} کانفیگ روی {n} آی‌پی قفل شد',
         'scan.clean.depth.quick': 'سریع',
         'scan.clean.depth.smart': 'هوشمند',
         'scan.clean.depth.deep': 'عمیق',
@@ -178,6 +192,8 @@ const I18N = {
         'scan.unreachable': 'در دسترس نیست',
         'stat.users': 'کل کاربران', 'stat.active': 'فعال', 'stat.paused': 'متوقف',
         'stat.traffic': 'ترافیک کل', 'stat.today': 'امروز', 'stat.expired': 'منقضی',
+        'ov.kicker': 'اتاق فرمان', 'ov.greet': 'سلام، فرمانده',
+        'ov.greetSub': 'نبض کاربرها، ترافیک و لبه — همین‌جا.',
         'ov.system': 'سیستم', 'ov.host': 'نام میزبان', 'ov.colo': 'نود لبه',
         'ov.storage': 'ذخیره‌سازی', 'ov.ip': 'آی‌پی شما', 'ov.quick': 'اقدامات سریع',
         'tg.title': 'تلگرام',
@@ -275,6 +291,7 @@ function redrawDynamic() {
     try { renderTelegram(); } catch { /* not loaded yet */ }
     try { renderCleanResults(); } catch { /* not loaded yet */ }
     try { renderCleanPinned(); } catch { /* not loaded yet */ }
+    try { updateKeepEq(); } catch { /* not loaded yet */ }
     if (usersCache.length) renderUsers();
     if (meta.subscriptionBase) renderSubscriptions();
     // Logs are fetched and rendered together, so refetch only if that tab is
@@ -627,9 +644,11 @@ function renderUsers() {
         const pct = limit ? Math.min(100, (used / limit) * 100) : 0;
         const over = limit && used >= limit;
         const subUrl = `${meta.subscriptionBase}?u=${encodeURIComponent(u.name)}`;
+        const initial = String(u.name || '?').replace(/[^0-9A-Za-z\u0600-\u06FF]/g, '').slice(0, 2) || '?';
 
         return `
         <div class="user-row">
+          <div class="user-ava">${escapeHtml(initial)}</div>
           <div class="user-main">
             <div class="user-name">
               ${escapeHtml(u.name)}
@@ -1220,7 +1239,40 @@ function currentDepth() {
 
 function currentKeep() {
     const n = Number($('#cleanKeep')?.value);
-    return Number.isFinite(n) ? Math.min(20, Math.max(1, Math.floor(n))) : 5;
+    return Number.isFinite(n) ? Math.min(30, Math.max(1, Math.floor(n))) : 8;
+}
+
+function updateKeepEq() {
+    const n = currentKeep();
+    const el = $('#cleanKeepEq');
+    if (el) el.textContent = t('scan.clean.eq').replaceAll('{n}', String(n));
+    const val = $('#cleanKeepVal');
+    if (val) val.textContent = String(n);
+}
+
+function clearBlips() {
+    const box = $('#scanBlips');
+    if (box) box.innerHTML = '';
+}
+
+function pingBlip(ip, ok) {
+    const box = $('#scanBlips');
+    if (!box) return;
+    const parts = String(ip).split('.').map(Number);
+    const h = parts.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+    const angle = (h * 47) % 360;
+    const radius = 18 + (h % 30);
+    const el = document.createElement('i');
+    el.className = `scan-blip ${ok ? 'ok' : 'miss'}`;
+    el.style.setProperty('--a', `${angle}deg`);
+    el.style.setProperty('--r', `${radius}%`);
+    box.appendChild(el);
+    while (box.children.length > 56) box.firstElementChild.remove();
+}
+
+function setTicker(message) {
+    const el = $('#cleanTicker');
+    if (el) el.textContent = message || '';
 }
 
 function waveLabel(wave) {
@@ -1257,11 +1309,22 @@ function localWinners(measurements, n) {
     const used = new Set();
     const out = [];
     for (const r of rows) {
-        const net = r.address.split('.').slice(0, 3).join('.');
-        if (used.has(net)) continue;
-        used.add(net);
+        const net16 = r.address.split('.').slice(0, 2).join('.');
+        if (used.has(net16)) continue;
+        used.add(net16);
         out.push(r.address);
         if (out.length >= n) break;
+    }
+    if (out.length < n) {
+        const used24 = new Set(out.map((ip) => ip.split('.').slice(0, 3).join('.')));
+        for (const r of rows) {
+            if (out.includes(r.address)) continue;
+            const net24 = r.address.split('.').slice(0, 3).join('.');
+            if (used24.has(net24)) continue;
+            used24.add(net24);
+            out.push(r.address);
+            if (out.length >= n) break;
+        }
     }
     return out;
 }
@@ -1279,19 +1342,22 @@ async function measureIp(ip, probes) {
     const samples = [];
     for (let i = 0; i < probes; i++) {
         if (cleanAbort) break;
-        samples.push(await probeEndpoint(ip, 443, 4000));
+        const ms = await probeEndpoint(ip, 443, 3800);
+        samples.push(ms);
+        pingBlip(ip, ms >= 0);
+        setTicker(t('scan.clean.ticker').replace('{ip}', ip));
     }
     return { address: ip, samples };
 }
 
-async function scanWave(wave, probes, measurements, seen, onTick) {
+async function scanWave(wave, probes, measurements, seen, onTick, concurrency) {
     const queue = (wave.addresses || []).filter((ip) => {
         if (seen.has(ip) || !isV4(ip)) return false;
         seen.add(ip);
         return true;
     });
     if (!queue.length) return;
-    const workers = Array.from({ length: Math.min(4, queue.length) }, async () => {
+    const workers = Array.from({ length: Math.min(concurrency || 4, queue.length) }, async () => {
         for (;;) {
             if (cleanAbort) return;
             const ip = queue.shift();
@@ -1306,10 +1372,11 @@ async function scanWave(wave, probes, measurements, seen, onTick) {
 /**
  * Multi-wave clean-IP scan from this browser.
  *
- * Memory → seeds → catalogue → /24 neighbours of winners → wider sample.
- * Smart mode skips the last wave once it already has `keep` diverse healthy IPs.
- * Ranking is done by the worker (median + jitter + loss); the keep slider only
- * decides how many of those healthy IPs to pin.
+ * Scout (2 probes) → /24 neighbours of winners → wider sample if needed →
+ * confirm the shortlist with extra probes. Smart mode skips explore once
+ * it already has `keep` diverse healthy IPs. Ranking is done by the worker;
+ * the keep slider only decides how many of those healthy IPs to pin.
+ * N pinned IPv4s become exactly N configs.
  */
 async function scanCleanIPs() {
     const btn = $('#scanClean');
@@ -1328,13 +1395,17 @@ async function scanCleanIPs() {
     box.innerHTML = '';
     $('#applyClean').disabled = true;
     $('#cleanStats').hidden = true;
+    clearBlips();
+    setTicker('');
 
     try {
-        const plan = await request(`/scan/candidates?depth=${encodeURIComponent(depth)}`);
+        const plan = await request(`/scan/candidates?depth=${encodeURIComponent(depth)}&keep=${keep}`);
         const waves = [...(plan.waves || [])];
-        const probes = Number(plan.probesPerIp) || (depth === 'quick' ? 3 : 5);
+        const scoutProbes = Number(plan.scoutProbes) || 2;
+        const confirmProbes = Number(plan.confirmProbes) || (depth === 'quick' ? 2 : 3);
+        const concurrency = Number(plan.concurrency) || 6;
         const earlyStop = plan.earlyStop !== false;
-        const minSuccesses = probes >= 5 ? 3 : 2;
+        const minSuccesses = 2;
         const measurements = [];
         const seen = new Set();
         let insertedNeighbors = false;
@@ -1355,7 +1426,7 @@ async function scanCleanIPs() {
             }
 
             renderWaves(waves, wi);
-            await scanWave(wave, probes, measurements, seen, () => {
+            await scanWave(wave, scoutProbes, measurements, seen, () => {
                 setScanProgress(
                     measurements.length,
                     totalOf(),
@@ -1363,14 +1434,14 @@ async function scanCleanIPs() {
                         .replace('{done}', String(measurements.length))
                         .replace('{total}', String(totalOf())),
                 );
-            });
+            }, concurrency);
 
             if (!insertedNeighbors && wave.id === 'catalog' && !cleanAbort) {
-                const winners = localWinners(measurements, 4);
+                const winners = localWinners(measurements, Math.min(8, Math.max(4, Math.ceil(keep / 2))));
                 if (winners.length) {
                     try {
                         const expanded = await request(
-                            `/scan/expand?around=${encodeURIComponent(winners.join(','))}&count=16`,
+                            `/scan/expand?around=${encodeURIComponent(winners.join(','))}&count=${Math.min(48, Math.max(16, keep * 2))}`,
                         );
                         const addrs = (expanded.addresses || []).filter((ip) => !seen.has(ip));
                         if (addrs.length) {
@@ -1388,8 +1459,39 @@ async function scanCleanIPs() {
             }
         }
 
+        if (!cleanAbort && measurements.length) {
+            const winners = localWinners(measurements, Math.min(keep * 2, 24));
+            if (winners.length && confirmProbes > 0) {
+                waves.push({
+                    id: 'confirm',
+                    label: 'Confirm winners',
+                    labelFa: 'تایید برنده‌ها',
+                    addresses: winners,
+                });
+                renderWaves(waves, waves.length - 1);
+                setTicker(t('scan.clean.confirm'));
+                const extraSeen = new Set();
+                const queue = [...winners];
+                const workers = Array.from({ length: Math.min(3, queue.length) }, async () => {
+                    for (;;) {
+                        if (cleanAbort) return;
+                        const ip = queue.shift();
+                        if (!ip) return;
+                        const extra = await measureIp(ip, confirmProbes);
+                        const existing = measurements.find((m) => m.address === ip);
+                        if (existing) existing.samples.push(...extra.samples);
+                        else measurements.push(extra);
+                        extraSeen.add(ip);
+                        setScanProgress(extraSeen.size, winners.length, t('scan.clean.confirm'));
+                    }
+                });
+                await Promise.all(workers);
+            }
+        }
+
         $('#cleanProgressWrap').hidden = true;
         $('#cleanProgress').textContent = '';
+        setTicker('');
 
         if (!measurements.length) {
             box.innerHTML = `<p class="empty">${escapeHtml(t('scan.clean.none'))}</p>`;
@@ -1398,7 +1500,7 @@ async function scanCleanIPs() {
 
         const ranked = await request('/scan/rank', {
             method: 'POST',
-            body: JSON.stringify({ measurements, keep: 24 }),
+            body: JSON.stringify({ measurements, keep: 30 }),
         });
 
         cleanRanked = ranked.ranked || [];
@@ -1417,6 +1519,7 @@ async function scanCleanIPs() {
         if (hero) hero.classList.remove('scanning');
         const wrap = $('#cleanProgressWrap');
         if (wrap) wrap.hidden = true;
+        setTicker('');
     }
 }
 
@@ -1434,8 +1537,10 @@ function updateCleanStats() {
     const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
     set('#cleanStatHealthy', String(cleanRanked.length));
     set('#cleanStatSelected', String(selected.length));
+    set('#cleanStatConfigs', String(selected.length));
     set('#cleanStatBest', best && best.medianMs > 0 ? `${best.medianMs} ms` : '—');
     set('#cleanStatSpread', String(nets.size));
+    updateKeepEq();
     const apply = $('#applyClean');
     if (apply) apply.disabled = selected.length === 0;
 }
@@ -1463,11 +1568,17 @@ function renderCleanResults() {
         const width = Math.max(8, Math.round((1 - (r.medianMs / (maxMs * 1.15))) * 100));
         const checked = i < n ? 'checked' : '';
         const picked = i < n ? 'picked' : '';
+        const net16 = r.address.split('.').slice(0, 2).join('.');
+        const net24 = r.address.split('.').slice(0, 3).join('.');
         return `
         <label class="scan-row ${picked}">
           <input type="checkbox" value="${escapeHtml(r.address)}" ${checked}>
+          <span class="scan-idx">${i + 1}</span>
           <span class="game-grade ${GRADE_CLASS[r.grade] ?? ''}">${escapeHtml(r.grade)}</span>
-          <span class="game-addr">${escapeHtml(r.address)}</span>
+          <span class="scan-addr-wrap">
+            <span class="game-addr">${escapeHtml(r.address)}</span>
+            <span class="scan-chips"><i>${escapeHtml(net16)}</i><i>${escapeHtml(net24)}</i></span>
+          </span>
           <span class="scan-lat">
             <b><bdi>${r.medianMs} ms</bdi></b>
             <span class="scan-bar"><i style="width:${width}%"></i></span>
@@ -1509,9 +1620,7 @@ async function applyCleanIPs() {
         method: 'POST',
         body: JSON.stringify({ addresses: picked }),
     });
-    notify(t('scan.clean.using')
-        .replace('{n}', String(picked.length))
-        .replace('{m}', String(cleanRanked.length)) + ' — ' + t('scan.applied'));
+    notify(t('scan.clean.appliedN').replaceAll('{n}', String(picked.length)));
     await loadAll();
 }
 
@@ -1528,9 +1637,8 @@ function initCleanKeep() {
     const saved = Number(localStorage.getItem('tabora.scanKeep'));
     const el = $('#cleanKeep');
     if (!el) return;
-    if (Number.isFinite(saved) && saved >= 1 && saved <= 20) el.value = String(saved);
-    const val = $('#cleanKeepVal');
-    if (val) val.textContent = el.value;
+    if (Number.isFinite(saved) && saved >= 1 && saved <= 30) el.value = String(saved);
+    updateKeepEq();
 }
 
 function bindEvents() {
@@ -1570,9 +1678,8 @@ function bindEvents() {
     }));
     $('#cleanKeep')?.addEventListener('input', () => {
         const el = $('#cleanKeep');
-        const val = $('#cleanKeepVal');
-        if (val && el) val.textContent = el.value;
-        localStorage.setItem('tabora.scanKeep', el.value);
+        if (el) localStorage.setItem('tabora.scanKeep', el.value);
+        updateKeepEq();
         if (cleanRanked.length) applyKeepSelection();
     });
     $('#cleanResults')?.addEventListener('change', (e) => {
@@ -1794,5 +1901,10 @@ loadAll()
             : (geo?.ip ?? '—');
     }).catch(() => {}))
     .catch((err) => notify(err.message, 'error', 8000));
+
+document.addEventListener('pointermove', (e) => {
+    document.documentElement.style.setProperty('--mx', e.clientX + 'px');
+    document.documentElement.style.setProperty('--my', e.clientY + 'px');
+});
 
 })();

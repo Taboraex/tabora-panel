@@ -136,22 +136,34 @@ export function expandAround(winners: string[], per = 6, cap = 24): string[] {
     return out;
 }
 
-/** Prefer a second /24 over a second host in the same /24. */
+/**
+ * Prefer a second /16, then a second /24, then a second host.
+ * One throttled prefix cannot take every slot.
+ */
 export function pickDiverse<T extends { address: string }>(rows: T[], keep: number): T[] {
-    const used = new Set<string>();
-    const first: T[] = [];
-    const rest: T[] = [];
-    for (const row of rows) {
-        const net = row.address.split('.').slice(0, 3).join('.');
-        if (used.has(net)) {
-            rest.push(row);
-            continue;
+    const out: T[] = [];
+    const taken = new Set<string>();
+    const used16 = new Set<string>();
+    const used24 = new Set<string>();
+    const net16 = (ip: string) => ip.split('.').slice(0, 2).join('.');
+    const net24 = (ip: string) => ip.split('.').slice(0, 3).join('.');
+
+    const take = (pred: (row: T) => boolean) => {
+        for (const row of rows) {
+            if (out.length >= keep) return;
+            if (taken.has(row.address)) continue;
+            if (!pred(row)) continue;
+            taken.add(row.address);
+            used16.add(net16(row.address));
+            used24.add(net24(row.address));
+            out.push(row);
         }
-        used.add(net);
-        first.push(row);
-        if (first.length >= keep) return first;
-    }
-    return [...first, ...rest].slice(0, keep);
+    };
+
+    take((row) => !used16.has(net16(row.address)));
+    take((row) => !used24.has(net24(row.address)));
+    take(() => true);
+    return out;
 }
 
 export function flattenPlan(waves: ScanWave[]): string[] {
@@ -167,27 +179,42 @@ export function flattenPlan(waves: ScanWave[]): string[] {
     return out;
 }
 
+export function clampKeep(value: unknown, fallback = 8): number {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.min(30, Math.max(1, Math.floor(n)));
+}
+
 export function planScan(opts: {
     previous?: string[];
     depth?: ScanDepth;
-}): ScanWave[] {
+    keep?: number;
+} = {}): ScanWave[] {
     const depth = parseDepth(opts.depth);
+    const keep = clampKeep(opts.keep);
     const seen = new Set<string>();
     const waves: ScanWave[] = [];
 
-    const memory = takeUnique((opts.previous ?? []).filter(isWorkerFrontIp).slice(0, 12), seen);
+    const memory = takeUnique(
+        (opts.previous ?? []).filter(isWorkerFrontIp).slice(0, Math.max(12, keep)),
+        seen,
+    );
     if (memory.length) waves.push({ id: 'memory', ...WAVE_META.memory, addresses: memory });
 
     const seeds = takeUnique(WORKER_FRONT_SEEDS, seen);
     if (seeds.length) waves.push({ id: 'seeds', ...WAVE_META.seeds, addresses: seeds });
 
-    const catalogSize = depth === 'quick' ? 20 : depth === 'deep' ? 64 : 40;
-    const catalog = pickCleanIps(catalogSize, seen);
+    const catalogWant = depth === 'quick'
+        ? Math.max(24, keep * 3)
+        : depth === 'deep'
+            ? Math.max(72, keep * 6)
+            : Math.max(48, keep * 4);
+    const catalog = pickCleanIps(Math.min(180, catalogWant), seen);
     if (catalog.length) waves.push({ id: 'catalog', ...WAVE_META.catalog, addresses: catalog });
 
     if (depth !== 'quick') {
-        const exploreSize = depth === 'deep' ? 40 : 24;
-        const explore = takeUnique(sampleFromRanges(exploreSize, WORKER_FRONT_RANGES), seen);
+        const exploreWant = depth === 'deep' ? Math.max(40, keep * 3) : Math.max(24, keep * 2);
+        const explore = takeUnique(sampleFromRanges(Math.min(96, exploreWant), WORKER_FRONT_RANGES), seen);
         if (explore.length) waves.push({ id: 'explore', ...WAVE_META.explore, addresses: explore });
     }
 

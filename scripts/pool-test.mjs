@@ -90,8 +90,24 @@ const mixed = m.resolveBuildContext({
     ...baseSettings,
     cleanIPs: ['104.17.147.22', 'icook.hk'],
 }, null);
-check('mixed IPv4 + domain stays cartesian (not poolFixed)', mixed.poolFixed === false);
-check('mixed list still includes the hostname fallback', mixed.addresses.includes('panel.workers.dev'));
+check('mixed IPv4 + leftover domain still locks to worker fronts', mixed.poolFixed === true);
+check('leftover domains are ignored when a Worker front exists',
+    mixed.addresses.length === 1 && mixed.addresses[0] === '104.17.147.22');
+check('hostname is not injected next to a pinned front',
+    !mixed.addresses.includes('panel.workers.dev'));
+
+const fifteen = Array.from({ length: 15 }, (_, i) => `104.16.${i}.10`);
+const fat = m.resolveBuildContext({
+    ...baseSettings,
+    cleanIPs: [...fifteen, 'icook.hk', 'japan.com'],
+    ports: [443, 8443, 2053],
+    protocols: 'vless,trojan',
+}, null);
+check('15 IPs + leftover domains → 15 addresses', fat.addresses.length === 15, `${fat.addresses.length}`);
+check('15 IPs stay poolFixed', fat.poolFixed === true);
+check('15 IPs do not multiply ports', fat.ports.length === 1 && fat.ports[0] === 443);
+check('15 IPs do not multiply protocols', fat.protocols.length === 1 && fat.protocols[0] === 'vless');
+check('maxConfigs equals the kept IP count', fat.maxConfigs === 15);
 
 const domains = m.resolveBuildContext({
     ...baseSettings,

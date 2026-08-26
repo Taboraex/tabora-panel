@@ -9,6 +9,11 @@
 <style>/* CSS_PLACEHOLDER */</style>
 </head>
 <body>
+<div class="aurora"></div>
+<div class="hex"></div>
+<div class="glow"></div>
+<div class="noise"></div>
+<div class="scan"></div>
 
 <header class="topbar">
   <div class="brand">
@@ -59,6 +64,13 @@
 
   <!-- ─────────────────────────────── Overview ─────────────────────────────── -->
   <section class="panel active" data-panel="overview">
+    <div class="hero">
+      <div>
+        <p class="hero-kicker" data-i18n="ov.kicker">COMMAND DECK</p>
+        <h2 class="hero-title" data-i18n="ov.greet">Welcome back</h2>
+        <p class="hero-sub" data-i18n="ov.greetSub">Pulse of users, traffic and the edge — right here.</p>
+      </div>
+    </div>
     <div class="stat-grid">
       <div class="stat"><span class="stat-label" data-i18n="stat.users">Total users</span><span class="stat-value" id="stTotal">—</span></div>
       <div class="stat ok"><span class="stat-label" data-i18n="stat.active">Active</span><span class="stat-value" id="stActive">—</span></div>
@@ -360,22 +372,26 @@
   <section class="panel" data-panel="scanner">
 
     <div class="card scan-hero" id="scanHero">
-      <div class="scan-orbit" aria-hidden="true">
-        <span class="scan-ring"></span>
-        <span class="scan-ring"></span>
-        <span class="scan-ring"></span>
-        <span class="scan-sweep"></span>
-        <span class="scan-core"></span>
-      </div>
-      <div class="scan-hero-copy">
-        <p class="scan-kicker" data-i18n="scan.clean.kicker">CLEAN IP</p>
-        <h2 data-i18n="scan.clean.title">Find low-ping Worker fronts</h2>
-        <p class="hint" data-i18n="scan.clean.hint">
-          Multi-wave scan from your own network: previous winners, verified fronts,
-          a baked catalogue, nearby /24s, then a wider sample. Ranking favours
-          steady low ping — lossy IPs are never kept. Each pinned IPv4 becomes
-          exactly one config.
-        </p>
+      <div class="scan-stage">
+        <div class="scan-hero-copy">
+          <p class="scan-kicker" data-i18n="scan.clean.kicker">CLEAN IP</p>
+          <h2 data-i18n="scan.clean.title">Find low-ping Worker fronts</h2>
+          <p class="hint" data-i18n="scan.clean.hint">
+            Multi-wave scan from your own network: previous winners, verified fronts,
+            a baked catalogue, nearby /24s, then a wider sample. Ranking favours
+            steady low ping — lossy IPs are never kept. Each pinned IPv4 becomes
+            exactly one config.
+          </p>
+          <p class="scan-eq" id="cleanKeepEq">8 IPs = 8 configs</p>
+        </div>
+        <div class="scan-orbit" aria-hidden="true">
+          <span class="scan-ring"></span>
+          <span class="scan-ring"></span>
+          <span class="scan-ring"></span>
+          <span class="scan-sweep"></span>
+          <span class="scan-core"></span>
+          <div class="scan-blips" id="scanBlips"></div>
+        </div>
       </div>
       <div class="scan-hero-controls">
         <div class="scan-depths" role="radiogroup" aria-label="Scan depth">
@@ -383,17 +399,21 @@
           <button type="button" class="scan-depth active" data-depth="smart" data-i18n="scan.clean.depth.smart">Smart</button>
           <button type="button" class="scan-depth" data-depth="deep" data-i18n="scan.clean.depth.deep">Deep</button>
         </div>
-        <label class="scan-keep">
-          <span data-i18n="scan.clean.keep">Keep</span>
-          <input type="range" id="cleanKeep" min="1" max="20" value="5">
-          <b id="cleanKeepVal">5</b>
-        </label>
+        <div class="scan-keep-card">
+          <label class="scan-keep">
+            <span data-i18n="scan.clean.keep">Keep</span>
+            <input type="range" id="cleanKeep" min="1" max="30" value="8">
+            <b id="cleanKeepVal">8</b>
+          </label>
+          <p class="hint" data-i18n="scan.clean.keepHint">Each kept IP is exactly one config — ports and protocols do not multiply.</p>
+        </div>
         <div class="btn-row">
           <button class="btn primary" id="scanClean" data-i18n="scan.clean.run">Scan from my network</button>
           <button class="btn ghost" id="stopClean" data-i18n="scan.clean.stop" hidden>Stop</button>
           <button class="btn" id="applyClean" data-i18n="scan.clean.apply" disabled>Pin selected</button>
         </div>
       </div>
+      <p class="scan-ticker" id="cleanTicker"></p>
       <div class="scan-waves" id="cleanWaves"></div>
       <div class="scan-progress-wrap" id="cleanProgressWrap" hidden>
         <div class="scan-progress-bar"><i id="cleanBar"></i></div>
@@ -402,6 +422,7 @@
       <div class="scan-stats" id="cleanStats" hidden>
         <div><span data-i18n="scan.clean.healthy">Healthy</span><b id="cleanStatHealthy">0</b></div>
         <div><span data-i18n="scan.clean.selected">Selected</span><b id="cleanStatSelected">0</b></div>
+        <div><span data-i18n="scan.clean.configs">Configs</span><b id="cleanStatConfigs">0</b></div>
         <div><span data-i18n="scan.clean.best">Best</span><b id="cleanStatBest">—</b></div>
         <div><span data-i18n="scan.clean.spread">/24s</span><b id="cleanStatSpread">0</b></div>
       </div>

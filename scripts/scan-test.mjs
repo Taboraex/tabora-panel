@@ -24,7 +24,7 @@ export {
 } from ${JSON.stringify(join(scanner, 'candidates'))};
 export {
     CLEAN_IPS, parseDepth, planScan, flattenPlan, pickCleanIps,
-    neighborsOf, expandAround, pickDiverse,
+    neighborsOf, expandAround, pickDiverse, clampKeep,
 } from ${JSON.stringify(join(scanner, 'strategy'))};
 export { rankClean } from ${JSON.stringify(join(scanner, 'rank'))};
 `);
@@ -82,6 +82,13 @@ check('deep catalogue is larger than smart',
 check('plan addresses are unique',
     m.flattenPlan(deep).length === new Set(m.flattenPlan(deep)).size);
 
+const fat = m.planScan({ depth: 'smart', keep: 15 });
+const slim = m.planScan({ depth: 'smart', keep: 8 });
+check('larger keep grows the catalogue',
+    fat.find((w) => w.id === 'catalog').addresses.length
+        > slim.find((w) => w.id === 'catalog').addresses.length);
+check('clampKeep caps at 30', m.clampKeep(99) === 30 && m.clampKeep(0) === 1);
+
 const picked = m.pickCleanIps(24);
 const sixteens = new Set(picked.map((ip) => ip.split('.').slice(0, 2).join('.')));
 check('catalogue picks spread across /16s', sixteens.size >= 4, `${sixteens.size} /16s`);
@@ -107,6 +114,13 @@ const mixedNets = [
 const diverse = m.pickDiverse(mixedNets, 3);
 check('pickDiverse prefers a second /24 over a second host',
     diverse.map((r) => r.address).join(',') === '104.16.10.10,104.17.147.22,162.159.36.1');
+const same16 = [
+    { address: '104.16.10.10' },
+    { address: '104.16.80.22' },
+    { address: '104.17.147.22' },
+];
+check('pickDiverse prefers a second /16 over a second /24 in the same /16',
+    m.pickDiverse(same16, 2).map((r) => r.address).join(',') === '104.16.10.10,104.17.147.22');
 
 console.log('\nRanking');
 const samples = (ok, miss = 0) => [...ok, ...Array(miss).fill(-1)];

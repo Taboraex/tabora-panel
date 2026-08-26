@@ -19,7 +19,7 @@ const dir = mkdtempSync(join(tmpdir(), 'tabora-cores-'));
 const entry = join(dir, 'entry.ts');
 const src = join(process.cwd(), 'src', 'cores');
 writeFileSync(entry, `
-export { uniqueLabel, renderRemark, preferTlsPort, preferProtocol } from ${JSON.stringify(join(src, 'shared'))};
+export { uniqueLabel, renderRemark, preferTlsPort, preferProtocol, resolveFixedFronts } from ${JSON.stringify(join(src, 'shared'))};
 export { buildSingboxConfig } from ${JSON.stringify(join(src, 'singbox'))};
 export { buildClashConfig } from ${JSON.stringify(join(src, 'clash'))};
 export { buildUriList } from ${JSON.stringify(join(src, 'uri'))};
@@ -145,6 +145,16 @@ const cartesian = {
 };
 check('without poolFixed the cartesian product still runs',
     m.buildUriList(cartesian).length === 12);
+
+const fifteen = Array.from({ length: 15 }, (_, i) => `104.16.${i}.10`);
+const ctx15 = { ...poolCtx, addresses: fifteen, maxConfigs: 15 };
+check('15 IPs emit 15 URIs', m.buildUriList(ctx15).length === 15, `${m.buildUriList(ctx15).length}`);
+check('15 IPs emit 15 sing-box proxies',
+    JSON.parse(m.buildSingboxConfig(ctx15)).outbounds.filter((o) => o.server).length === 15);
+check('15 worker fronts ignore leftover domains',
+    m.resolveFixedFronts([...fifteen, 'icook.hk', 'japan.com']).length === 15);
+check('colo interconnects never become fixed fronts',
+    m.resolveFixedFronts(['104.23.181.10', '104.16.10.10']).join(',') === '104.16.10.10');
 
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

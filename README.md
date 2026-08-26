@@ -185,9 +185,10 @@ The **Scanner** tab tests and replaces them:
   (not colo interconnects, not “Turkey `/22`” anycast theatre): previous
   winners, verified seeds, a baked catalogue, nearby `/24`s, then a wider
   sample. Ranking favours steady low ping over a single fast probe, and a
-  keep slider lets you choose how many of the healthy IPs to pin. Each one
-  becomes exactly one config on port 443 — no country labels, no hostname
-  that re-resolves.
+  keep slider (1–30) lets you choose how many of the healthy IPs to pin. Each
+  one becomes exactly one config on port 443 — leftover catalogue domains
+  do not multiply ports or protocols, no country labels, no hostname that
+  re-resolves.
 - **Relay health** probes each relay from the Worker and reports latency.
   Relays sit outside Cloudflare's network, so the Worker can measure them.
 

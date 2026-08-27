@@ -118,6 +118,41 @@
     </div>
   </section>
 
+  <!-- ──────────────────────────── Clean IPs ──────────────────────────────── -->
+  <section class="card cleanip-card" id="cleanIpCard">
+    <div class="cleanip-head">
+      <h2 data-i18n="cleanip.title">My Clean IPs</h2>
+      <span class="pill" id="cleanIpBadge" data-i18n="cleanip.badgeDefault">Default</span>
+    </div>
+    <p class="hint" data-i18n="cleanip.hint">Set custom Clean IPs to optimize speed and stability for your network.</p>
+
+    <div class="cleanip-form">
+      <div class="cleanip-input-wrap">
+        <textarea id="cleanIpInput" rows="2" placeholder="e.g. 104.16.1.1, 104.17.2.2" dir="ltr" spellcheck="false"></textarea>
+      </div>
+
+      <div class="cleanip-actions">
+        <button class="cbtn primary" type="button" id="btnScanCleanIps">
+          <span class="cbtn-t">⚡ <span data-i18n="cleanip.scan">Scan & Test IPs</span></span>
+        </button>
+        <button class="cbtn" type="button" id="btnSaveCleanIps">
+          <span class="cbtn-t" data-i18n="cleanip.save">Save Clean IPs</span>
+        </button>
+        <button class="cbtn danger" type="button" id="btnResetCleanIps">
+          <span class="cbtn-t" data-i18n="cleanip.reset">Reset</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="scanResultsArea" class="scan-results-area" hidden>
+      <div class="scan-results-head">
+        <span class="scan-status" id="scanStatusText">Scanning...</span>
+        <button class="btn-xs" type="button" id="btnApplyTopScanned" data-i18n="cleanip.applyTop">Apply Top 5</button>
+      </div>
+      <div class="scan-list" id="scanList"></div>
+    </div>
+  </section>
+
   <!-- ────────────────────────────── QR code ────────────────────────────────── -->
   <section class="card center">
     <h2 data-i18n="qr.title">Scan to import</h2>

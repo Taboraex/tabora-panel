@@ -5,14 +5,14 @@ import { initContext, loadSettings, getContext } from '@config/settings';
 import { UserService } from '@users/service';
 import { verifySession } from '@auth/jwt';
 import { handleWebSocket } from '@handlers/websocket';
-import { handleSubscription } from '@handlers/subscription';
+import { handleSubscription, handleUserCleanIps } from '@handlers/subscription';
 import { renderFallback } from '@handlers/fallback';
 import { handleLogin, handleLogout, handleChangePassword } from '@handlers/login';
 import { handleBot } from '@handlers/bot';
 import { handleUsers } from '@handlers/users';
 import { handleLogs } from '@handlers/logs';
 import {
-    handleScan, handleScanCandidates, handleScanApply, handleScanExpand, handleScanRank,
+    handleScan, handleScanCandidates, handleScanApply, handleScanExpand, handleScanRank, handleScanRepository,
 } from '@handlers/scan';
 import {
     handleGamingCandidates,
@@ -74,6 +74,14 @@ export default {
 
                 case 'sub':
                     return handleSubscription(request, settings, users);
+
+                case 'sub/clean-ips':
+                case 'api/sub/clean-ips':
+                    return handleUserCleanIps(request, settings, users, store);
+
+                case 'api/scan/repository':
+                case 'api/scan/community-ips':
+                    return handleScanRepository(request);
 
                 case 'api/set-password':
                     // Guarded internally: allowed unauthenticated only on first run.

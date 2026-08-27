@@ -704,12 +704,22 @@ function renderUsers() {
     }).join('');
 }
 
+function populateUserSelect() {
+    const sel = $('#applyToUserSelect');
+    if (!sel) return;
+    const currentVal = sel.value;
+    sel.innerHTML = `<option value="">اعمال برای همه (Global)</option>` +
+        (usersCache || []).map((u) => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join('');
+    sel.value = currentVal;
+}
+
 async function loadUsers() {
     try {
         const data = await request('/users');
         usersCache = data.users;
         renderStats(data.stats);
         renderUsers();
+        populateUserSelect();
     } catch (err) {
         notify(err.message, 'error');
     }
@@ -835,6 +845,7 @@ function openUserModal(user) {
     $('#uLimit').value = user?.limitBytes ? (user.limitBytes / 1024 ** 3).toFixed(2) : '';
     $('#uDaily').value = user?.dailyLimitBytes ? (user.dailyLimitBytes / 1024 ** 3).toFixed(2) : '';
     $('#uDays').value  = '';
+    if ($('#uCleanIps')) $('#uCleanIps').value = (user?.cleanIPs || []).join(', ');
     $('#uNotes').value = user?.notes ?? '';
     $('#userModal').hidden = false;
 }
@@ -1439,6 +1450,7 @@ function planScanLocal(previous, depth, keep) {
     const WAVE = {
         memory: { label: 'Previous winners', labelFa: 'برنده‌های قبلی' },
         seeds: { label: 'Verified fronts', labelFa: 'لبه‌های تاییدشده' },
+        repository: { label: 'Online Repository', labelFa: 'مخزن آنلاین' },
         catalog: { label: 'Clean catalogue', labelFa: 'کاتالوگ تمیز' },
         neighbors: { label: 'Nearby subnet', labelFa: 'همسایه‌های ساب‌نت' },
         explore: { label: 'Wider sample', labelFa: 'نمونهٔ گسترده‌تر' },
@@ -1805,6 +1817,31 @@ async function scanCleanIPs() {
         const previous = (settings.cleanIPs || []).filter((a) => isV4(a) && isWorkerFrontIpLocal(a));
         const plan = localPlanPayload(depth, keep, previous);
         const waves = [...(plan.waves || [])];
+
+        // Online repository wave fetching
+        const opVal = $('#cleanOperator')?.value || 'ALL';
+        const customUrl = $('#customRepoUrl')?.value?.trim() || '';
+        try {
+            let repoApiUrl = `/scan/repository?operator=${opVal}`;
+            if (opVal === 'CUSTOM' && customUrl) {
+                repoApiUrl += `&repoUrl=${encodeURIComponent(customUrl)}`;
+            }
+            const repoRes = await request(repoApiUrl);
+            if (repoRes && repoRes.ips && repoRes.ips.length) {
+                const repoWave = {
+                    id: 'repository',
+                    label: `Online Repo (${opVal})`,
+                    labelFa: `مخزن آنلاین (${opVal})`,
+                    addresses: repoRes.ips.slice(0, depth === 'quick' ? 30 : depth === 'deep' ? 90 : 60),
+                };
+                const seedIdx = waves.findIndex((w) => w.id === 'seeds');
+                if (seedIdx !== -1) waves.splice(seedIdx + 1, 0, repoWave);
+                else waves.unshift(repoWave);
+            }
+        } catch {
+            /* best effort */
+        }
+
         const scoutProbes = Number(plan.scoutProbes) || 2;
         const confirmProbes = Number(plan.confirmProbes) || (depth === 'quick' ? 2 : 3);
         const concurrency = Number(plan.concurrency) || 6;
@@ -2036,8 +2073,18 @@ async function persistCleanIPs(payload) {
 async function applyCleanIPs() {
     const picked = selectedCleanIps();
     if (!picked.length) return;
-    await persistCleanIPs({ addresses: picked });
-    notify(t('scan.clean.appliedN').replaceAll('{n}', String(picked.length)));
+
+    const targetUser = $('#applyToUserSelect')?.value;
+    if (targetUser) {
+        await request(`/sub/clean-ips?u=${encodeURIComponent(targetUser)}`, {
+            method: 'POST',
+            body: JSON.stringify({ cleanIPs: picked }),
+        });
+        notify(`Clean IPs applied to user ${targetUser}`);
+    } else {
+        await persistCleanIPs({ addresses: picked });
+        notify(t('scan.clean.appliedN').replaceAll('{n}', String(picked.length)));
+    }
     await loadAll();
 }
 
@@ -2056,6 +2103,12 @@ function initCleanKeep() {
 }
 
 function bindEvents() {
+    $('#cleanOperator')?.addEventListener('change', () => {
+        const val = $('#cleanOperator').value;
+        const wrap = $('#customRepoUrlWrap');
+        if (wrap) wrap.hidden = val !== 'CUSTOM';
+    });
+
     $$('[data-range]').forEach((btn) => btn.addEventListener('click', () => {
         chartDays = Number(btn.dataset.range);
         $$('[data-range]').forEach((b) => b.classList.toggle('active', b === btn));
@@ -2212,6 +2265,7 @@ function bindEvents() {
             uuid: $('#uUuid').value.trim(),
             limitGb: Number($('#uLimit').value) || 0,
             dailyLimitGb: Number($('#uDaily').value) || 0,
+            cleanIPs: ($('#uCleanIps')?.value || '').split(/[\s,\n]+/).filter(Boolean),
             notes: $('#uNotes').value,
         };
         const days = Number($('#uDays').value);

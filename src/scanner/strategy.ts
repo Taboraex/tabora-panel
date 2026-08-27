@@ -24,7 +24,7 @@ import { COMMUNITY_FRONTS } from './community';
  */
 
 export type ScanDepth = 'quick' | 'smart' | 'deep';
-export type WaveId = 'memory' | 'seeds' | 'catalog' | 'neighbors' | 'explore';
+export type WaveId = 'memory' | 'seeds' | 'repository' | 'catalog' | 'neighbors' | 'explore';
 
 export interface ScanWave {
     id: WaveId;
@@ -36,6 +36,7 @@ export interface ScanWave {
 const WAVE_META: Record<WaveId, { label: string; labelFa: string }> = {
     memory: { label: 'Previous winners', labelFa: 'برنده‌های قبلی' },
     seeds: { label: 'Verified fronts', labelFa: 'لبه‌های تاییدشده' },
+    repository: { label: 'Online Repository', labelFa: 'مخزن آنلاین' },
     catalog: { label: 'Clean catalogue', labelFa: 'کاتالوگ تمیز' },
     neighbors: { label: 'Nearby subnet', labelFa: 'همسایه‌های ساب‌نت' },
     explore: { label: 'Wider sample', labelFa: 'نمونهٔ گسترده‌تر' },
@@ -190,6 +191,7 @@ export function planScan(opts: {
     previous?: string[];
     depth?: ScanDepth;
     keep?: number;
+    repositoryIps?: string[];
 } = {}): ScanWave[] {
     const depth = parseDepth(opts.depth);
     const keep = clampKeep(opts.keep);
@@ -204,6 +206,13 @@ export function planScan(opts: {
 
     const seeds = takeUnique(WORKER_FRONT_SEEDS, seen);
     if (seeds.length) waves.push({ id: 'seeds', ...WAVE_META.seeds, addresses: seeds });
+
+    if (opts.repositoryIps && opts.repositoryIps.length) {
+        const repoList = takeUnique(opts.repositoryIps, seen);
+        if (repoList.length) {
+            waves.push({ id: 'repository', ...WAVE_META.repository, addresses: repoList });
+        }
+    }
 
     const catalogWant = depth === 'quick'
         ? Math.max(24, keep * 3)

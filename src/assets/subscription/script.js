@@ -208,6 +208,18 @@ const I18N = {
         'qr.hint': 'Open your client and scan the code.',
         'qr.long': 'Too long for a QR — use Copy instead',
         'adv.title': 'Raw links',
+        'cleanip.title': 'My Clean IPs',
+        'cleanip.hint': 'Set custom Clean IPs to optimize speed and stability for your network.',
+        'cleanip.scan': 'Scan & Test IPs',
+        'cleanip.save': 'Save Clean IPs',
+        'cleanip.reset': 'Reset',
+        'cleanip.badgeDefault': 'Panel Default',
+        'cleanip.badgeCustom': 'Custom IPs',
+        'cleanip.saved': 'Clean IPs saved successfully! Links updated.',
+        'cleanip.resetToast': 'Reset to panel default Clean IPs.',
+        'cleanip.applyTop': 'Apply Top 5',
+        'cleanip.scanning': 'Scanning clean IPs from your browser\u2026',
+        'cleanip.scannedDone': 'Scan finished! Found {count} working clean IPs.',
     },
     fa: {
         'mode.gaming': 'گیمینگ',
@@ -228,6 +240,18 @@ const I18N = {
         'qr.hint': 'برنامه‌ات را باز کن و کد را اسکن کن.',
         'qr.long': 'برای QR طولانی است — از کپی استفاده کن',
         'adv.title': 'لینک‌های خام',
+        'cleanip.title': 'آی‌پی‌های تمیز من',
+        'cleanip.hint': 'آی‌پی تمیز اختصاصی خود را وارد کنید تا بهترین سرعت و پایداری را روی شبکه خود داشته باشید.',
+        'cleanip.scan': 'اسکن و تست آی‌پی‌ها',
+        'cleanip.save': 'ذخیره آی‌پی‌ها',
+        'cleanip.reset': 'بازنشانی',
+        'cleanip.badgeDefault': 'پیش‌فرض پنل',
+        'cleanip.badgeCustom': 'آی‌پی اختصاصی',
+        'cleanip.saved': 'آی‌پی‌های تمیز با موفقیت ذخیره شدند! لینک‌ها به‌روز شدند.',
+        'cleanip.resetToast': 'آی‌پی‌ها به حالت پیش‌فرض پنل بازنشانی شدند.',
+        'cleanip.applyTop': 'انتخاب ۵ تای برتر',
+        'cleanip.scanning': 'در حال اسکن آی‌پی‌های تمیز از مرورگر شما\u2026',
+        'cleanip.scannedDone': 'اسکن پایان یافت! {count} آی‌پی تمیز فعال پیدا شد.',
     },
 };
 
@@ -494,6 +518,208 @@ document.getElementById('qrSwitch').addEventListener('click', async (event) => {
     }
 });
 
+/* ── Clean IP Management & Scanner ─────────────────────────────────────── */
+
+let userCleanIps = [];
+let scannedCleanIps = [];
+
+const cleanIpInput = document.getElementById('cleanIpInput');
+const cleanIpBadge = document.getElementById('cleanIpBadge');
+const btnScanCleanIps = document.getElementById('btnScanCleanIps');
+const btnSaveCleanIps = document.getElementById('btnSaveCleanIps');
+const btnResetCleanIps = document.getElementById('btnResetCleanIps');
+const scanResultsArea = document.getElementById('scanResultsArea');
+const scanStatusText = document.getElementById('scanStatusText');
+const scanList = document.getElementById('scanList');
+const btnApplyTopScanned = document.getElementById('btnApplyTopScanned');
+
+async function loadUserCleanIps() {
+    if (!S.name) return;
+    try {
+        const subBase = S.sub.split('?')[0].replace(/\/sub$/, '');
+        const res = await fetch(`${subBase}/sub/clean-ips?u=${encodeURIComponent(S.name)}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        userCleanIps = data.cleanIPs || [];
+        if (cleanIpInput) {
+            cleanIpInput.value = userCleanIps.join(', ');
+        }
+        updateCleanIpBadge(data.isCustom);
+    } catch {
+        /* best effort */
+    }
+}
+
+function updateCleanIpBadge(isCustom) {
+    if (!cleanIpBadge) return;
+    if (isCustom) {
+        cleanIpBadge.textContent = t('cleanip.badgeCustom');
+        cleanIpBadge.className = 'pill';
+    } else {
+        cleanIpBadge.textContent = t('cleanip.badgeDefault');
+        cleanIpBadge.className = 'pill paused';
+    }
+}
+
+async function saveUserCleanIps(ips, isReset = false) {
+    if (!S.name) return;
+    if (btnSaveCleanIps) btnSaveCleanIps.classList.add('busy');
+    try {
+        const subBase = S.sub.split('?')[0].replace(/\/sub$/, '');
+        const payload = isReset ? { clear: true } : { cleanIPs: ips };
+        const res = await fetch(`${subBase}/sub/clean-ips?u=${encodeURIComponent(S.name)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Failed to save clean IPs');
+        const data = await res.json();
+        userCleanIps = data.cleanIPs || [];
+        if (cleanIpInput) {
+            cleanIpInput.value = userCleanIps.join(', ');
+        }
+        updateCleanIpBadge(data.isCustom);
+        plainCache = null; // Clear cached VLESS configs so new IPs are fetched
+        showToast(isReset ? t('cleanip.resetToast') : t('cleanip.saved'));
+    } catch {
+        showToast(t('copy.fail'), 'warn');
+    } finally {
+        if (btnSaveCleanIps) btnSaveCleanIps.classList.remove('busy');
+    }
+}
+
+btnSaveCleanIps?.addEventListener('click', () => {
+    const raw = (cleanIpInput?.value || '').trim();
+    const ips = raw.split(/[\s,\n]+/).filter(Boolean);
+    saveUserCleanIps(ips, false);
+});
+
+btnResetCleanIps?.addEventListener('click', () => {
+    saveUserCleanIps([], true);
+});
+
+/* Browser-based probe against Cloudflare clean IPs */
+async function probeIp(ip, probes = 3, timeoutMs = 2000) {
+    const times = [];
+    for (let i = 0; i < probes; i++) {
+        const start = performance.now();
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            await fetch(`https://${ip}/cdn-cgi/trace?_=${Date.now()}_${i}`, {
+                mode: 'no-cors',
+                cache: 'no-store',
+                signal: controller.signal,
+            });
+            clearTimeout(timer);
+            times.push(Math.round(performance.now() - start));
+        } catch {
+            clearTimeout(timer);
+            times.push(-1);
+        }
+    }
+    const good = times.filter((t) => t >= 0);
+    if (!good.length) return { ip, latency: -1, loss: 1 };
+    good.sort((a, b) => a - b);
+    const median = good[Math.floor(good.length / 2)];
+    return { ip, latency: median, loss: 1 - good.length / times.length };
+}
+
+btnScanCleanIps?.addEventListener('click', async () => {
+    if (scanResultsArea) scanResultsArea.hidden = false;
+    if (scanStatusText) scanStatusText.textContent = t('cleanip.scanning');
+    if (scanList) scanList.innerHTML = '';
+    btnScanCleanIps.classList.add('busy');
+
+    try {
+        const subBase = S.sub.split('?')[0].replace(/\/sub$/, '');
+        let candidates = [
+            '104.16.10.10', '104.17.147.22', '104.18.26.90', '104.19.3.80',
+            '104.21.83.62', '104.24.0.10', '162.159.36.1', '188.114.97.3'
+        ];
+
+        try {
+            const res = await fetch(`${subBase}/api/scan/repository`, { cache: 'no-store' });
+            if (res.ok) {
+                const repoData = await res.json();
+                if (repoData.ips && repoData.ips.length) {
+                    candidates = [...new Set([...repoData.ips.slice(0, 30), ...candidates])];
+                }
+            }
+        } catch {
+            /* best effort */
+        }
+
+        if (cleanIpInput && cleanIpInput.value) {
+            const userIps = cleanIpInput.value.split(/[\s,\n]+/).filter(Boolean);
+            candidates = [...new Set([...userIps, ...candidates])];
+        }
+
+        scannedCleanIps = [];
+        const results = [];
+
+        const batchSize = 4;
+        for (let i = 0; i < candidates.length; i += batchSize) {
+            const batch = candidates.slice(i, i + batchSize);
+            const batchResults = await Promise.all(batch.map((ip) => probeIp(ip)));
+            for (const res of batchResults) {
+                if (res.latency > 0) {
+                    results.push(res);
+                }
+            }
+        }
+
+        results.sort((a, b) => a.latency - b.latency);
+        scannedCleanIps = results;
+
+        if (scanStatusText) {
+            scanStatusText.textContent = t('cleanip.scannedDone').replace('{count}', results.length);
+        }
+
+        if (scanList) {
+            if (!results.length) {
+                scanList.innerHTML = `<div class="hint" style="text-align:center">${t('copy.empty')}</div>`;
+            } else {
+                scanList.innerHTML = results.map((r) => {
+                    const slowClass = r.latency > 250 ? 'slow' : '';
+                    return `<div class="scan-item" data-ip="${r.ip}">
+                        <span>${r.ip}</span>
+                        <span class="latency ${slowClass}">⚡ ${r.latency}ms</span>
+                    </div>`;
+                }).join('');
+            }
+        }
+    } catch {
+        if (scanStatusText) scanStatusText.textContent = t('copy.fail');
+    } finally {
+        btnScanCleanIps.classList.remove('busy');
+    }
+});
+
+scanList?.addEventListener('click', (e) => {
+    const item = e.target.closest('.scan-item');
+    if (!item) return;
+    const ip = item.dataset.ip;
+    if (!ip || !cleanIpInput) return;
+
+    let current = cleanIpInput.value.split(/[\s,\n]+/).filter(Boolean);
+    if (current.includes(ip)) {
+        current = current.filter((x) => x !== ip);
+        item.classList.remove('selected');
+    } else {
+        current.push(ip);
+        item.classList.add('selected');
+    }
+    cleanIpInput.value = current.join(', ');
+});
+
+btnApplyTopScanned?.addEventListener('click', () => {
+    if (!scannedCleanIps.length || !cleanIpInput) return;
+    const top = scannedCleanIps.slice(0, 5).map((r) => r.ip);
+    cleanIpInput.value = top.join(', ');
+    saveUserCleanIps(top, false);
+});
+
 /* ── raw links ─────────────────────────────────────────────────────────── */
 
 const rawRows = [
@@ -517,5 +743,6 @@ if (S.gaming) document.getElementById('modePill').hidden = false;
 
 applyLang();
 renderQr(S.sub);
+loadUserCleanIps();
 
 })();

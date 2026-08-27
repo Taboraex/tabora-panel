@@ -384,6 +384,24 @@
         </div>
       </div>
       <div class="scan-hero-controls">
+        <div class="scan-repo-wrap" style="width: 100%; margin-bottom: .6rem;">
+          <label class="field" style="margin: 0;"><span data-i18n="scan.clean.operator">Community Repository & Operator</span>
+            <select id="cleanOperator">
+              <option value="ALL">همه اپراتورها (All Operators)</option>
+              <option value="MCI">همراه اول (MCI)</option>
+              <option value="MTN">ایرانسل (Irancell)</option>
+              <option value="RTL">رایتل (Rightel)</option>
+              <option value="SHT">شاتل (Shatel)</option>
+              <option value="MKH">مخابرات (Mokhaberat)</option>
+              <option value="AST">آسیاتک (Asiatech)</option>
+              <option value="PRS">پارس آنلاین (ParsOnline)</option>
+              <option value="CUSTOM">لینک سفارشی (Custom Raw URL)</option>
+            </select>
+          </label>
+          <div id="customRepoUrlWrap" hidden style="margin-top:.4rem;">
+            <input type="url" id="customRepoUrl" placeholder="https://raw.githubusercontent.com/.../list.json" style="width:100%; font-size:.8rem;">
+          </div>
+        </div>
         <div class="scan-depths" role="radiogroup" aria-label="Scan depth">
           <button type="button" class="scan-depth" data-depth="quick" data-i18n="scan.clean.depth.quick">Quick</button>
           <button type="button" class="scan-depth active" data-depth="smart" data-i18n="scan.clean.depth.smart">Smart</button>
@@ -401,6 +419,9 @@
           <button class="btn primary" id="scanClean" data-i18n="scan.clean.run">Scan from my network</button>
           <button class="btn ghost" id="stopClean" data-i18n="scan.clean.stop" hidden>Stop</button>
           <button class="btn" id="applyClean" data-i18n="scan.clean.apply" disabled>Pin selected</button>
+          <select id="applyToUserSelect" style="background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: .4rem .6rem; font-size: .8rem;">
+            <option value="">اعمال برای همه (Global)</option>
+          </select>
         </div>
       </div>
       <p class="scan-ticker" id="cleanTicker"></p>
@@ -497,6 +518,7 @@
         <label class="field"><span data-i18n="um.daily">Daily limit (GB)</span><input type="number" id="uDaily" min="0" step="0.1" placeholder="0 = unlimited"></label>
       </div>
       <label class="field"><span data-i18n="um.expiry">Expires in (days)</span><input type="number" id="uDays" min="0" placeholder="0 = never"></label>
+      <label class="field"><span data-i18n="um.cleanIPs">Custom Clean IPs</span><textarea id="uCleanIps" rows="2" placeholder="104.16.1.1, 104.17.2.2 (comma or line separated)"></textarea></label>
       <label class="field"><span data-i18n="um.notes">Notes</span><textarea id="uNotes" rows="2"></textarea></label>
       <div class="modal-actions">
         <button type="button" class="btn ghost" id="cancelUser">Cancel</button>

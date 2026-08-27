@@ -1,15 +1,17 @@
 import { Settings } from '#types/settings';
 import { UserService, isUsable } from '@users/service';
+import { Store } from '@storage/db';
 import { getContext } from '@config/settings';
 import { resolveBuildContext, renderInfoLabels } from '@cores/shared';
 import { buildBase64Subscription, buildPlainSubscription } from '@cores/uri';
 import { buildClashConfig } from '@cores/clash';
 import { buildSingboxConfig } from '@cores/singbox';
 import { BROWSER_UA_MARKERS, CLIENT_UA_MARKERS, PROJECT } from '@config/obfuscation';
-import { subscriptionResponse, htmlResponse, notFound } from '@common/http';
+import { subscriptionResponse, htmlResponse, notFound, ok, badRequest, methodNotAllowed } from '@common/http';
 import { gunzipBase64, formatBytes, formatDate } from '@common/utils';
 import { renderTemplate } from '@common/template';
 import { renderGamingSubscription } from './gaming';
+import { logActivity } from './logs';
 
 type Format = 'auto' | 'base64' | 'plain' | 'clash' | 'singbox';
 
@@ -229,4 +231,86 @@ function normaliseOrigin(value: string): string {
     } catch {
         return value;
     }
+}
+
+/** User self-service endpoint for managing custom Clean IPs */
+export async function handleUserCleanIps(
+    request: Request,
+    settings: Settings,
+    users: UserService,
+    store: Store,
+): Promise<Response> {
+    const ctx = getContext();
+    const requested = ctx.searchParams.get('u') ?? ctx.searchParams.get('sub') ?? '';
+    if (!requested) return badRequest('User parameter u is required.');
+
+    const user = await users.get(requested);
+    if (!user) return notFound('Subscription user not found.');
+
+    if (request.method === 'GET') {
+        const userIPs = user.cleanIPs ?? [];
+        const activeIPs = userIPs.length ? userIPs : (settings.cleanIPs ?? []);
+        return ok({
+            user: user.name,
+            cleanIPs: userIPs,
+            activeIPs,
+            isCustom: userIPs.length > 0,
+            globalIPs: settings.cleanIPs ?? [],
+        });
+    }
+
+    if (request.method === 'POST' || request.method === 'PUT') {
+        let body: { cleanIPs?: unknown; clear?: boolean };
+        try {
+            body = (await request.json()) as { cleanIPs?: unknown; clear?: boolean };
+        } catch {
+            return badRequest('Invalid JSON body.');
+        }
+
+        if (body.clear === true) {
+            await users.update(user.id, { cleanIPs: [] });
+            await logActivity(store, 'user-clean-ips-cleared', user.name);
+            return ok({
+                user: user.name,
+                cleanIPs: [],
+                activeIPs: settings.cleanIPs ?? [],
+                isCustom: false,
+            }, 'User clean IPs cleared to panel defaults.');
+        }
+
+        const rawList = Array.isArray(body.cleanIPs)
+            ? body.cleanIPs
+            : typeof body.cleanIPs === 'string'
+                ? (body.cleanIPs as string).split(/[\s,\n]+/)
+                : [];
+
+        const seen = new Set<string>();
+        const validIPs: string[] = [];
+
+        for (const entry of rawList) {
+            const ip = String(entry ?? '').trim().replace(/:(\d{1,5})$/, '');
+            if (!ip) continue;
+            if (!/^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)) continue;
+            if (seen.has(ip)) continue;
+            seen.add(ip);
+            validIPs.push(ip);
+            if (validIPs.length >= 30) break;
+        }
+
+        if (!validIPs.length && !body.clear) {
+            return badRequest('No valid IPv4 clean IPs supplied.');
+        }
+
+        await users.update(user.id, { cleanIPs: validIPs });
+        await logActivity(store, 'user-clean-ips-updated', `${user.name}: ${validIPs.join(', ')}`);
+
+        return ok({
+            user: user.name,
+            cleanIPs: validIPs,
+            activeIPs: validIPs,
+            isCustom: true,
+        }, 'Clean IPs updated successfully.');
+    }
+
+    return methodNotAllowed();
 }

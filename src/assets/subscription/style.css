@@ -306,3 +306,45 @@ h2 {
 }
 
 .toast.warn { color: var(--warn); border-color: rgba(251,191,36,.4); }
+
+/* ── clean ip card ─────────────────────────────────────────────────────── */
+
+.cleanip-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .4rem; }
+.cleanip-head h2 { margin: 0; }
+.cleanip-form { display: flex; flex-direction: column; gap: .6rem; margin-top: .8rem; }
+.cleanip-input-wrap textarea {
+  width: 100%; min-height: 52px; padding: .6rem .8rem;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .8rem;
+  color: var(--text); background: rgba(9, 14, 26, .65);
+  border: 1px solid var(--border); border-radius: 12px;
+  resize: vertical; outline: none; transition: border-color .18s;
+}
+.cleanip-input-wrap textarea:focus { border-color: rgba(56, 189, 248, .5); }
+.cleanip-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
+.cleanip-actions .cbtn { flex: 1 1 110px; text-align: center; justify-content: center; align-items: center; padding: .55rem .6rem; }
+.cleanip-actions .cbtn.danger { border-color: rgba(248, 113, 113, .3); color: var(--danger); }
+.cleanip-actions .cbtn.danger:hover { background: rgba(248, 113, 113, .1); }
+
+.scan-results-area {
+  margin-top: .9rem; padding-top: .8rem; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: .6rem;
+}
+.scan-results-head { display: flex; align-items: center; justify-content: space-between; font-size: .78rem; color: var(--muted); }
+.btn-xs {
+  padding: .25rem .65rem; font-size: .7rem; font-weight: 600;
+  color: #04121c; background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  border: 0; border-radius: 999px; cursor: pointer; transition: .18s;
+}
+.btn-xs:hover { opacity: .9; transform: scale(1.02); }
+.scan-list { display: flex; flex-direction: column; gap: .35rem; max-height: 220px; overflow-y: auto; }
+.scan-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .4rem .65rem; font-size: .78rem; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  background: rgba(9, 14, 26, .5); border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; transition: .15s;
+}
+.scan-item:hover { border-color: rgba(56,189,248,.4); background: rgba(56,189,248,.08); }
+.scan-item.selected { border-color: var(--ok); background: rgba(52, 211, 153, .12); }
+.scan-item .latency { font-weight: 650; color: var(--ok); font-size: .74rem; }
+.scan-item .latency.slow { color: var(--warn); }
+.scan-item .latency.dead { color: var(--danger); }

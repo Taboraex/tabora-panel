@@ -17,7 +17,27 @@ import {
 } from '@scanner/strategy';
 import { rankClean, type CleanMeasurement } from '@scanner/rank';
 import { scan, pickBest, type ProbeMode, type ProbeResult } from '@scanner/scanner';
+import { fetchCommunityIps, KNOWN_OPERATORS } from '@scanner/repositories';
 import { logActivity } from './logs';
+
+/**
+ * GET api/scan/repository — Fetch Clean IPs from external community repos.
+ */
+export async function handleScanRepository(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const operator = url.searchParams.get('operator') ?? 'ALL';
+    const repoUrl = url.searchParams.get('repoUrl') ?? undefined;
+
+    try {
+        const data = await fetchCommunityIps({ operator, url: repoUrl });
+        return ok({
+            ...data,
+            knownOperators: KNOWN_OPERATORS,
+        });
+    } catch (error) {
+        return badRequest(`Failed to fetch clean IP repository: ${safeError(error)}`);
+    }
+}
 
 /**
  * POST api/scan — probe candidate edges and report which ones work.
@@ -166,12 +186,25 @@ export async function handleScan(
  * Depth: quick | smart | deep. Previous Worker-front pins become the memory
  * wave so a rescan starts from what already worked on this network.
  */
-export function handleScanCandidates(request: Request, settings: Settings): Response {
+export async function handleScanCandidates(request: Request, settings: Settings): Promise<Response> {
     const url = new URL(request.url);
     const depth = parseDepth(url.searchParams.get('depth'));
     const keep = clamp(url.searchParams.get('keep'), LIMITS.keep);
+    const operator = url.searchParams.get('operator') ?? '';
+    const repoUrl = url.searchParams.get('repoUrl') ?? undefined;
+
+    let repositoryIps: string[] | undefined = undefined;
+    if (operator || repoUrl) {
+        try {
+            const fetched = await fetchCommunityIps({ operator: operator || 'ALL', url: repoUrl });
+            repositoryIps = fetched.ips;
+        } catch {
+            /* best effort, fallback to default waves */
+        }
+    }
+
     const previous = (settings.cleanIPs ?? []).filter((a) => isWorkerFrontIp(String(a)));
-    const waves = planScan({ previous, depth, keep });
+    const waves = planScan({ previous, depth, keep, repositoryIps });
     const sample = flattenPlan(waves);
     return ok({
         domains: CANDIDATE_DOMAINS,

@@ -36,10 +36,10 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
 
     const frontEnds = (user?.cleanIPs?.length ? user.cleanIPs : settings.cleanIPs)
         .filter(Boolean);
-    // Any Worker-front IPv4 wins exclusively. Leftover catalogue domains
+    // Any pinned IPv4 wins exclusively. Leftover catalogue domains
     // (icook.hk, …) used to fail the "every entry is IPv4" gate and fall
-    // through to addresses × ports × protocols — 15 IPs became dozens of
-    // configs. One healthy front → one config, always.
+    // through to addresses × ports × protocols — 16 IPs became dozens of
+    // configs and Hiddify died. One IP → one config, always.
     const workerFronts = resolveFixedFronts(frontEnds);
 
     if (workerFronts.length) {
@@ -81,17 +81,64 @@ export function resolveBuildContext(settings: Settings, user: User | null): Buil
     };
 }
 
-/** Worker-front IPv4s that each become exactly one config. */
+/** Strip a trailing :port so "104.16.1.1:443" still counts as a pinned IPv4. */
+export function pinnedIpv4(raw: string): string | null {
+    const host = String(raw ?? '').trim().replace(/:(\d{1,5})$/, '');
+    return isIPv4(host) ? host : null;
+}
+
+/**
+ * IPv4s that each become exactly one config.
+ *
+ * Worker-front addresses win when mixed with colo leftovers. If the operator
+ * pinned only IPv4s (even ones the catalogue does not know), still lock 1:1
+ * rather than exploding into ports × protocols.
+ */
 export function resolveFixedFronts(frontEnds: Iterable<string> | null | undefined): string[] {
     const seen = new Set<string>();
-    const out: string[] = [];
+    const fronts: string[] = [];
+    const anyIpv4: string[] = [];
     for (const raw of frontEnds ?? []) {
-        const ip = String(raw ?? '').trim();
-        if (!isIPv4(ip) || !isWorkerFrontIp(ip) || seen.has(ip)) continue;
+        const ip = pinnedIpv4(String(raw ?? ''));
+        if (!ip || seen.has(ip)) continue;
         seen.add(ip);
-        out.push(ip);
+        anyIpv4.push(ip);
+        if (isWorkerFrontIp(ip)) fronts.push(ip);
     }
-    return out;
+    return fronts.length ? fronts : anyIpv4;
+}
+
+/** One slot in the subscription — the only thing builders iterate. */
+export interface ConfigSlot {
+    address: string;
+    port: number;
+    protocol: string;
+    index: number;
+}
+
+/**
+ * Final list of configs. `maxConfigs` caps this list, not address×port pairs
+ * that later get multiplied by protocol (that is how 16 IPs became 60 rows).
+ */
+export function listConfigs(ctx: BuildContext): ConfigSlot[] {
+    const protocols = ctx.poolFixed
+        ? [ctx.protocols[0] ?? P.VL]
+        : (ctx.protocols.length ? ctx.protocols : [P.VL]);
+    const ports = ctx.poolFixed
+        ? [ctx.ports[0] ?? 443]
+        : (ctx.ports.length ? ctx.ports : [443]);
+
+    const slots: ConfigSlot[] = [];
+    outer: for (const address of ctx.addresses) {
+        for (const port of ports) {
+            if (!ctx.poolFixed && address !== ctx.hostname && !isTlsPort(port)) continue;
+            for (const protocol of protocols) {
+                if (slots.length >= ctx.maxConfigs) break outer;
+                slots.push({ address, port, protocol, index: slots.length + 1 });
+            }
+        }
+    }
+    return slots;
 }
 
 export function preferTlsPort(ports: number[]): number {
@@ -219,15 +266,9 @@ export function renderInfoLabels(
         });
 }
 
-/** Cartesian product of addresses × ports, capped at `maxConfigs`. */
+/** @deprecated use listConfigs — kept so older imports still typecheck. */
 export function* enumerateEndpoints(ctx: BuildContext) {
-    let index = 1;
-    outer: for (const address of ctx.addresses) {
-        for (const port of ctx.ports) {
-            // Non-worker front-ends only make sense over TLS ports.
-            if (address !== ctx.hostname && !isTlsPort(port)) continue;
-            if (index > ctx.maxConfigs) break outer;
-            yield { address, port, index: index++ };
-        }
+    for (const slot of listConfigs(ctx)) {
+        yield { address: slot.address, port: slot.port, index: slot.index };
     }
 }

@@ -1,7 +1,7 @@
 import { P } from '@config/obfuscation';
 import {
     BuildContext,
-    enumerateEndpoints,
+    listConfigs,
     isTlsPort,
     frontNeedsInsecure,
     renderRemark,
@@ -138,20 +138,18 @@ export function buildClashConfig(ctx: BuildContext): string {
     const proxies: ClashProxy[] = [];
     const used = new Set(['✅ Selector', '♻️ Auto', 'DIRECT']);
 
-    for (const { address, port, index } of enumerateEndpoints(ctx)) {
-        for (const protocol of ctx.protocols) {
-            const proto = protocol === P.TR ? 'TR' : 'VL';
-            const name = uniqueLabel(renderRemark(settings.nameTemplate, {
-                index,
-                prefix: settings.namePrefix,
-                protocol: proto,
-                port,
-                address,
-                flag: ctx.poolFlag,
-                country: ctx.poolCountry,
-            }), used, proto);
-            proxies.push(buildProxy(ctx, protocol, address, port, name));
-        }
+    for (const slot of listConfigs(ctx)) {
+        const proto = slot.protocol === P.TR ? 'TR' : 'VL';
+        const name = uniqueLabel(renderRemark(settings.nameTemplate, {
+            index: slot.index,
+            prefix: settings.namePrefix,
+            protocol: proto,
+            port: slot.port,
+            address: slot.address,
+            flag: ctx.poolFlag,
+            country: ctx.poolCountry,
+        }), used, proto);
+        proxies.push(buildProxy(ctx, slot.protocol, slot.address, slot.port, name));
     }
 
     const names = proxies.map((p) => p.name);

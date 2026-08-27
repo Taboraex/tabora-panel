@@ -2022,9 +2022,12 @@ async function persistCleanIPs(payload) {
         });
     } catch {
         const cleanIPs = payload.clear ? [] : (payload.addresses || []);
+        const patch = payload.clear
+            ? { cleanIPs: [] }
+            : { cleanIPs, maxConfigs: Math.max(cleanIPs.length, 1) };
         await request('/settings', {
             method: 'PUT',
-            body: JSON.stringify({ cleanIPs }),
+            body: JSON.stringify(patch),
         });
         return { applied: true, cleanIPs };
     }

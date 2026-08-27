@@ -274,17 +274,28 @@ export async function handleScanApply(
     }
 
     const supplied = Array.isArray(body.addresses) ? body.addresses : [];
-    const cleanIPs = supplied
-        .map((a) => String(a).trim())
-        .filter(isProbeTarget)
-        .filter((a) => !/^(?:\d{1,3}\.){3}\d{1,3}$/.test(a) || isWorkerFrontIp(a))
-        .slice(0, LIMITS.keep.max);
+    const seen = new Set<string>();
+    const cleanIPs: string[] = [];
+    for (const raw of supplied) {
+        const stripped = String(raw ?? '').trim().replace(/:(\d{1,5})$/, '');
+        if (!isProbeTarget(stripped)) continue;
+        if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(stripped) && !isWorkerFrontIp(stripped)) continue;
+        if (seen.has(stripped)) continue;
+        seen.add(stripped);
+        cleanIPs.push(stripped);
+        if (cleanIPs.length >= LIMITS.keep.max) break;
+    }
 
     if (!cleanIPs.length) return badRequest('No valid addresses supplied');
 
-    await saveSettings(store, settings, { cleanIPs });
+    const configCount = cleanIPs.filter((a) => /^(?:\d{1,3}\.){3}\d{1,3}$/.test(a)).length;
+    // maxConfigs tracks the pin count so a later cartesian path cannot
+    // multiply 16 IPs into 60 rows even if poolFixed is somehow off.
+    await saveSettings(store, settings, {
+        cleanIPs,
+        maxConfigs: Math.max(configCount || cleanIPs.length, 1),
+    });
     await logActivity(store, 'scan-applied', cleanIPs.join(', ').slice(0, 200));
 
-    const configCount = cleanIPs.filter((a) => isWorkerFrontIp(a)).length;
-    return ok({ applied: true, cleanIPs, configCount });
+    return ok({ applied: true, cleanIPs, configCount: configCount || cleanIPs.length });
 }

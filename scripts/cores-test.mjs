@@ -19,7 +19,7 @@ const dir = mkdtempSync(join(tmpdir(), 'tabora-cores-'));
 const entry = join(dir, 'entry.ts');
 const src = join(process.cwd(), 'src', 'cores');
 writeFileSync(entry, `
-export { uniqueLabel, renderRemark, preferTlsPort, preferProtocol, resolveFixedFronts } from ${JSON.stringify(join(src, 'shared'))};
+export { uniqueLabel, renderRemark, preferTlsPort, preferProtocol, resolveFixedFronts, pinnedIpv4, listConfigs } from ${JSON.stringify(join(src, 'shared'))};
 export { buildSingboxConfig } from ${JSON.stringify(join(src, 'singbox'))};
 export { buildClashConfig } from ${JSON.stringify(join(src, 'clash'))};
 export { buildUriList } from ${JSON.stringify(join(src, 'uri'))};
@@ -155,6 +155,48 @@ check('15 worker fronts ignore leftover domains',
     m.resolveFixedFronts([...fifteen, 'icook.hk', 'japan.com']).length === 15);
 check('colo interconnects never become fixed fronts',
     m.resolveFixedFronts(['104.23.181.10', '104.16.10.10']).join(',') === '104.16.10.10');
+
+check('ip:port still locks as a single IPv4',
+    m.pinnedIpv4('104.16.10.10:443') === '104.16.10.10');
+check('resolveFixedFronts strips :port',
+    m.resolveFixedFronts(['104.16.10.10:443', '104.21.83.62:8443']).join(',') === '104.16.10.10,104.21.83.62');
+
+const sixteen = Array.from({ length: 16 }, (_, i) => `104.16.${i}.10`);
+const boom16 = {
+    ...poolCtx,
+    poolFixed: true,
+    protocols: ['vless', 'trojan'],
+    ports: [443, 8443, 2053, 2083, 2087, 2096],
+    addresses: sixteen,
+    maxConfigs: 16,
+};
+check('16 IPs emit 16 URIs even if ports×protocols sneak in',
+    m.buildUriList(boom16).length === 16, `${m.buildUriList(boom16).length}`);
+const sb16 = JSON.parse(m.buildSingboxConfig(boom16));
+check('16 IPs emit 16 sing-box proxies',
+    sb16.outbounds.filter((o) => o.server).length === 16,
+    `${sb16.outbounds.filter((o) => o.server).length}`);
+check('Hiddify JSON has no TUN inbound', !sb16.inbounds,
+    JSON.stringify(sb16.inbounds ?? null));
+check('Hiddify JSON has no mixed inbound / clash_api / sniff',
+    !JSON.stringify(sb16).includes('"tun"')
+    && !JSON.stringify(sb16).includes('clash_api')
+    && !JSON.stringify(sb16).includes('"sniff"')
+    && !JSON.stringify(sb16).includes('hijack-dns'));
+check('Hiddify JSON has no remote GitHub rule-set',
+    !JSON.stringify(sb16).includes('rule_set') && !JSON.stringify(sb16).includes('githubusercontent'));
+check('16-IP profile still has unique outbound tags',
+    new Set(sb16.outbounds.map((o) => o.tag)).size === sb16.outbounds.length);
+check('16-IP profile has no urltest', !sb16.outbounds.some((o) => o.type === 'urltest'));
+
+const capped = {
+    ...cartesian,
+    maxConfigs: 5,
+};
+check('maxConfigs caps the final config count, not address×port before protocols',
+    m.buildUriList(capped).length === 5, `${m.buildUriList(capped).length}`);
+check('listConfigs never exceeds maxConfigs',
+    m.listConfigs(capped).length === 5);
 
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

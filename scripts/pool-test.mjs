@@ -109,6 +109,21 @@ check('15 IPs do not multiply ports', fat.ports.length === 1 && fat.ports[0] ===
 check('15 IPs do not multiply protocols', fat.protocols.length === 1 && fat.protocols[0] === 'vless');
 check('maxConfigs equals the kept IP count', fat.maxConfigs === 15);
 
+const sixteen = Array.from({ length: 16 }, (_, i) => `104.16.${i}.10`);
+const fat16 = m.resolveBuildContext({
+    ...baseSettings,
+    cleanIPs: [...sixteen, 'icook.hk', 'japan.com', '104.16.0.10:443'],
+    ports: [443, 8443, 2053, 2083, 2087, 2096],
+    protocols: 'vless,trojan',
+    maxConfigs: 30,
+}, null);
+check('16 IPs + leftover domains → 16 addresses', fat16.addresses.length === 16, `${fat16.addresses.length}`);
+check('16 IPs stay poolFixed', fat16.poolFixed === true);
+check('16 IPs do not multiply ports', fat16.ports.length === 1 && fat16.ports[0] === 443);
+check('16 IPs do not multiply protocols', fat16.protocols.length === 1 && fat16.protocols[0] === 'vless');
+check('16 IPs force maxConfigs to 16', fat16.maxConfigs === 16, `${fat16.maxConfigs}`);
+check('ip:port duplicate does not add a 17th address', !fat16.addresses.includes('104.16.0.10:443'));
+
 const domains = m.resolveBuildContext({
     ...baseSettings,
     cleanIPs: ['icook.hk', 'japan.com'],

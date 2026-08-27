@@ -1,7 +1,7 @@
 import { P } from '@config/obfuscation';
 import {
     BuildContext,
-    enumerateEndpoints,
+    listConfigs,
     isTlsPort,
     frontNeedsInsecure,
     renderRemark,
@@ -66,20 +66,18 @@ export function buildUriList(ctx: BuildContext, infoLabels: string[] = []): stri
         lines.push(buildUri(ctx, ctx.protocols[0], ctx.hostname, ctx.ports[0], uniqueLabel(label, used)));
     }
 
-    for (const { address, port, index } of enumerateEndpoints(ctx)) {
-        for (const protocol of ctx.protocols) {
-            const proto = protocol === P.TR ? 'TR' : 'VL';
-            const remark = uniqueLabel(renderRemark(settings.nameTemplate, {
-                index,
-                prefix: settings.namePrefix,
-                protocol: proto,
-                port,
-                address,
-                flag: ctx.poolFlag,
-                country: ctx.poolCountry,
-            }), used, proto);
-            lines.push(buildUri(ctx, protocol, address, port, remark));
-        }
+    for (const slot of listConfigs(ctx)) {
+        const proto = slot.protocol === P.TR ? 'TR' : 'VL';
+        const remark = uniqueLabel(renderRemark(settings.nameTemplate, {
+            index: slot.index,
+            prefix: settings.namePrefix,
+            protocol: proto,
+            port: slot.port,
+            address: slot.address,
+            flag: ctx.poolFlag,
+            country: ctx.poolCountry,
+        }), used, proto);
+        lines.push(buildUri(ctx, slot.protocol, slot.address, slot.port, remark));
     }
 
     return lines;

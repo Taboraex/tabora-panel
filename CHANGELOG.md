@@ -5,6 +5,22 @@ All notable changes to Tabora are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] — 2026-08-27
+
+### Fixed
+
+- **16 scanned clean IPs produced dozens of configs and Hiddify closed.**
+  Builders used to cap address×port, then multiply by every protocol — 16
+  IPv4s × TLS ports × VLESS+Trojan became 30–60 outbounds. The subscription
+  now emits **exactly one config per pinned IPv4** (port 443, one protocol)
+  even when leftover domains or `ip:port` entries sit on the list.
+- **Hiddify imported a full sing-box profile with TUN, mixed inbound,
+  `action: sniff` (1.11-only) and GitHub geosite rule-sets.** That fought
+  Hiddify’s own TUN and crashed the app. Sing-box output is now outbound-only:
+  selector + N proxies + direct, no TUN, no clash_api, no remote rule-sets.
+- Fake quota/expiry URI nodes are omitted while IPs are pinned, so they cannot
+  push the list past N.
+
 ## [0.15.0] — 2026-08-27
 
 ### Changed

@@ -109,7 +109,11 @@ export async function handleSubscription(
 
     const usage = user ? (await users.getUsage(user.id)) : null;
     const buildCtx = resolveBuildContext(settings, user);
-    const infoLabels = renderInfoLabels(settings, user, usage?.totalBytes ?? 0);
+    // Fake quota/expiry URIs are extra configs. Hiddify closes when the
+    // list is longer than the pinned IP count, so they stay off while locked.
+    const infoLabels = buildCtx.poolFixed
+        ? []
+        : renderInfoLabels(settings, user, usage?.totalBytes ?? 0);
 
     const format = requestedFormat;
 

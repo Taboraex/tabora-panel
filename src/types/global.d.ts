@@ -21,6 +21,7 @@ declare global {
         PROXY_IP?: string;
         CF_ACCOUNT_ID?: string;
         CF_API_TOKEN?: string;
+        BOT_TOKEN?: string;
         TELEGRAM_BOT_TOKEN?: string;
         TELEGRAM_ADMIN_ID?: string;
         /** Injected by the Telegram launcher so the bot can manage this panel. */
